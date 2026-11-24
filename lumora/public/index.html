@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="en" data-design="dusk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lumora</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2a5bd7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lumora">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<script>
+/* Server mode. When this page is served by the Lumora server, load the household's saved data
+   before the app starts, and save changes back as they happen. Anywhere else (a file, a preview)
+   none of this runs and the app stays a self-contained demo. */
+(function(){
+  window.__SRV=null;
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence'];
+  try{
+    if(!/^https?:$/.test(location.protocol)) return;
+    var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
+    if(x.status!==200||x.getResponseHeader('X-Lumora')!=='1') return;
+    var b=JSON.parse(x.responseText), ls=window.localStorage;
+    window.__SRV=b; document.documentElement.setAttribute('data-server','1');
+    SYNC.forEach(function(k){ if(b.user&&b.data&&typeof b.data[k]==='string') ls.setItem(k,b.data[k]); else ls.removeItem(k); });
+    if(b.user){ var u={}; u[b.user.email]={name:b.user.name,salt:'',hash:''}; ls.setItem('hub-users',JSON.stringify(u)); ls.setItem('hub-session',b.user.email); }
+    else { ls.setItem('hub-users','{}'); ls.removeItem('hub-session'); try{ sessionStorage.removeItem('hub-session'); }catch(e){} }
+    if(!b.user) return;
+    /* from here on, writes to the shared keys also go to the server */
+    var pending={}, timer=null, fails=0, inflight=0, setI=Storage.prototype.setItem, remI=Storage.prototype.removeItem;
+    function queue(k,v){ pending[k]=v; clearTimeout(timer); timer=setTimeout(flush,500); }
+    Storage.prototype.setItem=function(k,v){ setI.call(this,k,v); if(this===ls&&SYNC.indexOf(k)>-1) queue(k,String(v)); };
+    Storage.prototype.removeItem=function(k){ remI.call(this,k); if(this===ls&&SYNC.indexOf(k)>-1) queue(k,null); };
+    function send(k,v,keep){
+      inflight++;
+      return fetch('/api/data/'+k,{method:v===null?'DELETE':'PUT',headers:{'Content-Type':'application/json','X-Requested-With':'lumora'},body:v===null?undefined:JSON.stringify({value:v}),keepalive:!!keep,credentials:'same-origin'})
+        .then(function(r){ if(r.status===401){ location.reload(); return null; } if(!r.ok) throw new Error('save'); return r.json(); })
+        .then(function(j){ if(j&&j.rev) window.__srvRev=j.rev; fails=0; })
+        .catch(function(){ if(!(k in pending)) pending[k]=v; fails++; clearTimeout(timer); timer=setTimeout(flush,5000); if(fails===3&&window.toast) window.toast('Can’t reach the Lumora server. Changes will be saved when it’s back.'); })
+        .then(function(){ inflight--; });
+    }
+    function flush(keep){ clearTimeout(timer); var ks=Object.keys(pending), ps=[]; ks.forEach(function(k){ var v=pending[k]; delete pending[k]; ps.push(send(k,v,keep===true)); }); return Promise.all(ps); }
+    window.__srvFlush=flush; window.__srvRev=b.rev;
+    addEventListener('pagehide',function(){ flush(true); });
+    document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') flush(true); });
+    var warned=false;
+    setInterval(function(){
+      if(document.hidden||warned||inflight||Object.keys(pending).length) return;
+      fetch('/api/rev',{credentials:'same-origin'}).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+        if(j&&j.rev!==window.__srvRev&&!inflight&&!Object.keys(pending).length){ warned=true; if(window.toast) window.toast('Someone changed things on another device. Reload this page to see the changes.'); }
+      }).catch(function(){});
+    },20000);
+  }catch(e){ window.__SRV=null; }
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#e9eef4;--surface:#f8fafc;--ink:#18222e;--muted:#5d6b7b;--line:#cfd8e2;--accent:#2a5bd7;--off:#dfe5ec;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101722;--surface:#18212e;--ink:#e8edf3;--muted:#93a1b2;--line:#2a3646;--accent:#7ea2ff;--off:#222d3b}}
+:root[data-theme="dark"]{--bg:#101722;--surface:#18212e;--ink:#e8edf3;--muted:#93a1b2;--line:#2a3646;--accent:#7ea2ff;--off:#222d3b}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background-color:var(--bg);background-image:var(--bgimg);background-attachment:fixed;background-repeat:no-repeat;color:var(--ink);font:400 16px/1.5 "Instrument Sans",system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 190px}
+h1,h2{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0}
+h1{font-size:2.2rem;line-height:1.1}
+h2{font-size:1.25rem;margin:36px 0 12px}
+header{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+header p{margin:4px 0 0;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.scenes{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.light{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;overflow:hidden;transition:border-color .2s}
+.light .glow{position:absolute;inset:auto -30% -70% -30%;height:70%;border-radius:50%;filter:blur(36px);opacity:0;transition:opacity .3s,background .3s;pointer-events:none}
+.light.on .glow{opacity:.75}
+.light>*{position:relative}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.name{font-weight:600}
+.sub{color:var(--muted);font-size:.875rem}
+.sw{width:52px;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--off);padding:2px;display:flex;align-items:center}
+.sw i{width:24px;height:24px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px #0004;transition:transform .2s}
+.light.on .sw{background:var(--accent);border-color:var(--accent)}
+.light.on .sw i{transform:translateX(22px)}
+input[type=range]{width:100%;margin:16px 0 10px;accent-color:var(--accent)}
+.cols{display:flex;gap:8px}
+.col{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.col[aria-pressed=true]{box-shadow:0 0 0 2px var(--ink)}
+.cams .cam{background:var(--surface);border:1px dashed var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.feed{aspect-ratio:16/9;border-radius:12px;background:repeating-linear-gradient(135deg,var(--off) 0 10px,transparent 10px 20px);display:grid;place-items:center;color:var(--muted);font-size:.875rem;text-align:center;padding:8px}
+.auto{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.log{margin:12px 0 0;padding:0;list-style:none;color:var(--muted);font-size:.875rem}
+.note{color:var(--muted);max-width:60ch}
+.light,.cam,.auto{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:var(--r,20px)}
+.sw i{background:var(--knob,#fff)}
+.designs{display:flex;gap:6px;flex-wrap:wrap}
+.dock{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:20;width:210px;display:flex;flex-direction:column;gap:12px;padding:12px;border-radius:24px;overflow-y:auto;background:color-mix(in srgb,var(--bg) 76%,transparent);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px #0003}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px}
+.strip[hidden],.pop[hidden]{display:none}
+.strip .btn{flex:none;padding:6px 14px}
+.pop{display:flex;flex-direction:column;gap:8px;padding:8px 6px 4px}
+.tabs{display:flex;gap:4px}
+.tab{flex:1;border:0;background:transparent;padding:10px 4px;border-radius:20px;font-weight:600;color:var(--muted)}
+.tab[aria-current=true],.tab[aria-expanded=true]{background:var(--accent);color:var(--onaccent,#fff)}
+.tabs{flex-direction:column;order:1}
+.tab{text-align:left;padding:12px 16px}
+.strip{order:3;flex-direction:column;overflow:visible;border-top:1px solid var(--line);padding-top:12px}
+.strip .btn{width:100%;text-align:left}
+body{padding-left:234px}
+main{padding-bottom:56px}
+.side{position:sticky;top:16px;display:flex;flex-direction:column;gap:12px}
+.info{position:static}
+.alloff{width:100%;padding:14px 16px;border-radius:var(--r,20px);border:1px solid var(--line);background:var(--surface);font-weight:600;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.alloff:hover:not(:disabled){border-color:var(--accent)}
+.alloff:disabled{opacity:.5;cursor:default}
+@media (max-width:760px){
+.dock{left:50%;right:auto;top:auto;transform:translateX(-50%);width:min(560px,calc(100% - 24px));border-radius:28px;overflow:visible;gap:8px;padding:8px}
+.tabs{flex-direction:row;order:3}
+.tab{text-align:center;padding:10px 4px}
+.pop{order:1}
+.strip{order:2;flex-direction:row;overflow-x:auto;border-top:0;padding-top:2px}
+.strip .btn{width:auto;text-align:center}
+body{padding-left:0}
+main{padding-bottom:190px}
+.side{order:-1;position:static}
+}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.lt{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r,20px);padding:14px 16px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.bulb{width:56px;height:56px;border-radius:50%;border:1px solid var(--line);background:var(--off);display:grid;place-items:center;color:var(--muted);transition:box-shadow .3s,background .3s}
+.lt.on .bulb{background:var(--c);color:#1b1b1b;border-color:transparent;box-shadow:0 0 28px 4px color-mix(in srgb,var(--c) 70%,transparent)}
+.mid{min-width:0}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.fader{-webkit-appearance:none;appearance:none;width:100%;height:30px;margin:6px 0 0;background:transparent;cursor:pointer}
+.fader::-webkit-slider-runnable-track{height:30px;border-radius:15px;background:linear-gradient(90deg,var(--c) var(--v),var(--off) var(--v))}
+.fader::-moz-range-track{height:30px;border-radius:15px;background:linear-gradient(90deg,var(--c) var(--v),var(--off) var(--v))}
+.fader::-webkit-slider-thumb{-webkit-appearance:none;width:6px;height:22px;margin-top:4px;border-radius:3px;background:#fff;box-shadow:0 0 0 1px #0004}
+.fader::-moz-range-thumb{width:6px;height:22px;border:0;border-radius:3px;background:#fff;box-shadow:0 0 0 1px #0004}
+.lt:not(.on) .fader{opacity:.45}
+.dot{width:34px;height:34px;border-radius:50%;background:var(--c);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.pal{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;padding-top:2px}
+.pal[hidden]{display:none}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px;align-items:start}
+.split .list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.info{position:sticky;top:16px;background:var(--surface);border:1px solid var(--line);border-left:4px solid #e0a030;border-radius:var(--r,20px);padding:14px 16px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.info[hidden]{display:none}
+.info h2{font-size:1rem;margin:0 0 8px}
+.info ul{margin:0 0 8px;padding:0;list-style:none}
+.info li{padding:6px 0;border-top:1px solid var(--line);font-weight:600}
+.info p{margin:0}
+.lt.offline{opacity:.6}
+.lt.offline .bulb{box-shadow:none}
+@media (max-width:760px){.split{grid-template-columns:1fr}.info{order:-1;position:static}}
+.designs .btn{border-color:transparent;background:transparent}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:var(--r,20px);padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.rule.off .txt{opacity:.55}
+.rule .txt{flex:1;min-width:0}
+.rule .sw{flex:none}
+.rule.on .sw{background:var(--accent);border-color:var(--accent)}
+.rule.on .sw i{transform:translateX(22px)}
+.x{border:0;background:none;color:var(--muted);font-size:1.4rem;line-height:1;padding:6px 10px;border-radius:8px}
+.x:hover{color:var(--ink)}
+.f{display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--muted)}
+.f[hidden]{display:none}
+select,input[type=time]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;max-width:100%}
+.add{margin-top:14px;align-items:end;justify-content:flex-start}
+.simrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.designs .btn[aria-pressed=true]{background:var(--accent);color:var(--onaccent,#fff);border-color:var(--accent)}
+:root[data-design="dusk"]{--bgimg:radial-gradient(60% 50% at 15% 0%,#ffd2b0b0,transparent),radial-gradient(50% 45% at 92% 8%,#b4c4ffd0,transparent),linear-gradient(180deg,#dfe7f5,#efe6e8 70%,#f6e9dc);--surface:#ffffffb8}
+@media (prefers-color-scheme:dark){:root[data-design="dusk"]:not([data-theme="light"]){--bgimg:radial-gradient(60% 50% at 12% 0%,#6b3f6a88,transparent),radial-gradient(50% 45% at 92% 8%,#2d4a9a88,transparent),linear-gradient(180deg,#141a33,#1d1830 75%,#2a1c2c);--surface:#1a2238b8}}
+:root[data-design="dusk"][data-theme="dark"]{--bgimg:radial-gradient(60% 50% at 12% 0%,#6b3f6a88,transparent),radial-gradient(50% 45% at 92% 8%,#2d4a9a88,transparent),linear-gradient(180deg,#141a33,#1d1830 75%,#2a1c2c);--surface:#1a2238b8}
+:root[data-design="midnight"]{color-scheme:dark;--bg:#070b16;--surface:#ffffff12;--ink:#e9f1ff;--muted:#8fa3c4;--line:#ffffff26;--accent:#4de1d0;--onaccent:#04201d;--off:#ffffff14;--knob:#e9f1ff;--bgimg:radial-gradient(1.5px 1.5px at 20% 30%,#fffc,transparent),radial-gradient(1px 1px at 70% 18%,#fffa,transparent),radial-gradient(1.5px 1.5px at 86% 66%,#fff9,transparent),radial-gradient(1px 1px at 42% 82%,#fffa,transparent),radial-gradient(1px 1px at 8% 70%,#fff9,transparent),radial-gradient(70% 55% at 80% 0%,#1c3d7a99,transparent),radial-gradient(60% 50% at 0% 100%,#3a1f6e88,transparent),linear-gradient(#070b16,#0c1226)}
+:root[data-design="meadow"]{color-scheme:light;--bg:#e4efe3;--surface:#ffffffd9;--ink:#1d3023;--muted:#587060;--line:#c3d8c5;--accent:#2f8f4e;--onaccent:#fff;--off:#dbe8da;--r:30px;--bgimg:radial-gradient(45% 40% at 100% 0%,#fff3bfd0,transparent),radial-gradient(60% 50% at 0% 100%,#b4ddbdd0,transparent),radial-gradient(40% 35% at 60% 100%,#cde5deaa,transparent),linear-gradient(180deg,#e8f2e6,#d9ebd9)}
+:root{--rc:14px;--gap:12px}
+:root[data-design="meadow"]{--rc:999px}
+.lt,.rule,.auto,.cam,.info{border-radius:var(--r,20px);padding:14px 16px}
+.dock{border-radius:calc(var(--r,20px) + 4px)}
+.btn,.alloff,.tab{border-radius:var(--rc);min-height:42px;padding:9px 16px;font-weight:600}
+.alloff{width:100%;min-height:48px}
+.tab{padding:10px 16px}
+.strip .btn{min-height:38px}
+.tab:not([aria-current=true]):not([aria-expanded=true]):hover{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink)}
+select,input[type=time]{min-height:42px;border-radius:min(var(--rc),14px);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.list,.grid,.split{gap:var(--gap)}
+#rules{display:grid;gap:var(--gap)}
+.rule{margin:0}
+.cam{gap:12px}
+.add,.simrow{margin-top:var(--gap)}
+section>h2:first-child{margin-top:0}
+.log li{padding:3px 0}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes bulbglow{from{box-shadow:0 0 0 0 transparent}}
+@keyframes toastin{from{opacity:0;transform:translateX(-110%)}to{opacity:1;transform:none}}
+@keyframes toastout{to{opacity:0;transform:translateX(-110%)}}
+@keyframes toastinUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes toastoutUp{to{opacity:0;transform:translateY(16px)}}
+@keyframes ping{0%{box-shadow:0 0 0 0 #e0a03099}100%{box-shadow:0 0 0 10px #e0a03000}}
+section[data-tab]:not([hidden]){animation:fadein .35s ease both}
+section[data-tab].fadeout{animation:fadeout .2s ease both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes fadeout{from{opacity:1}to{opacity:0}}
+.lt.lit .bulb{animation:bulbglow .6s ease-out}
+.lt{transition:opacity .3s}
+.btn,.tab,.alloff,.bulb,.dot,.col{transition:transform .12s,background .2s,border-color .2s,box-shadow .3s}
+.btn:active,.tab:active,.alloff:not(:disabled):active{transform:scale(.96)}
+.toasts{position:fixed;z-index:15;left:234px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:min(400px,calc(100% - 258px));clip-path:inset(-40px -40px -40px 0);display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{display:flex;align-items:center;gap:12px;pointer-events:auto;padding:12px 14px 12px 16px;border-radius:var(--r,20px);background:color-mix(in srgb,var(--bg) 90%,transparent);border:1px solid var(--line);border-left:4px solid #e0a030;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px #0004;font-weight:600;animation:toastin .4s cubic-bezier(.2,.9,.3,1.2) both}
+.toast.out{animation:toastout .28s ease forwards}
+.tdot{width:10px;height:10px;border-radius:50%;background:#e0a030;flex:none;animation:ping 1.6s ease-out infinite}
+.tmsg{flex:1}
+@media (max-width:760px){.toasts{left:50%;transform:translateX(-50%);clip-path:none;width:min(420px,calc(100% - 24px));bottom:calc(150px + env(safe-area-inset-bottom,0px))}.toast{animation-name:toastinUp}.toast.out{animation-name:toastoutUp}}
+@keyframes glow{50%{box-shadow:0 0 56px 10px #ffb35caa}}
+.mark{width:36px;height:36px;border-radius:11px;background:#ffb35c;color:#1b1b1b;display:grid;place-items:center;box-shadow:0 0 22px #ffb35c88;flex:none}
+.mark svg{width:60%;height:60%}
+.brand{display:flex;align-items:center;gap:10px;font:700 1.15rem "Bricolage Grotesque",system-ui,sans-serif}
+.dock .brand{order:0;padding:2px 4px 6px}
+.brand.big{flex-direction:column;gap:14px;font-size:2rem}
+.brand.big .mark{width:76px;height:76px;border-radius:24px}
+.acct{order:4;margin-top:auto;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.whorow{display:flex;align-items:center;gap:10px;min-width:0}
+.av{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--onaccent,#fff);display:grid;place-items:center;font-weight:700;flex:none}
+.who{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+body[data-auth="out"] :is(main,.dock,.toasts){display:none}
+.splash,.gate{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background-color:var(--bg);background-image:var(--bgimg)}
+.splash{z-index:100;text-align:center;cursor:pointer;transition:opacity .5s,visibility .5s}
+.splash.out{opacity:0;visibility:hidden}
+.splash .brand{animation:rise .8s ease both}
+.splash .mark{animation:glow 1.8s ease-in-out infinite}
+.splash .tag{color:var(--muted);margin:10px 0 0;animation:rise .8s .3s ease both}
+.gate{z-index:90;overflow:auto}
+.gate[hidden]{display:none}
+.card,.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r,20px);padding:20px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.card{width:min(400px,100%);display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:6px}
+.seg .btn{flex:1}
+.seg .btn[aria-pressed=true],.btn.primary{background:var(--accent);color:var(--onaccent,#fff);border-color:var(--accent)}
+.btn.danger{color:#e5534b;border-color:#e5534b66}
+.in,select{font:inherit;color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent);border:1px solid var(--line);border-radius:12px;padding:9px 12px;min-height:42px}
+.in{width:100%}
+.pw{display:flex;gap:6px;align-items:center}
+.chk{display:flex;gap:8px;align-items:center;font-size:.9rem}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
+.err{color:#e5534b;margin:0;font-size:.9rem}
+.err[hidden]{display:none}
+.sw.on{background:var(--accent);border-color:var(--accent)}
+.sw.on i{transform:translateX(22px)}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:var(--gap,12px);align-items:start}
+h3{font:700 1.05rem "Bricolage Grotesque",system-ui,sans-serif;margin:0 0 6px}
+.panel p{margin:10px 0 0}
+.srow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+h3+.srow,#lightNames .srow:first-child{border-top:0}
+.srow .in{width:min(240px,55%)}
+.srow input[type=range]{width:min(200px,50%);margin:0}
+@media (max-width:760px){.dock .brand,.acct{display:none}.tab{padding:10px 6px;font-size:.9rem}}
+/* ---- glass ---- */
+:root{--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#ffb199b0;--o2:#8fa8ffb0;--o3:#c7a2ffb0}
+@media (prefers-color-scheme:dark){:root[data-design="dusk"]:not([data-theme="light"]){--glass-a:rgba(255,255,255,.12);--glass-b:rgba(255,255,255,.04);--glass-line:rgba(255,255,255,.22);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.4);--glass-in:rgba(255,255,255,.07);--o1:#a04fb099;--o2:#2d57c499;--o3:#1f8a9a77}}
+:root[data-design="dusk"][data-theme="dark"]{--glass-a:rgba(255,255,255,.12);--glass-b:rgba(255,255,255,.04);--glass-line:rgba(255,255,255,.22);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.4);--glass-in:rgba(255,255,255,.07);--o1:#a04fb099;--o2:#2d57c499;--o3:#1f8a9a77}
+:root[data-design="midnight"]{--glass-a:rgba(255,255,255,.11);--glass-b:rgba(255,255,255,.035);--glass-line:rgba(255,255,255,.2);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.45);--glass-in:rgba(255,255,255,.07);--o1:#3a6ff77a;--o2:#8a4dff77;--o3:#19d3c155}
+:root[data-design="meadow"]{--glass-a:rgba(255,255,255,.62);--glass-b:rgba(255,255,255,.3);--glass-line:rgba(255,255,255,.85);--glass-hi:#fff;--glass-shadow:rgba(30,70,45,.14);--glass-in:rgba(255,255,255,.5);--o1:#ffe58aa6;--o2:#7fd6a1a6;--o3:#8fd0e0a6}
+/* ---- more designs ---- */
+:root[data-design="ocean"]{color-scheme:light;--bg:#e3f0fa;--surface:#ffffffd9;--ink:#10283c;--muted:#4d6477;--line:#bcd3e4;--accent:#0b6fb8;--onaccent:#ffffff;--off:#d3e4f2;--bgimg:linear-gradient(180deg,#e3f0fa,#cfe6f6);--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#7fc8f0a8;--o2:#3d8fd6a0;--o3:#9ee6e0a8}
+:root[data-design="sunset"]{color-scheme:light;--bg:#fdebd8;--surface:#ffffffd9;--ink:#3a1d1d;--muted:#74524d;--line:#e8c4b4;--accent:#b83a0a;--onaccent:#ffffff;--off:#f1d9c8;--bgimg:linear-gradient(180deg,#fdebd8,#f8d3cd);--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#ffb36ba8;--o2:#ff7e8fa0;--o3:#ffd27fa8}
+:root[data-design="forest"]{color-scheme:dark;--bg:#0c1a14;--surface:#ffffff12;--ink:#e6f3ea;--muted:#97b4a3;--line:#ffffff26;--accent:#5fd08a;--onaccent:#06210f;--off:#ffffff14;--knob:#e6f3ea;--bgimg:linear-gradient(180deg,#0c1a14,#12281d);--glass-a:rgba(255,255,255,.11);--glass-b:rgba(255,255,255,.035);--glass-line:rgba(255,255,255,.2);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.45);--glass-in:rgba(255,255,255,.07);--o1:#2f8f5f80;--o2:#1f6b7a80;--o3:#7bd35a55}
+:root[data-design="blossom"]{color-scheme:light;--bg:#fde8ef;--surface:#ffffffd9;--ink:#3b1a28;--muted:#7a4f63;--line:#ecc3d4;--accent:#b81f66;--onaccent:#ffffff;--off:#f5d8e4;--bgimg:linear-gradient(180deg,#fde8ef,#f6d5e4);--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#ff9ec4a8;--o2:#ffc3a0a0;--o3:#d9a2ffa8}
+:root[data-design="lavender"]{color-scheme:light;--bg:#ece8fa;--surface:#ffffffd9;--ink:#231a3d;--muted:#5a5078;--line:#cbc2ea;--accent:#6538c8;--onaccent:#ffffff;--off:#ddd7f2;--bgimg:linear-gradient(180deg,#ece8fa,#dad2f4);--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#b9a3ffa8;--o2:#8fa8ffa0;--o3:#f0b0ffa0}
+:root[data-design="sand"]{color-scheme:light;--bg:#f5eee2;--surface:#ffffffd9;--ink:#2f2618;--muted:#675a45;--line:#dccfb6;--accent:#85560f;--onaccent:#ffffff;--off:#e7dcc7;--bgimg:linear-gradient(180deg,#f5eee2,#e9ddc8);--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#e8c98aa8;--o2:#d9a98a99;--o3:#b8c9a0a0;--r:16px}
+:root[data-design="graphite"]{color-scheme:dark;--bg:#111316;--surface:#ffffff12;--ink:#eceff3;--muted:#9ea7b2;--line:#ffffff26;--accent:#8ab4ff;--onaccent:#0b1930;--off:#ffffff14;--knob:#eceff3;--bgimg:linear-gradient(180deg,#111316,#1b1e24);--glass-a:rgba(255,255,255,.11);--glass-b:rgba(255,255,255,.035);--glass-line:rgba(255,255,255,.2);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.45);--glass-in:rgba(255,255,255,.07);--o1:#4a556680;--o2:#2f3b4f80;--o3:#5a647555;--r:12px}
+:root[data-design="aurora"]{color-scheme:dark;--bg:#06101c;--surface:#ffffff12;--ink:#e8f6f4;--muted:#93b4b8;--line:#ffffff26;--accent:#7cf0c8;--onaccent:#04231a;--off:#ffffff14;--knob:#e8f6f4;--bgimg:linear-gradient(180deg,#06101c,#0e1f2e);--glass-a:rgba(255,255,255,.11);--glass-b:rgba(255,255,255,.035);--glass-line:rgba(255,255,255,.2);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.45);--glass-in:rgba(255,255,255,.07);--o1:#2bd6a080;--o2:#7a5cff80;--o3:#3aa0ff70}
+:root[data-design="neon"]{color-scheme:dark;--bg:#0b0614;--surface:#ffffff12;--ink:#f4eaff;--muted:#b79fd2;--line:#ffffff26;--accent:#ff4fd8;--onaccent:#2a0520;--off:#ffffff14;--knob:#f4eaff;--bgimg:linear-gradient(180deg,#0b0614,#160a26);--glass-a:rgba(255,255,255,.11);--glass-b:rgba(255,255,255,.035);--glass-line:rgba(255,255,255,.2);--glass-hi:rgba(255,255,255,.3);--glass-shadow:rgba(0,0,0,.45);--glass-in:rgba(255,255,255,.07);--o1:#ff2bd680;--o2:#22e1ff70;--o3:#8a5cff80;--r:10px}
+:root[data-design="mint"]{color-scheme:light;--bg:#e1f5ee;--surface:#ffffffd9;--ink:#0f2e25;--muted:#48695d;--line:#b6dccd;--accent:#0b7a5a;--onaccent:#ffffff;--off:#cfe9df;--bgimg:linear-gradient(180deg,#e1f5ee,#cdece0);--glass-a:rgba(255,255,255,.55);--glass-b:rgba(255,255,255,.26);--glass-line:rgba(255,255,255,.78);--glass-hi:rgba(255,255,255,.95);--glass-shadow:rgba(40,60,110,.16);--glass-in:rgba(255,255,255,.42);--o1:#7fe3c4a8;--o2:#9ad8f0a0;--o3:#c4f09aa0}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.dbtn{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 12px;border-radius:var(--rc,14px);border:2px solid var(--glass-line);background:var(--glass-a);font-weight:600;text-align:left}
+.dbtn .dot2{width:26px;height:26px;border-radius:50%;flex:none;border:1px solid #0003}
+.dbtn[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.sgrid .panel.wide{grid-column:1/-1}
+body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;background:radial-gradient(38vmax 38vmax at 12% 18%,var(--o1),transparent 70%),radial-gradient(34vmax 34vmax at 88% 12%,var(--o2),transparent 70%),radial-gradient(40vmax 40vmax at 70% 92%,var(--o3),transparent 70%);animation:drift 26s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(3%,-3%,0) scale(1.08)}}
+.lt,.rule,.auto,.cam,.panel,.card,.alloff,.dock,.toast{background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.cam{border-style:dashed}
+.toast{border-left:4px solid #e0a030;background:color-mix(in srgb,var(--bg) 94%,transparent)}
+.lt.on{box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow),0 0 36px -8px color-mix(in srgb,var(--c) 65%,transparent)}
+.btn,.bulb{background:var(--glass-a);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi)}
+.in,select,input[type=time]{background:var(--glass-in);border:1px solid var(--glass-line);box-shadow:inset 0 1px 2px var(--glass-shadow)}
+.sw{background:var(--glass-in)}
+.fader::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--c) var(--v),var(--glass-in) var(--v));box-shadow:inset 0 0 0 1px var(--glass-line)}
+.fader::-moz-range-track{background:linear-gradient(90deg,var(--c) var(--v),var(--glass-in) var(--v));box-shadow:inset 0 0 0 1px var(--glass-line)}
+.tab[aria-current=true]{box-shadow:inset 0 1px 0 #ffffff66,0 6px 16px -4px color-mix(in srgb,var(--accent) 60%,transparent)}
+.pal{flex-direction:column;align-items:stretch;gap:12px;padding-top:4px}
+.swatches,.chips{display:flex;gap:8px;flex-wrap:wrap}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.9rem}
+.mrow.stack{flex-direction:column;align-items:flex-start;gap:8px}
+.pick{width:44px;height:30px;padding:0;border:1px solid var(--glass-line);border-radius:8px;background:transparent;cursor:pointer}
+.warm{width:min(190px,55%);margin:0}
+.warm::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#ff9d3a,#fff1d6,#bcd4ff)}
+.warm::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(90deg,#ff9d3a,#fff1d6,#bcd4ff)}
+.warm::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-5px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #0004,0 2px 4px #0003}
+.warm::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #0004,0 2px 4px #0003}
+.chip{border:1px solid var(--glass-line);background:var(--glass-a);border-radius:999px;padding:4px 12px;font-size:.85rem;font-weight:600;min-height:30px}
+.chip[aria-pressed=true]{background:var(--accent);color:var(--onaccent,#fff);border-color:var(--accent)}
+.chip:disabled,.pick:disabled,.warm:disabled{opacity:.5;cursor:default}
+.list{align-items:start}
+.bulb{position:relative}
+.tbadge{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);padding:1px 7px;border-radius:999px;background:var(--accent);color:var(--onaccent,#fff);font-size:.7rem;font-weight:700;pointer-events:none;box-shadow:0 2px 6px #0003}
+.tbadge[hidden]{display:none}
+.row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.row .sub{white-space:nowrap;flex:none}
+.mrow span{white-space:nowrap}
+.row{flex-direction:column;align-items:flex-start;gap:0}
+.row .name{max-width:100%}
+:root[data-motion="reduced"] *{transition:none!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+.lt{position:relative}
+.lt[hidden]{display:none}
+.star{position:absolute;top:6px;right:8px;border:0;background:none;font-size:1.1rem;line-height:1;color:var(--muted);padding:4px}
+.star[aria-pressed=true]{color:#e0a030}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--gap,12px);margin-bottom:var(--gap,12px)}
+.stat{display:flex;flex-direction:column;gap:2px;padding:12px 16px;border-radius:var(--r,20px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi)}
+.stat b{font:700 1.4rem "Bricolage Grotesque",system-ui,sans-serif}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:var(--gap,12px)}
+.toolbar .in{width:min(260px,100%)}
+.banner{padding:12px 16px;border-radius:var(--r,20px);border:1px solid #e0a030;border-left-width:4px;background:color-mix(in srgb,#e0a030 18%,transparent);margin-bottom:var(--gap,12px);font-weight:600}
+.banner[hidden]{display:none}
+.side .btn{width:100%}
+.roombtns,.savescene{display:flex;gap:8px}
+.savescene{flex-direction:column}
+.row2{display:flex;justify-content:space-between;gap:8px}
+.cam .feed{aspect-ratio:16/6}
+.bat.low{color:#e5534b;font-weight:600}
+h2 .sub{font:400 .875rem "Instrument Sans",system-ui,sans-serif;margin-left:8px}
+.legend{position:fixed;right:24px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:min(900px,62vw);pointer-events:none}
+.legend[hidden]{display:none}
+.legend span{padding:6px 12px;border-radius:999px;font-size:.8rem;font-weight:600;background:color-mix(in srgb,var(--bg) 72%,transparent);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.legend .rd{border-color:#e5534b}.legend .gr{border-color:#3fb950}.legend .ye{border-color:#e0a030}.legend .bl{border-color:#4a8dff}
+:root[data-tv="1"]{scroll-padding:48px 0 150px}
+:root[data-tv="1"] body{padding-left:300px}
+:root[data-tv="1"] main{max-width:none;padding:32px 40px 150px}
+:root[data-tv="1"] .dock{left:32px;top:28px;bottom:28px;width:240px}
+:root[data-tv="1"] .list{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+:root[data-tv="1"] .toasts{left:308px}
+:root[data-tv="1"] :focus{outline:4px solid var(--accent);outline-offset:3px;box-shadow:0 0 0 9px color-mix(in srgb,var(--accent) 28%,transparent)}
+:root[data-tv="1"] .fader.adjusting,:root[data-tv="1"] input[type=range].adjusting{outline-color:#e0a030;box-shadow:0 0 0 9px color-mix(in srgb,#e0a030 32%,transparent)}
+@media (max-width:1300px){:root[data-tv="1"] .split{grid-template-columns:1fr}:root[data-tv="1"] .side{position:static;order:-1;flex-direction:row;flex-wrap:wrap;align-items:flex-start}:root[data-tv="1"] .side>*{width:auto;flex:1 1 200px}}
+@media (min-width:1400px){
+:root[data-tv="1"]{font-size:20px}
+:root[data-tv="1"] body{font-size:1rem}
+:root[data-tv="1"] .btn,:root[data-tv="1"] .alloff,:root[data-tv="1"] .tab,:root[data-tv="1"] .chip,:root[data-tv="1"] select,:root[data-tv="1"] .in{min-height:56px;font-size:1rem}
+:root[data-tv="1"] .bulb{width:72px;height:72px}
+:root[data-tv="1"] .dot{width:46px;height:46px}
+:root[data-tv="1"] .col{width:44px;height:44px}
+:root[data-tv="1"] .star{font-size:1.7rem;padding:10px}
+:root[data-tv="1"] .fader{height:40px}
+:root[data-tv="1"] .fader::-webkit-slider-runnable-track{height:40px;border-radius:20px}
+:root[data-tv="1"] .fader::-webkit-slider-thumb{height:30px;margin-top:5px}
+:root[data-tv="1"] .sw{width:72px;height:40px}
+:root[data-tv="1"] .sw i{width:32px;height:32px}
+:root[data-tv="1"] .sw.on i,:root[data-tv="1"] .rule.on .sw i{transform:translateX(32px)}
+:root[data-tv="1"] .dock{width:268px}
+:root[data-tv="1"] body{padding-left:328px}
+:root[data-tv="1"] .toasts{left:336px}
+}
+.waves{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.waves svg{position:absolute;left:0;width:200%;height:130vh;animation:wave 30s linear infinite,bob 9s ease-in-out infinite}
+.waves svg:nth-child(1){top:12%;fill:var(--o2);opacity:.6}
+.waves svg:nth-child(2){top:34%;fill:var(--o1);opacity:.5;animation-duration:22s,11s;animation-direction:reverse,normal}
+.waves svg:nth-child(3){top:56%;fill:var(--o3);opacity:.55;animation-duration:16s,7s}
+@keyframes wave{to{transform:translateX(-50%)}}
+@keyframes bob{50%{translate:0 16px}}
+/* notifications: fix tips and the show/hide button */
+.toast{align-items:flex-start}
+.tdot{margin-top:5px}
+.tbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.tfix{margin:0;padding-left:20px;font-weight:400;font-size:.875rem;line-height:1.4;display:flex;flex-direction:column;gap:3px}
+.tfix[hidden]{display:none}
+.tlink{align-self:flex-start;border:0;background:none;padding:0;font-weight:600;font-size:.875rem;color:var(--accent);text-decoration:underline;min-height:0}
+.bellbtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:25;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;font-weight:600;background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.bellbtn svg{width:20px;height:20px}
+.bellbtn svg[hidden]{display:none}
+body[data-auth="out"] .bellbtn{display:none}
+@media (max-width:760px){.bellbtn{right:12px;bottom:calc(150px + env(safe-area-inset-bottom,0px));padding:8px 14px}}
+.appc{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:var(--r,20px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.appc .btns{display:flex;gap:8px;flex-wrap:wrap}
+.appc .btn{min-height:38px;padding:6px 14px}
+.appc.used{border-color:var(--accent)}
+#appGrid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.autotop{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:var(--gap,12px)}
+.autotop .seg{min-width:240px}
+.autotop .mrow{gap:12px}
+h3.gap{margin:26px 0 10px}
+.builder{display:flex;flex-direction:column;gap:14px}
+.bstep{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.bstep h4{margin:0;font:700 1rem "Bricolage Grotesque",system-ui,sans-serif}
+.afields{display:flex;gap:12px;flex-wrap:wrap}
+.afields .f{min-width:130px}
+.adder .arow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.adder .arow>select{min-width:210px}
+.pill{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:12px;background:var(--glass-in);border:1px solid var(--glass-line);margin-bottom:6px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.tplgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:var(--gap,12px)}
+.tpl{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:var(--r,20px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.tpl p{margin:0;flex:1}
+.tpl .btn{align-self:flex-start;margin-top:6px}
+.rule{flex-wrap:wrap}
+.rule .meta{font-size:.8rem}
+.rule .x{font-size:1.1rem}
+
+/* ---- v12: lights page, notifications, splash ---- */
+.list{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:var(--gap,12px)}
+.lt{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;gap:10px 12px;padding:14px 14px 16px}
+.lt .mid{display:contents}
+.lt .row{grid-column:2;grid-row:1;min-width:0}
+.lt .row .name{font:700 1.02rem "Bricolage Grotesque",system-ui,sans-serif}
+.lt .acts{grid-column:3;grid-row:1;display:flex;align-items:center;gap:2px}
+.lt .fader{grid-column:1/-1;grid-row:2;margin:0}
+.lt .pal{grid-row:3}
+.lt .bulb{width:48px;height:48px}
+.lt .bulb svg{width:24px;height:24px}
+.lt .acts .star{position:static;font-size:1.2rem;padding:6px;min-width:32px;min-height:32px}
+.lt .dot{width:28px;height:28px}
+.rh{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:14px 0 0}
+.rh:first-child{margin-top:2px}
+.rh[hidden]{display:none}
+.rh h3{margin:0;font:700 1.05rem "Bricolage Grotesque",system-ui,sans-serif}
+.rh .rline{flex:1;height:1px;background:var(--line)}
+.rh .chip{flex:none}
+.actbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;margin-bottom:6px;border-radius:var(--r,20px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.actbar .grow{flex:1}
+.actbar .alloff{width:auto;flex:none;min-height:42px;padding:8px 18px;box-shadow:none}
+.actbar .presbox{width:auto;flex:none}
+.actbar .presbox .btn{flex:none;padding:8px 16px}
+.actbar .roombtns{flex:none}
+.actbar .btn{min-height:42px}
+.scanmsg{min-height:0;margin:0 0 10px 4px}
+.scanmsg:empty{display:none}
+.toolbar{padding:0;margin-bottom:6px}
+.toolbar .in{flex:1 1 220px;width:auto;max-width:340px}
+.toolbar .chips{flex:0 1 auto}
+.stats{grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0 10px}
+.stat{flex-direction:row;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 16px}
+.stat b{font-size:1.25rem}
+h2{margin:26px 0 10px}
+details.tools{margin-top:18px;border-radius:var(--r,20px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+details.tools summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px}
+details.tools summary::-webkit-details-marker{display:none}
+details.tools summary::after{content:"+";font-size:1.3rem;line-height:1;color:var(--muted)}
+details.tools[open] summary::after{content:"–"}
+.toolsbody{display:flex;flex-direction:column;gap:10px;padding:0 16px 16px}
+.toolsbody .savescene{flex-direction:row;flex-wrap:wrap}
+.toolsbody .savescene .in{flex:1 1 180px;max-width:260px}
+.toolsbody .simrow{margin-top:0}
+.lt .pal{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:8;padding:14px;border-radius:var(--r,20px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b)),color-mix(in srgb,var(--bg) 92%,transparent);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 22px 50px var(--glass-shadow);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%)}
+.lt .pal[hidden]{display:none}
+.lt:has(.pal:not([hidden])){z-index:9}
+.lt .row .sub{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* notifications */
+.toast{align-items:flex-start;gap:12px;padding:14px 12px 14px 14px;border:1px solid var(--glass-line);border-left:1px solid var(--glass-line);background:linear-gradient(135deg,var(--glass-a),var(--glass-b)),color-mix(in srgb,var(--bg) 97%,transparent);box-shadow:inset 0 1px 0 var(--glass-hi),0 18px 44px var(--glass-shadow);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);font-weight:400}
+.toast .ticon{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#ffb35c;color:#1b1b1b;box-shadow:0 0 18px #ffb35c77}
+.toast.info .ticon{background:var(--accent);color:var(--onaccent,#fff);box-shadow:0 0 18px color-mix(in srgb,var(--accent) 55%,transparent)}
+.toast.warn .ticon{animation:glow 2.2s ease-in-out infinite}
+.toast .tmsg{font:700 1.02rem "Bricolage Grotesque",system-ui,sans-serif;line-height:1.3;padding-top:2px}
+.toast .tsub{font-size:.8rem;color:var(--muted)}
+.toast .tfix{margin:2px 0 0;padding:10px 12px 10px 34px;list-style:none;counter-reset:s;background:var(--glass-in);border:1px solid var(--glass-line);border-radius:14px;gap:8px;font-size:.85rem}
+.toast .tfix li{counter-increment:s;position:relative}
+.toast .tfix li::before{content:counter(s);position:absolute;left:-24px;top:1px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:.7rem;font-weight:700;background:var(--accent);color:var(--onaccent,#fff)}
+.toast .tlink{align-self:flex-start;min-height:30px;text-decoration:none}
+.toast .x{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--glass-line);background:var(--glass-a);display:grid;place-items:center;line-height:1;font-size:1.1rem;color:var(--muted)}
+.toast .x:hover{color:var(--ink);border-color:var(--accent)}
+/* splash and sign-in */
+.splash,.gate{background-color:var(--bg);background-image:var(--bgimg);isolation:isolate}
+.splash>.waves,.gate>.waves{position:fixed;inset:0;z-index:-1}
+.scard{display:flex;flex-direction:column;align-items:center;gap:6px;padding:44px 56px 36px;border-radius:calc(var(--r,20px) + 10px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 30px 80px var(--glass-shadow);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);animation:rise .8s ease both}
+.scard .brand.big{animation:none}
+.scard .tag{margin:2px 0 0;max-width:22ch;line-height:1.4}
+.sbar{margin-top:22px;width:160px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.sbar i{display:block;height:100%;width:100%;border-radius:2px;background:var(--accent);transform-origin:left;animation:sload 1.7s cubic-bezier(.3,.7,.3,1) forwards}
+@keyframes sload{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.gate .card{background:linear-gradient(135deg,var(--glass-a),var(--glass-b));box-shadow:inset 0 1px 0 var(--glass-hi),0 30px 80px var(--glass-shadow)}
+@media (max-width:760px){
+  .actbar{padding:10px}.actbar .grow{display:none}.actbar .alloff{flex:1 1 100%}.actbar .presbox{flex:1 1 100%}.actbar .presbox .btn{flex:1}
+  .actbar #scan{flex:1}.stats{gap:8px}.stat{flex-direction:column;align-items:flex-start;gap:0;padding:10px 12px}
+  .toolbar .in{max-width:none;flex-basis:100%}.scard{padding:36px 32px 30px}
+  .toasts{bottom:calc(200px + env(safe-area-inset-bottom,0px))}
+}
+:root[data-tv="1"] .lt{padding:18px}
+
+.srow select{max-width:min(250px,58%);min-width:0}
+.srow>label,.srow>span:first-child{min-width:0}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:8px 28px;margin-top:6px}
+.panel h4{margin:6px 0 2px;font:700 .95rem "Bricolage Grotesque",system-ui,sans-serif}
+.panel h4.gap{margin-top:22px}
+.rng{display:flex;align-items:center;gap:10px}
+.rng input{width:140px}
+.rng b{min-width:3ch;text-align:right}
+.trow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.trow .in{width:auto}
+#powerKeep{margin:6px 0 4px}
+
+main{max-width:1200px}
+.devmain{min-width:0}
+@media (max-width:420px){.tabs{gap:0;overflow-x:auto}.tab{flex:1 1 auto;min-width:0;padding:10px 3px;font-size:.74rem;letter-spacing:0;white-space:nowrap}.dock{padding:6px}}
+
+.vtop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.vname{display:flex;flex-direction:column;min-width:0}
+.vname b{font:700 1.02rem "Bricolage Grotesque",system-ui,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vname .sub{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vchip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700;background:var(--glass-a);border:1px solid var(--glass-line);white-space:nowrap}
+.vchip.warn{background:color-mix(in srgb,#e0a030 28%,transparent);border-color:#e0a030}
+.vchip.ok{background:color-mix(in srgb,#3aa86b 22%,transparent);border-color:#3aa86b}
+.vgauge{height:12px;border-radius:6px;background:var(--off);overflow:hidden}
+.vgauge.big{height:16px;border-radius:8px;margin:6px 0 10px}
+.vgauge i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .5s}
+.vgauge.warn i{background:#e0a030}.vgauge.bad i{background:#d9453b}
+.btn.sm{padding:6px 12px;font-size:.82rem;min-height:34px}
+#vSel{margin:6px 0}
+@media (max-width:360px){.tab{font-size:.64rem;padding:10px 1px}}
+
+html[data-server] .demoonly{display:none}
+html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,html[data-remote] h3.gap:has(+#sim){display:none}
+.srow.stackrow{flex-wrap:wrap}
+</style>
+</head>
+<body data-auth="out">
+<div class="waves" aria-hidden="true"><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 160 Q180 40 360 160 T720 160 T1080 160 T1440 160 T1800 160 T2160 160 T2520 160 T2880 160 V1000 H0Z"/></svg><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 140 Q120 230 240 140 T480 140 T720 140 T960 140 T1200 140 T1440 140 T1680 140 T1920 140 T2160 140 T2400 140 T2640 140 T2880 140 V1000 H0Z"/></svg><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 170 Q360 60 720 170 T1440 170 T2160 170 T2880 170 V1000 H0Z"/></svg></div>
+<main>
+<header>
+  <div>
+    <h1 id="homeTitle">Home</h1>
+    <p id="summary">Loading lights…</p>
+  </div>
+</header>
+
+<section data-tab="Devices">
+<div class="banner" id="powerBanner" hidden role="status"></div>
+<div class="devsplit">
+<div class="devmain">
+<div class="stats" id="stats"></div>
+<div class="actbar" role="group" aria-label="Quick actions">
+  <button class="alloff" id="alloff">All lights off</button>
+  <div class="seg presbox" role="group" aria-label="Home or away"></div>
+  <div class="roombtns" id="roombtns" hidden><button class="btn" id="roomOn">Room on</button><button class="btn" id="roomOff">Room off</button></div>
+  <span class="grow"></span>
+  <button class="btn" id="scan">Scan for devices</button>
+  <button class="btn primary" id="addFound" hidden></button>
+</div>
+<div class="sub scanmsg" id="scanMsg" role="status"></div>
+<div class="toolbar">
+  <input class="in" id="q" type="search" placeholder="Search lights and cameras" aria-label="Search lights and cameras">
+  <select id="roomSel" aria-label="Room"></select>
+  <div class="chips" id="modes"></div>
+  <button class="chip" id="grpBtn" aria-pressed="false" title="Show lights under their room names">Group by room</button>
+</div>
+<h2>Lights <span class="sub" id="lcount"></span></h2>
+<div class="list" id="lights"></div>
+<p class="note" id="empty" hidden>No lights match your search or filter.</p>
+<details class="tools">
+  <summary>Scenes and testing</summary>
+  <div class="toolsbody">
+    <div class="savescene"><input class="in" id="sceneName" placeholder="Scene name" maxlength="20" aria-label="Scene name"><button class="btn" id="saveScene">Save lights as a scene</button></div>
+    <div class="simrow" id="offsim"><span class="sub">Test a light going offline:</span></div>
+    <div class="simrow" id="powersim"><span class="sub">Test a power cut:</span><button class="btn" id="simOut">Cut power</button><button class="btn" id="simBack">Restore power</button></div>
+  </div>
+</details>
+<h2>Cameras <span class="sub" id="ccount"></span></h2>
+<p class="note">Aosu battery cameras don’t offer a video stream to other software, so live view stays in the Aosu app. This section is ready for a camera that supports RTSP or ONVIF.</p>
+<div class="grid cams" id="cams"></div>
+</div>
+</div>
+</section>
+
+<section data-tab="Automations" hidden>
+<h2>Automations</h2>
+<p class="note">Rules that run on their own: when something happens, and any conditions are met, do one or more steps. Camera motion would reach the hub through Alexa or Google Home, so use the test button at the bottom to try it here.</p>
+<div class="autotop">
+  <div class="seg presbox" role="group" aria-label="Home or away"></div>
+  <div class="mrow"><span>Pause all automations</span><button class="sw" role="switch" data-set="pauseAll" aria-label="Pause all automations"><i></i></button></div>
+</div>
+<h3 class="gap">Your automations</h3>
+<div id="rules"></div>
+<h3 class="gap" id="bHead">New automation</h3>
+<div class="panel builder">
+  <label class="f">Name (optional)<input class="in" id="bName" maxlength="40" placeholder="For example, Movie night"></label>
+  <div class="bstep"><h4>When</h4><label class="f">Trigger<select id="bTrig"></select></label><div class="afields" id="bTf"></div></div>
+  <div class="bstep"><h4>Only if <span class="sub">(optional)</span></h4><div id="bConds"></div><div id="bCondAdd"></div></div>
+  <div class="bstep"><h4>Then</h4><div id="bActs"></div><div id="bActAdd"></div></div>
+  <label class="chk"><input type="checkbox" id="bOnce">Run only once, then turn it off</label>
+  <p class="sub" id="bHint" hidden></p>
+  <div class="btns"><button class="btn primary" id="bSave">Add automation</button><button class="btn" id="bCancel" hidden>Cancel</button></div>
+  <p class="sub" id="bMsg" role="status"></p>
+</div>
+<h3 class="gap">Ideas to start from</h3>
+<div class="tplgrid" id="tpls"></div>
+<p class="sub" id="tplMsg" role="status"></p>
+<h3 class="gap">Test</h3>
+<div class="simrow" id="sim"><span class="sub">Test a camera event:</span></div>
+</section>
+
+<section data-tab="Activity" hidden>
+<h2>Activity</h2>
+<div class="simrow"><button class="btn" id="clearLog">Clear activity</button></div>
+<ul class="log" id="log"></ul>
+<h2>Power events</h2>
+<ul class="log" id="powerLog"></ul>
+</section>
+
+<section data-tab="Apps" hidden>
+<h2>Linked apps</h2>
+<p class="note">Open the apps and websites for your brands from here, and mark the ones you use so they sit at the top. Lumora can’t sign in to these accounts yet, because that needs the home server, so these are shortcuts for now.</p>
+<h3>Add your own link</h3>
+<div class="auto add">
+  <label class="f">Name<input class="in" id="apName" maxlength="30"></label>
+  <label class="f">Web address<input class="in" id="apUrl" placeholder="https://" inputmode="url" autocomplete="off"></label>
+  <label class="f">Type<select id="apCat"><option>Lights</option><option>Cameras</option><option>Hubs</option></select></label>
+  <button class="btn" id="apAdd">Add link</button>
+</div>
+<p class="sub" id="apMsg" role="status"></p>
+<h3 style="margin-top:24px">Brands</h3>
+<div class="toolbar">
+  <input class="in" id="appQ" type="search" placeholder="Search brands" aria-label="Search brands">
+  <div class="chips" id="appCats"></div>
+</div>
+<div class="grid" id="appGrid"></div>
+
+</section>
+
+<section data-tab="Settings" hidden>
+<h2>Settings</h2>
+<div class="sgrid">
+<div class="panel"><h3>Account</h3>
+  <div class="srow"><label for="sName">Display name</label><input class="in" id="sName" maxlength="30"></div>
+  <div class="srow"><span>Email</span><span class="sub" id="sEmail"></span></div>
+  <div class="srow"><label for="pwOld">Current password</label><input class="in" id="pwOld" type="password" autocomplete="current-password"></div>
+  <div class="srow"><label for="pwNew">New password</label><input class="in" id="pwNew" type="password" autocomplete="new-password"></div>
+  <div class="srow"><button class="btn" id="pwSave">Change password</button><span class="sub" id="pwMsg" role="status"></span></div>
+  <div class="srow"><button class="btn" id="signout">Sign out</button><button class="btn danger" id="delAcct">Delete account</button></div>
+</div>
+<div class="panel"><h3>Home</h3>
+  <div class="srow"><label for="sHome">Home name</label><input class="in" id="sHome" data-set="homeName" maxlength="24"></div>
+        <div class="srow"><label for="sTime">Time format</label><select id="sTime" data-set="timeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
+  <div class="srow"><span>Reduce motion</span><button class="sw" role="switch" data-set="reduceMotion" aria-label="Reduce motion"><i></i></button></div>
+</div>
+<div class="panel wide"><h3>Design</h3><div class="dgrid" id="designs" role="group" aria-label="Design"></div></div>
+<div class="panel"><h3>Lights</h3><div id="lightNames"></div><p class="sub">Names show on the Devices tab and in automations. Removing a light also takes it out of automations, and an automation with nothing left to do is deleted. A scan can find it again.</p></div>
+<div class="panel"><h3>Cameras</h3><div id="camNames"></div><p class="sub">Removing a camera also removes automations that use its motion alerts.</p></div>
+<div class="panel"><h3>Connections</h3>
+  <div class="srow demoonly"><label for="sHub">Hub server address</label><input class="in" id="sHub" data-set="hubUrl" placeholder="http://homehub.local:8080" autocomplete="off"></div>
+  <div class="srow demoonly"><label for="sLepro">Lepro account email</label><input class="in" id="sLepro" data-set="lepro" type="email" autocomplete="off"></div>
+  <p class="sub" id="conn"></p>
+  <p class="sub">Aosu cameras: live video isn’t available, because Aosu battery cameras don’t share a video stream.</p>
+</div>
+<div class="panel"><h3>Notifications and sound</h3>
+  <div class="srow"><span>Offline popups</span><button class="sw" role="switch" data-set="popups" aria-label="Offline popups"><i></i></button></div>
+  <div class="srow"><label for="sSecs">Popup stays for</label><select id="sSecs" data-set="popupSecs"><option value="4">4 seconds</option><option value="6">6 seconds</option><option value="10">10 seconds</option><option value="20">20 seconds</option></select></div>
+  <div class="srow"><span>Sound effects</span><button class="btn" id="snd" aria-pressed="true">Sounds: on</button></div>
+  <div class="srow"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="100" data-set="volume"></div>
+</div>
+<div class="panel"><h3>Devices</h3>
+  <div class="srow"><span>Add detected devices automatically</span><button class="sw" role="switch" data-set="autoAdd" aria-label="Add detected devices automatically"><i></i></button></div>
+  <p class="sub">Limits: 30 lights and 30 cameras.</p>
+</div>
+<div class="panel wide"><h3>Power outage</h3>
+  <p class="sub">Lumora decides the power is out when every light goes offline at once. These settings control what happens then and when power comes back.</p>
+  <div class="pgrid">
+    <div>
+      <h4>Detecting</h4>
+      <div class="srow"><span>Power outage protection</span><button class="sw" role="switch" data-set="outageOn" aria-label="Power outage protection"><i></i></button></div>
+      <div class="srow"><label for="sMin">Count it as an outage after</label><select id="sMin" data-set="powerMin"><option value="0">Right away</option><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div>
+      <div class="srow"><span>Tell me when power is lost or back</span><button class="sw" role="switch" data-set="powerNotify" aria-label="Tell me when power is lost or back"><i></i></button></div>
+      <div class="srow"><span>Play a sound for outages</span><button class="sw" role="switch" data-set="powerSound" aria-label="Play a sound for outages"><i></i></button></div>
+      <div class="srow"><span>Pause automations during an outage</span><button class="sw" role="switch" data-set="powerPause" aria-label="Pause automations during an outage"><i></i></button></div>
+    </div>
+    <div>
+      <h4>When power returns</h4>
+      <div class="srow"><label for="sAfter">Lights</label><select id="sAfter" data-set="afterPower"><option value="keepOff">Keep off</option><option value="restore">Put back as they were</option><option value="on">Turn on</option><option value="leave">Leave as they come back</option></select></div>
+      <div class="srow"><label for="sBri">Brightness when turning on</label><span class="rng"><input id="sBri" type="range" min="10" max="100" step="5" data-set="powerBri" aria-label="Brightness when turning on"><b id="sBriV"></b></span></div>
+      <div class="srow"><label for="sWait">Wait before turning lights on</label><select id="sWait" data-set="powerWait"><option value="0">No wait</option><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div>
+      <div class="srow"><label for="sGap">Turn them on</label><select id="sGap" data-set="powerGap"><option value="0">All at once</option><option value="1">One by one, 1 s apart</option><option value="3">One by one, 3 s apart</option></select></div>
+      <div class="srow"><span>Keep lights off at night</span><button class="sw" role="switch" data-set="powerNight" aria-label="Keep lights off at night"><i></i></button></div>
+      <div class="srow"><label for="sNf">Night is from</label><span class="trow"><input class="in" type="time" id="sNf" data-set="powerFrom" aria-label="Night starts"> <span class="sub">to</span> <input class="in" type="time" id="sNt" data-set="powerTo" aria-label="Night ends"></span></div>
+    </div>
+  </div>
+  <h4 class="gap">Lights that always come back on</h4>
+  <p class="sub">Handy for a hallway or porch light. These come on after an outage even at night, at their old brightness.</p>
+  <div class="chips" id="powerKeep"></div>
+  <h4 class="gap">History</h4>
+  <p class="sub" id="powerSum"></p>
+  <div class="srow"><button class="btn" id="clrPower">Clear power history</button></div>
+</div>
+<div class="panel"><h3>Automations and location</h3>
+  <div class="srow"><label for="sLat">Latitude</label><input class="in" id="sLat" data-set="lat" inputmode="decimal" placeholder="e.g. 51.5" autocomplete="off"></div>
+  <div class="srow"><label for="sLon">Longitude</label><input class="in" id="sLon" data-set="lon" inputmode="decimal" placeholder="e.g. -0.12" autocomplete="off"></div>
+  <div class="srow"><button class="btn" id="geoBtn">Use my location</button><span class="sub" id="geoMsg" role="status"></span></div>
+  <p class="sub" id="sunInfo"></p>
+  <div class="srow"><span>Away simulation</span><button class="sw" role="switch" data-set="mimic" aria-label="Away simulation"><i></i></button></div>
+  <div class="srow"><label for="sMF">From</label><input class="in" id="sMF" type="time" data-set="mimicFrom"></div>
+  <div class="srow"><label for="sMT">Until</label><input class="in" id="sMT" type="time" data-set="mimicTo"></div>
+  <p class="sub">While you are set to “I’m away”, lights switch on and off at random in that window so the house looks lived in. It only runs while this page is open. Your location stays in this browser.</p>
+</div>
+<div class="panel"><h3>Your scenes</h3><div id="sceneList"></div><p class="sub">Save a scene from the Devices tab.</p></div>
+<div class="panel"><h3>TV and remote</h3>
+  <div class="srow"><label for="sTV">TV mode</label><select id="sTV" data-set="tvMode"><option value="auto">Automatic</option><option value="on">On</option><option value="off">Off</option></select></div>
+  <div class="srow"><span>Colored remote buttons</span><button class="sw" role="switch" data-set="remoteKeys" aria-label="Colored remote buttons"><i></i></button></div>
+  <div class="srow"><span>Show remote help bar</span><button class="sw" role="switch" data-set="tvLegend" aria-label="Show remote help bar"><i></i></button></div>
+  <p class="sub">With a TV remote: arrows move, OK selects and Back goes back. On a brightness bar, OK starts adjusting and the left and right arrows change it. Red turns all lights off. Green, Yellow and Blue run the Evening, Movie and Bright scenes.</p>
+</div>
+<div class="panel"><h3>Security</h3>
+  <div class="srow"><label for="sLock">Sign out after inactivity</label><select id="sLock" data-set="autoLock"><option value="0">Never</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></div>
+  <p class="sub">Accounts and settings are stored only in this browser.</p>
+</div>
+<div class="panel" id="hhPanel" hidden><h3>Household</h3>
+  <p class="sub">People who can sign in to this Lumora server. They all see and control the same lights.</p>
+  <div id="hhList"></div>
+  <div class="srow stackrow"><label for="hhName">Name</label><input class="in" id="hhName" maxlength="30" autocomplete="off"></div>
+  <div class="srow stackrow"><label for="hhEmail">Email</label><input class="in" id="hhEmail" type="email" autocomplete="off"></div>
+  <div class="srow stackrow"><label for="hhPw">Starting password</label><input class="in" id="hhPw" type="password" autocomplete="new-password"></div>
+  <div class="srow"><button class="btn primary" id="hhAdd" type="button">Add person</button></div>
+  <p class="sub" id="hhMsg" role="status">They can change the password in Settings after signing in.</p>
+</div>
+<div class="panel"><h3>Data and about</h3>
+  <div class="srow"><button class="btn" id="rstSet">Reset settings</button><button class="btn" id="rstData">Reset lights and automations</button></div>
+  <p class="sub" id="aboutVer">Lumora preview 0.1</p>
+</div>
+</div>
+</section>
+</main>
+<div class="dock">
+  <div class="brand" data-brand></div>
+  <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="acct" id="acct"></div>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<button class="bellbtn" id="notifBtn" type="button"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M8.7 3A6 6 0 0 1 18 8c0 2.7.4 4.6.9 6M6.3 6.3C6.1 6.9 6 7.4 6 8c0 7-3 9-3 9h14M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20"/></svg><span class="lbl">Hide notifications</span></button>
+<div class="legend" id="legend" hidden><span>OK select</span><span>Arrows move</span><span>Back returns</span><span class="rd">Red: all off</span><span class="gr">Green: Evening</span><span class="ye">Yellow: Movie</span><span class="bl">Blue: Bright</span></div>
+
+<div class="gate" id="login" hidden>
+  <div class="card">
+    <div class="brand" data-brand></div>
+    <div class="seg"><button class="btn" id="mIn" aria-pressed="true">Sign in</button><button class="btn" id="mUp" aria-pressed="false">Create account</button></div>
+    <label class="f up" hidden>Your name<input class="in" id="lName" maxlength="30" autocomplete="name"></label>
+    <label class="f">Email<input class="in" id="lEmail" type="email" autocomplete="username"></label>
+    <label class="f">Password<span class="pw"><input class="in" id="lPw" type="password" autocomplete="current-password"><button class="btn" id="lShow" type="button">Show</button></span></label>
+    <label class="f up" hidden>Confirm password<input class="in" id="lPw2" type="password" autocomplete="new-password"></label>
+    <label class="chk"><input type="checkbox" id="lKeep" checked>Keep me signed in on this device</label>
+    <p class="err" id="lErr" role="alert" hidden></p>
+    <button class="btn primary" id="lGo">Sign in</button>
+    <p class="sub" id="gateNote">This preview keeps accounts only in this browser. Real sign-in needs the home server.</p>
+  </div>
+</div>
+
+<div class="splash" id="splash" role="status" aria-label="Lumora is loading">
+  <div class="scard"><div class="brand big" data-brand></div><p class="tag">Your lights and cameras, in one place.</p><div class="sbar" aria-hidden="true"><i></i></div></div>
+</div>
+
+<script>
+/* Device layer. Every adapter exposes list() and set(id, patch).
+   To control real Lepro bulbs, write a LeproAdapter with this same shape
+   that calls your own small backend (browsers can’t reach Lepro’s cloud directly). */
+const mockAdapter = {
+  devices: [
+    {id:'living', name:'Living room lamp', on:true,  bri:70, color:'#ffb35c'},
+    {id:'bedroom',name:'Bedroom',          on:false, bri:40, color:'#ffd9a8'},
+    {id:'hall',   name:'Hallway',          on:true,  bri:100,color:'#fff1d6'},
+    {id:'porch',  name:'Porch',            on:false, bri:100,color:'#fff1d6'}
+  ],
+  async list(){ return this.devices.map(d=>({online:true,room:'Home',...d})); },
+  async set(id, patch){ const d=this.devices.find(x=>x.id===id); if(!d) return; if(d.online===false && !('online' in patch) && ('on' in patch||'bri' in patch||'color' in patch||'temp' in patch)) return; if('on' in patch && !('offAt' in patch)){ d.offAt=null; d.offIn=0; } Object.assign(d, patch); }
+};
+const adapter = mockAdapter;
+const MAX_LIGHTS=30, MAX_CAMS=30;
+const ROOMS=['Living room','Kitchen','Bedroom','Bathroom','Hallway','Garage','Office','Basement','Patio','Garden'];
+['Living room','Bedroom','Hallway','Outdoors'].forEach((r,i)=>{ mockAdapter.devices[i].room=r; });
+/* Devices the demo "network scan" can discover. A real adapter would ask the home server instead. */
+mockAdapter.pool=[]; mockAdapter.camPool=[];
+ROOMS.forEach((r,ri)=>{ for(let n=1;n<=3;n++){ const k=ri*3+n;
+  mockAdapter.pool.push({id:'x'+k,name:r+' light '+n,room:r,on:false,bri:80,color:'#fff1d6'});
+  mockAdapter.camPool.push({id:'cx'+k,name:r+' camera '+n,room:r,online:true,battery:35+(k*17)%60,alerts:true,last:null}); } });
+mockAdapter.scan=async function(){
+  await new Promise(r=>setTimeout(r,900));
+  const known=new Set(this.devices.map(d=>d.id));
+  this.pool=this.pool.filter(p=>!known.has(p.id));
+  const take=(arr,n)=>{ const out=[]; while(out.length<n&&arr.length) out.push(arr.splice(Math.floor(Math.random()*arr.length),1)[0]); return out; };
+  return {lights:take(this.pool,3+Math.floor(Math.random()*5)), cams:take(this.camPool,2+Math.floor(Math.random()*4))};
+};
+mockAdapter.devices.find(d=>d.id==='hall').online = false;
+
+/* ---- server mode and real devices ----
+   When the page is served by the Lumora server, SRV holds the session. If the server has Home Assistant
+   set up, lights are real: this adapter asks the server for their state and sends it commands. */
+const SRV=window.__SRV||null;
+const REMOTE=!!(SRV&&SRV.user&&SRV.config&&SRV.config.adapter==='homeassistant');
+async function srvApi(method,path,body){
+  try{
+    const r=await fetch(path,{method,headers:{'Content-Type':'application/json','X-Requested-With':'lumora'},body:body===undefined?undefined:JSON.stringify(body),credentials:'same-origin'});
+    let j={}; try{ j=await r.json(); }catch(e){}
+    if(r.status===401&&SRV&&SRV.user) location.reload();
+    return {ok:r.ok,status:r.status,json:j};
+  }catch(e){ return {ok:false,status:0,json:{message:'Can’t reach the Lumora server.'}}; }
+}
+let deviceWarned=0;
+function deviceProblem(r){ const n=Date.now(); if(n-deviceWarned<60000) return; deviceWarned=n; try{ toast((r.json&&r.json.message)||'Can’t reach your lights right now.'); }catch(e){} }
+if(REMOTE){
+  document.documentElement.setAttribute('data-remote','1');
+  mockAdapter.devices=[]; mockAdapter.pool=[]; mockAdapter.camPool=[];
+  const DEVICE_FIELDS=['on','bri','color','temp'];
+  mockAdapter.list=async function(){
+    const ids=this.devices.map(d=>d.id); let st=null;
+    if(ids.length){ const r=await srvApi('POST','/api/devices/state',{ids}); if(r.ok) st=r.json.states||{}; else deviceProblem(r); }
+    return this.devices.map(d=>{
+      const s=st&&st[d.id];
+      if(s){ d.on=s.on; d.bri=s.bri; d.color=s.color; if(s.temp) d.temp=s.temp; }
+      const o={online:true,room:'Home',...d};
+      if(st) o.online=!!s&&s.online!==false;
+      if(!o.name||o.name===o.id) o.name=(s&&s.name)||o.id;
+      return o;
+    });
+  };
+  mockAdapter.set=async function(id,patch){
+    const d=this.devices.find(x=>x.id===id); if(!d) return;
+    const cmd={};
+    DEVICE_FIELDS.forEach(k=>{ if(k in patch) cmd[k]=patch[k]; });
+    for(const k in patch) if(!DEVICE_FIELDS.includes(k)&&k!=='online') d[k]=patch[k];   /* names, favourites and timers stay in the app */
+    if(Object.keys(cmd).length){ const r=await srvApi('POST','/api/devices/'+encodeURIComponent(id)+'/set',cmd); if(!r.ok) deviceProblem(r); else Object.assign(d,cmd); }
+  };
+  mockAdapter.scan=async function(){
+    const known=this.devices.map(d=>d.id);
+    const r=await srvApi('GET','/api/devices/discover?known='+encodeURIComponent(known.join(',')));
+    if(!r.ok){ deviceProblem(r); return {lights:[],cams:[]}; }
+    return {lights:r.json.lights||[],cams:[]};
+  };
+  /* pick up changes made elsewhere (a wall switch, another app) */
+  setInterval(async()=>{
+    if(typeof started==='undefined'||!started||document.hidden) return;
+    const a=document.activeElement; if(a&&a.type==='range') return;
+    const n=await adapter.list();
+    if(JSON.stringify(n)!==JSON.stringify(state)){ state=n; save(); render(); }
+  },10000);
+}
+/* scenes written as {'*':...} apply to every light that is online */
+const expandScene=sc=>{ if(sc&&sc['*']) return Object.fromEntries(state.filter(d=>d.online!==false).map(d=>[d.id,sc['*']])); return sc||{}; };
+
+const COLORS = ['#ffd9a8','#ffb35c','#fff1d6','#8fc1ff','#c79bff','#ff8fa3'];
+const SCENES = {
+  Evening:{living:{on:true,bri:45,color:'#ffb35c'},bedroom:{on:true,bri:25,color:'#ffd9a8'},hall:{on:true,bri:30,color:'#ffb35c'},porch:{on:true,bri:60,color:'#fff1d6'}},
+  Movie:{living:{on:true,bri:12,color:'#8fc1ff'},bedroom:{on:false},hall:{on:false},porch:{on:false}},
+  Bright:{living:{on:true,bri:100,color:'#fff1d6'},bedroom:{on:true,bri:100,color:'#fff1d6'},hall:{on:true,bri:100,color:'#fff1d6'},porch:{on:true,bri:100,color:'#fff1d6'}},
+  'All off':{living:{on:false},bedroom:{on:false},hall:{on:false},porch:{on:false}}
+};
+if(REMOTE){ SCENES.Evening={'*':{on:true,bri:45,color:'#ffb35c'}}; SCENES.Movie={'*':{on:true,bri:12,color:'#8fc1ff'}}; SCENES.Bright={'*':{on:true,bri:100,color:'#fff1d6'}}; SCENES['All off']={'*':{on:false}}; }
+let cams=[
+  {id:'c1',name:'Front door',room:'Outdoors',online:true,battery:84,alerts:true,last:null},
+  {id:'c2',name:'Driveway',room:'Outdoors',online:true,battery:61,alerts:true,last:null},
+  {id:'c3',name:'Backyard',room:'Outdoors',online:true,battery:17,alerts:true,last:null}
+];
+try{ const sc=JSON.parse(localStorage.getItem('hub-cams')||'null'); if(Array.isArray(sc)) cams=sc.filter(c=>c&&c.id&&c.name); else if(REMOTE) cams=[]; }catch(e){}
+const saveCams=()=>{ try{ localStorage.setItem('hub-cams',JSON.stringify(cams)); }catch(e){} };
+const camNames=()=>cams.map(c=>c.name);
+
+let state = [];
+const $ = id => document.getElementById(id);
+let activity=[]; try{ activity=JSON.parse(localStorage.getItem('hub-activity')||'[]'); if(!Array.isArray(activity)) activity=[]; }catch(e){ activity=[]; }
+const tstr=ts=>new Date(ts).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',hour12:settings.timeFormat!=='24'});
+const logLine=a=>{ const li=document.createElement('li'); li.textContent=tstr(a.t)+'  '+a.m; return li; };
+const log = msg => { const a={t:Date.now(),m:String(msg)}; activity.unshift(a); activity.length=Math.min(activity.length,100); try{ localStorage.setItem('hub-activity',JSON.stringify(activity)); }catch(e){} $('log').prepend(logLine(a)); };
+function renderLog(){ const ul=$('log'); ul.innerHTML=''; activity.forEach(a=>ul.appendChild(logLine(a))); }
+
+function save(){ try{ localStorage.setItem('hub-lights', JSON.stringify(state)); }catch(e){} }
+async function load(){
+  const gone=store.get('hub-removed',[]); if(Array.isArray(gone)&&gone.length) adapter.devices=adapter.devices.filter(x=>!gone.includes(x.id));
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem('hub-lights')||'null'); }catch(e){}
+  if(Array.isArray(saved)) for(const d of saved){ if(!d||!d.id) continue; if(REMOTE){ if(!adapter.devices.some(x=>x.id===d.id)&&adapter.devices.length<MAX_LIGHTS){ const c={...d}; delete c.online; if(typeof c.name==='string') c.name=c.name.replace(/[<>&"']/g,''); adapter.devices.push(c); } continue; } if(!adapter.devices.some(x=>x.id===d.id) && adapter.devices.length<MAX_LIGHTS) adapter.devices.push({id:d.id,name:d.name||d.id,room:d.room,on:false,bri:80,color:'#fff1d6'}); if(typeof d.name==='string') d.name=d.name.replace(/[<>&"']/g,''); await adapter.set(d.id, d); }
+  state = await adapter.list();
+  render();
+}
+async function update(id, patch){
+  await adapter.set(id, patch);
+  state = await adapter.list();
+  save(); render(patch.__keepFocus);
+}
+
+let openColor = null, popId = null;
+const COLOR_NAMES = ['Warm white','Amber','Soft white','Sky blue','Violet','Rose'];
+function kelvinHex(k){
+  const t=k/100, cl=v=>Math.min(255,Math.max(0,v));
+  const r = t<=66 ? 255 : cl(329.698727446*Math.pow(t-60,-0.1332047592));
+  const g = t<=66 ? cl(99.4708025861*Math.log(t)-161.1195681661) : cl(288.1221695283*Math.pow(t-60,-0.0755148492));
+  const b = t>=66 ? 255 : t<=19 ? 0 : cl(138.5177312231*Math.log(t-10)-305.0447927307);
+  return '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+}
+async function expire(d){
+  const offline = d.online===false;
+  await adapter.set(d.id, offline ? {offAt:null,offIn:0} : {on:false,offAt:null,offIn:0});
+  state = await adapter.list(); save(); render();
+  if(!offline){ chime(false); log(d.name+' turned off by its timer'); }
+}
+setInterval(()=>{
+  if(!started) return;
+  const now=Date.now(); let any=false;
+  for(const d of state){ if(d.offAt){ any=true; if(now>=d.offAt) expire(d); } }
+  if(any) render();
+},5000);
+function buildCard(d){
+  const el = document.createElement('div');
+  el.dataset.id = d.id;
+  el.innerHTML =
+    '<button class="bulb" data-key="t-'+d.id+'" aria-pressed="false"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span class="tbadge" hidden></span></button>'+
+    '<div class="mid"><div class="row"><span class="name"></span><span class="sub"></span></div>'+
+    '<input class="fader" type="range" min="1" max="100" data-key="r-'+d.id+'"></div>'+
+    '<div class="acts"><button class="star" data-key="s-'+d.id+'" aria-pressed="false">☆</button><button class="dot" data-key="c-'+d.id+'" aria-expanded="false"></button></div>'+
+    '<div class="pal" hidden><div class="swatches">'+COLORS.map((c,i)=>'<button class="col" style="background:'+c+'" aria-label="'+COLOR_NAMES[i]+'" data-c="'+c+'"></button>').join('')+'</div>'+
+    '<div class="mrow"><span>Custom color</span><input class="pick" type="color" aria-label="Custom color"></div>'+
+    '<div class="mrow"><span>Warm to cool</span><input class="warm" type="range" min="2200" max="6500" step="100" aria-label="Warm to cool"></div>'+
+    '<div class="mrow stack"><span>Turn off in</span><div class="chips">'+[[0,'Never'],[15,'15 min'],[30,'30 min'],[60,'1 hour'],[120,'2 hours']].map(([m,l])=>'<button class="chip" data-m="'+m+'">'+l+'</button>').join('')+'</div></div></div>';
+  const cur = ()=>state.find(x=>x.id===d.id);
+  el.querySelector('.bulb').onclick = ()=>{
+    const x = cur(); chime(!x.on);
+    if(!x.on){ popId = x.id; setTimeout(()=>{ if(popId===x.id) popId=null; },600); }
+    update(x.id,{on:!x.on});
+  };
+  el.querySelector('.dot').onclick = ()=>{ openColor = openColor===d.id ? null : d.id; render(); };
+  el.querySelector('.star').onclick = ()=>update(d.id,{fav:!cur().fav});
+  const r = el.querySelector('.fader');
+  r.oninput = e=>{ r.style.setProperty('--v', e.target.value+'%'); el.classList.add('on'); el.querySelector('.sub').textContent = e.target.value+'%'; };
+  r.onchange = e=>{ if(!cur().on) chime(true); update(d.id,{bri:+e.target.value,on:true}); };
+  el.querySelectorAll('.col').forEach(b=>b.onclick=()=>update(d.id,{color:b.dataset.c,on:true}));
+  el.querySelector('.pick').onchange = e=>update(d.id,{color:e.target.value,on:true});
+  el.querySelector('.warm').onchange = e=>{ const k=+e.target.value; update(d.id,{temp:k,color:kelvinHex(k),on:true}); };
+  el.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ const m=+c.dataset.m; update(d.id, m ? {on:true,offAt:Date.now()+m*60000,offIn:m} : {offAt:null,offIn:0}); });
+  return el;
+}
+/* Cards are created once and updated in place, so they never move or get rebuilt. */
+function render(){
+  const live = state.filter(d=>d.online!==false);
+  const onCount = live.filter(d=>d.on).length;
+  $('summary').textContent = onCount ? onCount+' of '+live.length+' lights on' : 'All lights are off';
+  renderInfo();
+  const root = $('lights');
+  const have = new Map([...root.children].filter(c=>c.dataset.id).map(c=>[c.dataset.id,c]));
+  const rooms=[...new Set(state.map(d=>d.room||'Home'))];
+  const grouped=isGrouped();
+  const rank=d=>grouped?rooms.indexOf(d.room||'Home')*1000:0;
+  state.forEach((d,i)=>{
+    const off = d.online===false;
+    let el = have.get(d.id);
+    if(!el){ el = buildCard(d); root.appendChild(el); }
+    have.delete(d.id);
+    el.style.order = rank(d)+i+1; el.hidden = !matches(d);
+    el.style.setProperty('--c', d.color);
+    el.className = 'lt'+(d.on&&!off?' on':'')+(off?' offline':'')+(d.id===popId&&d.on&&!off?' lit':'');
+    const bulb = el.querySelector('.bulb');
+    bulb.setAttribute('aria-pressed', String(d.on)); bulb.setAttribute('aria-label', d.name); bulb.disabled = off;
+    el.querySelector('.name').textContent = d.name;
+    const st = el.querySelector('.star'); st.textContent = d.fav ? '★' : '☆'; st.setAttribute('aria-pressed', String(!!d.fav)); st.setAttribute('aria-label', (d.fav?'Remove ':'Add ')+d.name+(d.fav?' from favorites':' to favorites'));
+    const mins = d.offAt ? Math.max(1,Math.ceil((d.offAt-Date.now())/60000)) : 0;
+    el.querySelector('.sub').textContent = (grouped?'':(d.room||'Home')+' · ')+(off ? 'Offline' : d.on ? d.bri+'%' : 'Off');
+    el.querySelector('.sub').title = d.on&&!off&&mins ? 'Turns off in '+mins+' min' : '';
+    const tb = el.querySelector('.tbadge'); tb.hidden = !(d.on&&!off&&mins); tb.textContent = mins+'m';
+    const r = el.querySelector('.fader');
+    r.value = d.bri; r.style.setProperty('--v', d.bri+'%'); r.setAttribute('aria-label', d.name+' brightness'); r.disabled = off;
+    const dot = el.querySelector('.dot');
+    dot.setAttribute('aria-expanded', String(openColor===d.id)); dot.setAttribute('aria-label','Color and timer for '+d.name); dot.disabled = off;
+    el.querySelector('.pal').hidden = openColor!==d.id;
+    const pk = el.querySelector('.pick'); pk.value = /^#[0-9a-f]{6}$/i.test(d.color) ? d.color : '#ffffff';
+    el.querySelector('.warm').value = d.temp||3000;
+    el.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed', String(+c.dataset.m===(d.offAt?d.offIn:0))));
+    el.querySelectorAll('.pick,.warm,.chip').forEach(x=>x.disabled = off);
+    el.querySelectorAll('.col').forEach(b=>{ b.setAttribute('aria-pressed', String(b.dataset.c===d.color)); b.disabled = off; });
+  });
+  have.forEach(el=>el.remove());
+  const heads=new Map([...root.querySelectorAll('.rh')].map(h=>[h.dataset.room,h]));
+  rooms.forEach(r=>{
+    let h=heads.get(r); heads.delete(r);
+    if(!grouped) return;
+    if(!h){
+      h=document.createElement('div'); h.className='rh'; h.dataset.room=r;
+      h.innerHTML='<h3></h3><span class="sub"></span><span class="rline"></span><button class="chip" type="button"></button>';
+      h.querySelector('h3').textContent=r;
+      h.querySelector('.chip').onclick=()=>roomToggle(r);
+      root.appendChild(h); heads.delete(r);
+    }
+    const ds=state.filter(d=>(d.room||'Home')===r), live=ds.filter(d=>d.online!==false), on=live.filter(d=>d.on);
+    h.style.order=rooms.indexOf(r)*1000; h.hidden=!ds.some(matches);
+    h.querySelector('.sub').textContent=on.length+' of '+ds.length+' on';
+    const tb=h.querySelector('.chip'); tb.textContent=on.length?'Turn all off':'Turn all on'; tb.disabled=!live.length; tb.setAttribute('aria-label',(on.length?'Turn off all ':'Turn on all ')+r+' lights');
+  });
+  heads.forEach(h=>h.remove());
+  if(!grouped) root.querySelectorAll('.rh').forEach(h=>h.remove());
+  $('lcount').textContent = state.length+' of '+MAX_LIGHTS; syncGroup();
+  $('empty').hidden = !(state.length && !state.some(matches));
+}
+
+/* ---- automations ---- */
+const DAYN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const ALLDAYS=[0,1,2,3,4,5,6];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const nameOf=id=>(state.find(d=>d.id===id)||{}).name||id;
+const lightName=id=>id==='all'?'all lights':id==='@trigger'?'the light that triggered it':nameOf(id);
+let presence=localStorage.getItem('hub-presence')==='away'?'away':'home';
+let FADE_MS=5000;
+const fades={}; let inFade=false;
+const ruleBusy=new Set();
+
+function migrate(r){
+  if(!r||typeof r!=='object'||!r.t||typeof r.t!=='object') return null;
+  if(Array.isArray(r.acts)) return {id:String(r.id||'r'+Date.now()),on:r.on!==false,name:String(r.name||'').slice(0,40),t:r.t,c:Array.isArray(r.c)?r.c:[],acts:r.acts,once:!!r.once,last:r.last||null,count:r.count||0};
+  const a=r.a||{}, acts=[];
+  if(a.type==='scene') acts.push({k:'scene',name:a.name});
+  else if(a.type==='light') acts.push({k:'light',id:a.id,op:a.on?'on':'off',mins:0});
+  if(!acts.length) return null;
+  return {id:String(r.id||'r'+Date.now()),on:r.on!==false,name:'',t:r.t,c:[],acts,once:false,last:null,count:0};
+}
+let rules=[
+  {id:'r1',on:true,name:'',t:{type:'motion',cam:'Front door'},c:[],acts:[{k:'light',id:'porch',op:'on',mins:0}],once:false,last:null,count:0},
+  {id:'r2',on:true,name:'',t:{type:'time',at:'22:30',days:ALLDAYS},c:[],acts:[{k:'scene',name:'All off'}],once:false,last:null,count:0},
+  {id:'r3',on:false,name:'',t:{type:'time',at:'18:00',days:ALLDAYS},c:[],acts:[{k:'scene',name:'Evening'}],once:false,last:null,count:0}
+];
+try{ const s=JSON.parse(localStorage.getItem('hub-rules')||'null'); if(Array.isArray(s)) rules=s.map(migrate).filter(Boolean); else if(REMOTE) rules=[]; }catch(e){}
+const saveRules=()=>{ try{ localStorage.setItem('hub-rules',JSON.stringify(rules)); }catch(e){} };
+
+/* ---- sun ---- */
+function hasLoc(){ const la=parseFloat(settings.lat), lo=parseFloat(settings.lon); return isFinite(la)&&isFinite(lo)&&Math.abs(la)<=90&&Math.abs(lo)<=180; }
+function sunMinutes(date){
+  if(!hasLoc()) return null;
+  const lat=parseFloat(settings.lat), lon=parseFloat(settings.lon), rad=Math.PI/180;
+  const doy=Math.round((Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())-Date.UTC(date.getFullYear(),0,0))/864e5);
+  const g=2*Math.PI/365*(doy-1);
+  const eq=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g));
+  const dec=0.006918-0.399912*Math.cos(g)+0.070257*Math.sin(g)-0.006758*Math.cos(2*g)+0.000907*Math.sin(2*g)-0.002697*Math.cos(3*g)+0.00148*Math.sin(3*g);
+  const c=(Math.cos(90.833*rad)-Math.sin(lat*rad)*Math.sin(dec))/(Math.cos(lat*rad)*Math.cos(dec));
+  if(c>1||c<-1) return {none:true,up:c<-1};
+  const ha=Math.acos(c)/rad, tz=-date.getTimezoneOffset();
+  const m=v=>((Math.round(v)%1440)+1440)%1440;
+  return {rise:m(720-4*(lon+ha)-eq+tz), set:m(720-4*(lon-ha)-eq+tz)};
+}
+function isDark(d){
+  d=d||new Date(); const s=sunMinutes(d); if(!s) return null;
+  if(s.none) return !s.up;
+  const nm=d.getHours()*60+d.getMinutes();
+  return s.rise<s.set ? (nm<s.rise||nm>=s.set) : (nm>=s.set&&nm<s.rise);
+}
+const minToHM=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+function renderSunInfo(){
+  const el=$('sunInfo'); if(!el) return;
+  if(!hasLoc()){ el.textContent='Enter your latitude and longitude, or tap Use my location, to use sunrise, sunset and “dark outside”.'; return; }
+  const s=sunMinutes(new Date());
+  el.textContent=s.none?(s.up?'The sun does not set today at this location.':'The sun does not rise today at this location.'):'Today: sunrise '+fmt(minToHM(s.rise))+', sunset '+fmt(minToHM(s.set))+'.';
+}
+$('geoBtn').onclick=()=>{
+  const m=$('geoMsg');
+  if(!navigator.geolocation){ m.textContent='This browser can’t share a location. Type the numbers instead.'; return; }
+  m.textContent='Asking for your location…';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    settings.lat=pos.coords.latitude.toFixed(2); settings.lon=pos.coords.longitude.toFixed(2); saveSettings();
+    $('sLat').value=settings.lat; $('sLon').value=settings.lon;
+    m.textContent='Saved, rounded to two decimals, in this browser only.'; apply();
+  },()=>{ m.textContent='Couldn’t get your location. Type the numbers instead.'; },{timeout:10000,maximumAge:3600000});
+};
+
+/* ---- text ---- */
+const dayList=days=>[1,2,3,4,5,6,0].filter(x=>days.includes(x)).map(x=>DAYN[x]).join(', ');
+function trigText(t){
+  switch(t.type){
+    case 'time': return 'the time is '+fmt(t.at)+(t.days&&t.days.length<7?' on '+dayList(t.days):'');
+    case 'sun': { const o=Math.round(+t.off||0), w=t.which==='sunrise'?'sunrise':'sunset'; return o===0?'it is '+w:'it is '+Math.abs(o)+' min '+(o>0?'after ':'before ')+w; }
+    case 'motion': return 'motion is detected at '+t.cam;
+    case 'nomotion': return 'there is no motion at '+t.cam+' for '+t.mins+' min';
+    case 'lefton': return 'a light has been on for '+t.mins+' min';
+    case 'lightoff': return 'a light goes offline';
+    case 'outage': return 'the power is cut';
+    case 'restored': return 'the power returns';
+    case 'lowbat': return 'a camera battery is low';
+    case 'home': return 'I arrive home';
+    case 'away': return 'I leave home';
+    case 'manual': return 'I tap its button';
+  }
+  return 'something happens';
+}
+function actText(a){
+  const L=lightName(a.id);
+  switch(a.k){
+    case 'light': return a.op==='toggle'?'toggle '+L:a.op==='off'?'turn off '+L:'turn on '+L+(a.mins>0?' for '+a.mins+' min':'');
+    case 'bri': return 'set '+L+' to '+a.bri+'%';
+    case 'color': return 'set '+L+' to a custom color';
+    case 'scene': return 'run the '+a.name+' scene';
+    case 'room': return 'turn '+(a.op==='on'?'on':'off')+' the '+a.room+' lights';
+    case 'fadeup': return 'slowly brighten '+L+' over '+a.mins+' min'+(a.bri&&a.bri<100?' to '+a.bri+'%':'');
+    case 'fadedown': return 'slowly dim '+L+' over '+a.mins+' min, then turn off';
+    case 'notify': return 'show “'+a.text+'”';
+    case 'wait': return 'wait '+a.n+(a.unit==='m'?' min':' sec');
+  }
+  return 'do something';
+}
+function condText(c){
+  switch(c.k){
+    case 'dark': return 'it is dark outside';
+    case 'presence': return 'I am '+(c.v==='away'?'away':'home');
+    case 'between': return 'the time is between '+fmt(c.from)+' and '+fmt(c.to);
+    case 'lighton': return lightName(c.id)+' is '+(c.v==='on'?'on':'off');
+  }
+  return 'a condition is met';
+}
+const ruleTitle=r=>r.name||cap(r.acts.map(actText).join(', then '));
+const needsLoc=r=>(r.t.type==='sun'||r.c.some(c=>c.k==='dark'))&&!hasLoc();
+
+/* ---- definitions ---- */
+const camOpts=()=>cams.map(c=>[c.name,c.name]);
+const lightOpts=ctx=>[['all','All lights']].concat(state.map(d=>[d.id,d.name]),ctx&&(ctx.trig==='lefton'||ctx.trig==='lightoff')?[['@trigger','The light that triggered it']]:[]);
+const oneLightOpts=()=>state.map(d=>[d.id,d.name]);
+const roomOpts=()=>[...new Set(state.map(d=>d.room).filter(Boolean))].sort().map(r=>[r,r]);
+const sceneOpts=()=>Object.keys(SCENES).map(n=>[n,n]);
+const ON_OFF=[['on','Turn on'],['off','Turn off']];
+const TRIG={
+  time:{l:'At a set time',f:[{n:'at',t:'time',l:'Time',d:'20:00'},{n:'days',t:'days',l:'Days'}]},
+  sun:{l:'At sunrise or sunset',f:[{n:'which',t:'sel',l:'Which',o:[['sunset','Sunset'],['sunrise','Sunrise']],d:'sunset'},{n:'off',t:'num',l:'Minutes after (negative = before)',d:0,min:-240,max:240}]},
+  motion:{l:'A camera detects motion',f:[{n:'cam',t:'sel',l:'Camera',o:camOpts}]},
+  nomotion:{l:'A camera sees no motion for a while',f:[{n:'cam',t:'sel',l:'Camera',o:camOpts},{n:'mins',t:'num',l:'Minutes',d:10,min:1,max:240}]},
+  lefton:{l:'A light has been left on',f:[{n:'mins',t:'num',l:'Minutes',d:60,min:1,max:1440}]},
+  lightoff:{l:'A light goes offline',f:[]},
+  outage:{l:'The power is cut',f:[]},
+  restored:{l:'The power returns',f:[]},
+  lowbat:{l:'A camera battery gets low',f:[]},
+  home:{l:'I arrive home',f:[]},
+  away:{l:'I leave home',f:[]},
+  manual:{l:'I tap its button (shows in the left bar)',f:[]}
+};
+const ACT={
+  light:{l:'Turn a light on or off',f:[{n:'id',t:'sel',l:'Light',o:lightOpts,d:'all'},{n:'op',t:'sel',l:'Do',o:[['on','Turn on'],['off','Turn off'],['toggle','Toggle']],d:'on'},{n:'mins',t:'num',l:'Then turn off after (min, 0 = never)',d:0,min:0,max:1440}]},
+  bri:{l:'Set brightness',f:[{n:'id',t:'sel',l:'Light',o:lightOpts,d:'all'},{n:'bri',t:'num',l:'Brightness %',d:60,min:1,max:100}]},
+  color:{l:'Set a color',f:[{n:'id',t:'sel',l:'Light',o:lightOpts,d:'all'},{n:'color',t:'color',l:'Color',d:'#ffb35c'}]},
+  scene:{l:'Run a scene',f:[{n:'name',t:'sel',l:'Scene',o:sceneOpts}]},
+  room:{l:'Turn a room on or off',f:[{n:'room',t:'sel',l:'Room',o:roomOpts},{n:'op',t:'sel',l:'Do',o:ON_OFF,d:'on'}]},
+  fadeup:{l:'Slowly brighten (wake-up)',f:[{n:'id',t:'sel',l:'Light',o:lightOpts,d:'all'},{n:'mins',t:'num',l:'Over (min)',d:20,min:0.5,max:120},{n:'bri',t:'num',l:'Up to %',d:80,min:1,max:100}]},
+  fadedown:{l:'Slowly dim, then turn off',f:[{n:'id',t:'sel',l:'Light',o:lightOpts,d:'all'},{n:'mins',t:'num',l:'Over (min)',d:15,min:0.5,max:120}]},
+  notify:{l:'Show a notification',f:[{n:'text',t:'text',l:'Message',d:'',req:true}]},
+  wait:{l:'Wait before the next step',f:[{n:'n',t:'num',l:'For',d:30,min:1,max:3600},{n:'unit',t:'sel',l:'Unit',o:[['s','seconds'],['m','minutes']],d:'s'}]}
+};
+const COND={
+  dark:{l:'It is dark outside',f:[]},
+  presence:{l:'I am home or away',f:[{n:'v',t:'sel',l:'I am',o:[['home','Home'],['away','Away']],d:'home'}]},
+  between:{l:'The time is between',f:[{n:'from',t:'time',l:'From',d:'22:00'},{n:'to',t:'time',l:'Until',d:'06:00'}]},
+  lighton:{l:'A light is on or off',f:[{n:'id',t:'sel',l:'Light',o:oneLightOpts},{n:'v',t:'sel',l:'Is',o:[['on','On'],['off','Off']],d:'on'}]}
+};
+
+/* ---- form pieces ---- */
+function mkField(f,val,ctx){
+  const wrap=document.createElement(f.t==='days'?'div':'label'); wrap.className='f';
+  const capEl=document.createElement('span'); capEl.textContent=f.l; wrap.appendChild(capEl);
+  let get;
+  if(f.t==='days'){
+    const set=new Set(Array.isArray(val)&&val.length?val:ALLDAYS), row=document.createElement('div'); row.className='chips';
+    [[1,'M','Monday'],[2,'T','Tuesday'],[3,'W','Wednesday'],[4,'T','Thursday'],[5,'F','Friday'],[6,'S','Saturday'],[0,'S','Sunday']].forEach(([n,l,full])=>{
+      const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=l; b.setAttribute('aria-label',full); b.setAttribute('aria-pressed',String(set.has(n)));
+      b.onclick=()=>{ if(set.has(n)){ if(set.size>1) set.delete(n); } else set.add(n); b.setAttribute('aria-pressed',String(set.has(n))); };
+      row.appendChild(b);
+    });
+    wrap.appendChild(row); get=()=>[...set];
+  }else if(f.t==='sel'){
+    const sel=document.createElement('select'), opts=typeof f.o==='function'?f.o(ctx):f.o;
+    if(!opts.length){ const o=document.createElement('option'); o.value=''; o.textContent='(none yet)'; sel.appendChild(o); sel.disabled=true; }
+    opts.forEach(([v,l])=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); });
+    const want=val!=null&&opts.some(o=>o[0]===val)?val:(f.d!=null&&opts.some(o=>o[0]===f.d)?f.d:(opts[0]?opts[0][0]:''));
+    sel.value=want; wrap.appendChild(sel); get=()=>sel.value;
+  }else{
+    const inp=document.createElement('input'); inp.className='in';
+    inp.type=f.t==='num'?'number':f.t==='time'?'time':f.t==='color'?'color':'text';
+    if(f.t==='num'){ inp.min=f.min; inp.max=f.max; inp.step='any'; }
+    if(f.t==='text') inp.maxLength=80;
+    if(f.t==='color') inp.className='pick';
+    inp.value=val!=null?val:(f.d!=null?f.d:'');
+    wrap.appendChild(inp); get=()=>inp.value;
+  }
+  return {el:wrap,get};
+}
+function buildFields(box,fields,vals,ctx){
+  box.innerHTML=''; box._g={};
+  fields.forEach(f=>{ const m=mkField(f,vals&&vals[f.n],ctx); box._g[f.n]=m.get; box.appendChild(m.el); });
+}
+function readFields(box,fields){
+  const o={};
+  fields.forEach(f=>{
+    let v=box._g[f.n]();
+    if(f.t==='num'){ v=parseFloat(v); if(!isFinite(v)) v=f.d!=null?f.d:0; if(f.min!=null) v=Math.max(f.min,v); if(f.max!=null) v=Math.min(f.max,v); }
+    if(f.t==='text') v=String(v).replace(/[<>&"]/g,'').trim();
+    o[f.n]=v;
+  });
+  return o;
+}
+function makeAdder(host,defs,onAdd,ctxFn,label){
+  host.classList.add('adder');
+  const row=document.createElement('div'); row.className='arow';
+  const sel=document.createElement('select'); sel.setAttribute('aria-label',label);
+  const fb=document.createElement('div'); fb.className='afields';
+  const btn=document.createElement('button'); btn.type='button'; btn.className='btn'; btn.textContent='Add';
+  row.append(sel,fb,btn); host.appendChild(row);
+  const draw=()=>buildFields(fb,defs[sel.value].f,{},ctxFn());
+  sel.onchange=draw;
+  btn.onclick=()=>{
+    const k=sel.value, f=defs[k].f, v=readFields(fb,f), m=$('bMsg');
+    if(f.some(x=>x.t==='sel'&&!v[x.n])){ m.textContent='There is nothing to choose yet. Scan for devices on the Devices tab first.'; return; }
+    if(f.some(x=>x.req&&!v[x.n])){ m.textContent='Fill in the '+f.find(x=>x.req).l.toLowerCase()+' first.'; return; }
+    m.textContent=''; onAdd(Object.assign({k},v));
+  };
+  return {redraw(){
+    const cur=sel.value; sel.innerHTML='';
+    Object.entries(defs).forEach(([k,d])=>{ const o=document.createElement('option'); o.value=k; o.textContent=d.l; sel.appendChild(o); });
+    if(defs[cur]) sel.value=cur; draw();
+  }};
+}
+function pills(host,arr,txt,empty,rm,num){
+  host.innerHTML='';
+  if(!arr.length){ const p=document.createElement('p'); p.className='sub'; p.textContent=empty; host.appendChild(p); return; }
+  arr.forEach((x,i)=>{
+    const el=document.createElement('div'); el.className='pill';
+    const sp=document.createElement('span'); sp.textContent=(num?(i+1)+'. ':'')+cap(txt(x));
+    const b=document.createElement('button'); b.type='button'; b.className='x'; b.textContent='×'; b.setAttribute('aria-label','Remove: '+txt(x)); b.onclick=()=>rm(i);
+    el.append(sp,b); host.appendChild(el);
+  });
+}
+
+/* ---- builder ---- */
+const newB=()=>({name:'',t:{type:'time'},c:[],acts:[],once:false,editing:null});
+let B=newB();
+const bCtx=()=>({trig:B.t.type});
+const condAdder=makeAdder($('bCondAdd'),COND,c=>{ B.c.push(c); drawLists(); },bCtx,'Condition type');
+const actAdder=makeAdder($('bActAdd'),ACT,a=>{ B.acts.push(a); drawLists(); },bCtx,'Action type');
+function hint(){
+  const need=(B.t.type==='sun'||B.c.some(c=>c.k==='dark'))&&!hasLoc(), h=$('bHint');
+  h.hidden=!need; h.textContent=need?'Sunrise, sunset and “dark outside” need your location. Add it in Settings.':'';
+}
+function drawTrig(){
+  const sel=$('bTrig');
+  if(!sel.options.length) sel.innerHTML=Object.entries(TRIG).map(([k,d])=>'<option value="'+k+'">'+d.l+'</option>').join('');
+  sel.value=B.t.type; buildFields($('bTf'),TRIG[B.t.type].f,B.t,bCtx()); hint();
+}
+function drawLists(){
+  pills($('bConds'),B.c,condText,'No conditions. It runs every time the trigger happens.',i=>{ B.c.splice(i,1); drawLists(); });
+  pills($('bActs'),B.acts,actText,'No steps yet. Add at least one below.',i=>{ B.acts.splice(i,1); drawLists(); },true);
+  hint();
+}
+function drawHead(){
+  $('bHead').textContent=B.editing?'Edit automation':'New automation';
+  $('bSave').textContent=B.editing?'Save changes':'Add automation'; $('bCancel').hidden=!B.editing;
+  $('bName').value=B.name; $('bOnce').checked=B.once;
+}
+function fillSelects(){
+  const ok=id=>!id||id==='all'||id==='@trigger'||state.some(d=>d.id===id);
+  B.acts=B.acts.filter(a=>ok(a.id)); B.c=B.c.filter(c=>ok(c.id));
+  drawHead(); drawTrig(); drawLists(); condAdder.redraw(); actAdder.redraw();
+}
+$('bTrig').onchange=()=>{ B.t={type:$('bTrig').value}; drawTrig(); actAdder.redraw(); };
+$('bCancel').onclick=()=>{ B=newB(); $('bMsg').textContent=''; fillSelects(); };
+$('bSave').onclick=()=>{
+  const m=$('bMsg'); m.textContent='';
+  const type=$('bTrig').value, def=TRIG[type], tv=readFields($('bTf'),def.f);
+  if(def.f.some(f=>f.t==='sel'&&!tv[f.n])){ m.textContent='Add a camera first. Scan for devices on the Devices tab.'; return; }
+  if(def.f.some(f=>f.t==='time'&&!tv[f.n])){ m.textContent='Pick a time.'; return; }
+  if(!B.acts.length){ m.textContent='Add at least one step under Then.'; return; }
+  const base={name:$('bName').value.replace(/[<>&"']/g,'').trim().slice(0,40),t:Object.assign({type},tv),c:B.c.map(x=>({...x})),acts:B.acts.map(x=>({...x})),once:$('bOnce').checked};
+  if(B.editing){ const r=rules.find(x=>x.id===B.editing); if(r) Object.assign(r,base); }
+  else rules.push(Object.assign({id:'r'+Date.now()+'-'+rules.length,on:true,last:null,count:0},base));
+  const nm=base.name||cap(base.acts.map(actText).join(', then '));
+  saveRules(); renderRules(); log((B.editing?'Automation changed: ':'Automation added: ')+nm);
+  B=newB(); fillSelects(); m.textContent='Saved.';
+};
+function editRule(r){
+  B={name:r.name||'',t:{...r.t},c:r.c.map(x=>({...x})),acts:r.acts.map(x=>({...x})),once:!!r.once,editing:r.id};
+  $('bMsg').textContent=''; fillSelects();
+  $('bHead').scrollIntoView({block:'start'}); $('bName').focus();
+}
+
+/* ---- running ---- */
+const waitMs=ms=>new Promise(r=>setTimeout(r,ms));
+function targetsFor(id,ctx){
+  if(id==='all') return state.filter(d=>d.online!==false);
+  if(id==='@trigger'){ const d=ctx&&ctx.light&&state.find(x=>x.id===ctx.light); return d?[d]:[]; }
+  const d=state.find(x=>x.id===id); return d?[d]:[];
+}
+function cancelFade(id){ if(fades[id]){ clearInterval(fades[id].t); delete fades[id]; } }
+const _setOrig=adapter.set.bind(adapter);
+adapter.set=function(id,p){ if(!inFade&&fades[id]) cancelFade(id); return _setOrig(id,p); };
+function fadeSet(id,patch){ inFade=true; const pr=adapter.set(id,patch); inFade=false; return pr; }
+function startFade(d,dir,mins,target){
+  cancelFade(d.id);
+  if(dir==='down'&&!d.on) return;
+  const steps=Math.max(2,Math.round(mins*60000/FADE_MS));
+  const from=dir==='up'?1:Math.max(1,d.bri), to=dir==='up'?Math.max(1,Math.min(100,Math.round(target||100))):1, orig=d.bri;
+  let i=0; const f={t:null}; fades[d.id]=f;
+  const refresh=async()=>{ state=await adapter.list(); save(); render(); };
+  if(dir==='up') fadeSet(d.id,{on:true,bri:1}).then(refresh);
+  f.t=setInterval(async()=>{
+    if(fades[d.id]!==f){ clearInterval(f.t); return; }
+    i++;
+    if(i>=steps){ clearInterval(f.t); delete fades[d.id]; await fadeSet(d.id,dir==='up'?{bri:to}:{on:false,bri:orig}); }
+    else await fadeSet(d.id,{bri:Math.max(1,Math.round(from+(to-from)*i/steps))});
+    await refresh();
+  },FADE_MS);
+}
+async function doAct(a,ctx){
+  switch(a.k){
+    case 'light':
+      for(const d of targetsFor(a.id,ctx)){
+        if(a.op==='toggle') await adapter.set(d.id,{on:!d.on});
+        else if(a.op==='on') await adapter.set(d.id,a.mins>0?{on:true,offAt:Date.now()+a.mins*60000,offIn:a.mins}:{on:true});
+        else await adapter.set(d.id,{on:false});
+      } break;
+    case 'bri': for(const d of targetsFor(a.id,ctx)) await adapter.set(d.id,{bri:Math.round(a.bri),on:true}); break;
+    case 'color': for(const d of targetsFor(a.id,ctx)) await adapter.set(d.id,{color:a.color,on:true}); break;
+    case 'scene': for(const [id,p] of Object.entries(expandScene(SCENES[a.name]))) await adapter.set(id,p); break;
+    case 'room': for(const d of state.filter(x=>x.room===a.room&&x.online!==false)) await adapter.set(d.id,{on:a.op==='on'}); break;
+    case 'fadeup': targetsFor(a.id,ctx).forEach(d=>startFade(d,'up',a.mins,a.bri)); break;
+    case 'fadedown': targetsFor(a.id,ctx).forEach(d=>startFade(d,'down',a.mins)); break;
+    case 'notify': toast(a.text||'Automation'); break;
+    case 'wait': await waitMs((a.unit==='m'?60000:1000)*a.n); break;
+  }
+  state=await adapter.list(); save(); render();
+}
+const minNow=()=>{ const d=new Date(); return d.getHours()*60+d.getMinutes(); };
+const toMin=hm=>{ const [h,m]=String(hm||'0:0').split(':'); return (+h||0)*60+(+m||0); };
+const inRange=(nm,from,to)=>{ const a=toMin(from), b=toMin(to); return a<=b?(nm>=a&&nm<b):(nm>=a||nm<b); };
+function condOK(c){
+  switch(c.k){
+    case 'dark': return isDark()===true;
+    case 'presence': return presence===c.v;
+    case 'between': return inRange(minNow(),c.from,c.to);
+    case 'lighton': { const d=state.find(x=>x.id===c.id); return !!d&&d.online!==false&&(!!d.on===(c.v==='on')); }
+  }
+  return true;
+}
+async function runRule(r,o){
+  o=o||{}; const ctx=o.ctx||{};
+  if(!o.force){
+    if(settings.pauseAll) return;
+    if(power.outage&&settings.powerPause&&r.t.type!=='outage'&&r.t.type!=='restored') return;
+    const bad=r.c.find(c=>!condOK(c));
+    if(bad){ log('Skipped “'+ruleTitle(r)+'”: not true that '+condText(bad)); return; }
+  }
+  if(ruleBusy.has(r.id)) return;
+  ruleBusy.add(r.id);
+  try{ for(const a of r.acts) await doAct(a,ctx); }
+  catch(e){ log('Automation problem: '+ruleTitle(r)); }
+  finally{ ruleBusy.delete(r.id); }
+  r.last=Date.now(); r.count=(r.count||0)+1;
+  if(r.once&&!o.force) r.on=false;
+  saveRules(); renderRules();
+  log('Automation ran: '+ruleTitle(r)+(ctx.light?' ('+nameOf(ctx.light)+')':''));
+}
+function fireTrigger(type,ctx){ rules.filter(r=>r.on&&r.t.type===type).forEach(r=>runRule(r,{ctx})); }
+function motionAt(cam){
+  const c=cams.find(x=>x.name===cam); if(c){ c.last=Date.now(); saveCams(); }
+  log('Motion at '+cam);
+  if(c&&c.alerts!==false&&settings.popups) toast('Motion at '+cam);
+  rules.filter(r=>r.on&&r.t.type==='motion'&&r.t.cam===cam).forEach(r=>runRule(r,{ctx:{cam}}));
+  renderCams();
+}
+let lastStamp=Math.floor(Date.now()/60000);
+setInterval(()=>{
+  const nowM=Math.floor(Date.now()/60000);
+  if(!started){ lastStamp=nowM; return; }
+  for(let m=Math.max(lastStamp+1,nowM-5); m<=nowM; m++){
+    const d=new Date(m*60000), hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'), nm=d.getHours()*60+d.getMinutes();
+    let sun;
+    rules.filter(r=>r.on).forEach(r=>{
+      if(r.t.type==='time'){ if(r.t.at===hm&&(!r.t.days||r.t.days.includes(d.getDay()))) runRule(r); }
+      else if(r.t.type==='sun'){
+        if(sun===undefined) sun=sunMinutes(d);
+        if(sun&&!sun.none){ const tg=(((Math.round((r.t.which==='sunrise'?sun.rise:sun.set)+(+r.t.off||0)))%1440)+1440)%1440; if(tg===nm) runRule(r); }
+      }
+    });
+  }
+  lastStamp=nowM;
+},10000);
+
+/* ---- things that are watched ---- */
+const onSince={}, firedLeft={}, firedNoMotion={}, batWarned={};
+let mimicOn=false;
+async function mimicAllOff(){ for(const d of state) await adapter.set(d.id,{on:false}); state=await adapter.list(); save(); render(); log('Away simulation ended: lights off'); }
+function mimic(){
+  if(settings.mimic&&presence==='away'){
+    if(inRange(minNow(),settings.mimicFrom||'18:00',settings.mimicTo||'23:00')){
+      mimicOn=true;
+      if(Math.random()<0.06){
+        const live=state.filter(d=>d.online!==false);
+        if(live.length){
+          const d=live[Math.floor(Math.random()*live.length)], on=!d.on;
+          adapter.set(d.id,{on}).then(async()=>{ state=await adapter.list(); save(); render(); log('Away simulation: '+d.name+(on?' on':' off')); });
+        }
+      }
+    }else if(mimicOn){ mimicOn=false; mimicAllOff(); }
+  }else if(mimicOn){ mimicOn=false; }
+}
+function watch(){
+  if(!started) return;
+  const now=Date.now();
+  for(const d of state){
+    if(d.on&&d.online!==false){ if(!onSince[d.id]) onSince[d.id]=now; }
+    else{ delete onSince[d.id]; Object.keys(firedLeft).forEach(k=>{ if(k.endsWith('|'+d.id)) delete firedLeft[k]; }); }
+  }
+  rules.filter(r=>r.on).forEach(r=>{
+    if(r.t.type==='lefton'){
+      for(const d of state){ const k=r.id+'|'+d.id; if(onSince[d.id]&&now-onSince[d.id]>=r.t.mins*60000&&!firedLeft[k]){ firedLeft[k]=1; runRule(r,{ctx:{light:d.id}}); } }
+    }else if(r.t.type==='nomotion'){
+      const c=cams.find(x=>x.name===r.t.cam);
+      if(c&&c.last&&now-c.last>=r.t.mins*60000&&firedNoMotion[r.id]!==c.last){ firedNoMotion[r.id]=c.last; runRule(r,{ctx:{cam:c.name}}); }
+    }
+  });
+  for(const c of cams){ if(c.battery<20){ if(!batWarned[c.id]){ batWarned[c.id]=1; fireTrigger('lowbat',{cam:c.name}); } } else if(c.battery>=25) delete batWarned[c.id]; }
+  mimic();
+}
+setInterval(watch,10000);
+
+/* ---- home or away ---- */
+function renderPresence(){
+  document.querySelectorAll('.presbox').forEach(box=>{
+    if(!box.children.length) ['home','away'].forEach(v=>{
+      const b=document.createElement('button'); b.type='button'; b.className='btn'; b.dataset.v=v; b.textContent=v==='home'?'I’m home':'I’m away'; b.onclick=()=>setPresence(v); box.appendChild(b);
+    });
+    box.querySelectorAll('.btn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===presence)));
+  });
+}
+function setPresence(v){
+  if(v===presence) return;
+  presence=v; try{ localStorage.setItem('hub-presence',v); }catch(e){}
+  renderPresence(); log(v==='home'?'You are home':'You are away');
+  if(v==='away'&&settings.mimic) toast('Away simulation is on');
+  fireTrigger(v);
+}
+
+/* ---- the list ---- */
+const whenTxt=ts=>{ const d=new Date(ts); return (new Date().toDateString()===d.toDateString()?'':DAYN[d.getDay()]+' ')+tstr(ts); };
+function renderRules(){
+  const root=$('rules'); root.innerHTML='';
+  if(settings.pauseAll){ const p=document.createElement('p'); p.className='banner'; p.textContent='Automations are paused. Buttons you tap yourself still work.'; root.appendChild(p); }
+  if(!rules.length){ const p=document.createElement('p'); p.className='note'; p.textContent='No automations yet. Try one of the ideas below, or build your own.'; root.appendChild(p); }
+  rules.forEach(r=>{
+    const el=document.createElement('div'); el.className='rule '+(r.on?'on':'off');
+    const txt=document.createElement('div'); txt.className='txt';
+    const line=(cls,t)=>{ const d=document.createElement('div'); d.className=cls; d.textContent=t; txt.appendChild(d); };
+    line('name',r.name||'When '+trigText(r.t));
+    if(r.name) line('sub','When '+trigText(r.t));
+    line('sub','Then '+r.acts.map(actText).join(', then ')+(r.c.length?' · Only if '+r.c.map(condText).join(' and '):''));
+    line('sub meta',(r.once?'Runs once · ':'')+(r.count?'Last ran '+whenTxt(r.last)+' · '+r.count+(r.count===1?' time':' times'):'Never run')+(needsLoc(r)?' · Needs your location in Settings':''));
+    const sw=document.createElement('button'); sw.className='sw'; sw.setAttribute('role','switch'); sw.setAttribute('aria-checked',String(r.on)); sw.setAttribute('aria-label','Enabled: '+ruleTitle(r)); sw.innerHTML='<i></i>';
+    sw.onclick=()=>{ r.on=!r.on; saveRules(); renderRules(); };
+    const x=(t,l,fn)=>{ const b=document.createElement('button'); b.className='x'; b.type='button'; b.textContent=t; b.setAttribute('aria-label',l+': '+ruleTitle(r)); b.onclick=fn; return b; };
+    el.append(txt,sw,
+      x('▶','Run now',()=>runRule(r,{force:true})),
+      x('✎','Edit',()=>editRule(r)),
+      x('⧉','Duplicate',()=>{ const c=JSON.parse(JSON.stringify(r)); c.id='r'+Date.now()+'-'+rules.length; c.name=(r.name||cap(r.acts.map(actText)[0]||'Automation')).slice(0,32)+' copy'; c.on=false; c.last=null; c.count=0; rules.splice(rules.indexOf(r)+1,0,c); saveRules(); renderRules(); }),
+      x('×','Delete',()=>{ rules=rules.filter(q=>q.id!==r.id); saveRules(); renderRules(); }));
+    root.appendChild(el);
+  });
+  renderScenes();
+}
+function pruneLight(id){
+  let n=0;
+  rules=rules.filter(r=>{ const before=r.acts.length+r.c.length; r.acts=r.acts.filter(a=>a.id!==id); r.c=r.c.filter(c=>c.id!==id); if(r.acts.length+r.c.length!==before) n++; return r.acts.length>0; });
+  saveRules(); return n;
+}
+function pruneCam(name){ const n=rules.length; rules=rules.filter(r=>!(r.t&&r.t.cam===name)); saveRules(); return n-rules.length; }
+
+/* ---- ideas ---- */
+const pickLight=prefs=>state.find(d=>prefs.includes(d.id))||state[0];
+const TPL=[
+  {n:'Porch light at sunset',d:'Turns the porch light on when the sun goes down.',loc:true,mk:()=>{ const l=pickLight(['porch']); return l&&{t:{type:'sun',which:'sunset',off:0},acts:[{k:'light',id:l.id,op:'on',mins:0}]}; }},
+  {n:'Porch light off at sunrise',d:'Turns the porch light off when the sun comes up.',loc:true,mk:()=>{ const l=pickLight(['porch']); return l&&{t:{type:'sun',which:'sunrise',off:0},acts:[{k:'light',id:l.id,op:'off',mins:0}]}; }},
+  {n:'Gentle wake-up',d:'Brightens the bedroom light slowly over 20 minutes at 7:00 on weekdays.',mk:()=>{ const l=pickLight(['bedroom']); return l&&{t:{type:'time',at:'07:00',days:[1,2,3,4,5]},acts:[{k:'fadeup',id:l.id,mins:20,bri:80}]}; }},
+  {n:'Wind down at bedtime',d:'Slowly dims every light and turns it off, starting at 10:00 PM.',mk:()=>state.length&&{t:{type:'time',at:'22:00',days:ALLDAYS},acts:[{k:'fadedown',id:'all',mins:15}]}},
+  {n:'Motion lights the porch',d:'When a camera sees motion after dark, the porch light comes on for 5 minutes.',loc:true,mk:()=>{ const l=pickLight(['porch']), c=cams.find(x=>/front/i.test(x.name))||cams[0]; return l&&c&&{t:{type:'motion',cam:c.name},c:[{k:'dark'}],acts:[{k:'light',id:l.id,op:'on',mins:5}]}; }},
+  {n:'Good night button',d:'One tap turns every light off. The button shows in the left bar.',mk:()=>state.length&&{name:'Good night',t:{type:'manual'},acts:[{k:'light',id:'all',op:'off',mins:0},{k:'notify',text:'Good night!'}]}},
+  {n:'Lights off when I leave',d:'When you switch to “I’m away”, every light goes off.',mk:()=>state.length&&{t:{type:'away'},acts:[{k:'light',id:'all',op:'off',mins:0}]}},
+  {n:'Welcome home',d:'When you arrive home after dark, the hallway light comes on at 70% for 10 minutes.',loc:true,mk:()=>{ const l=pickLight(['hall','living']); return l&&{t:{type:'home'},c:[{k:'dark'}],acts:[{k:'bri',id:l.id,bri:70},{k:'light',id:l.id,op:'on',mins:10}]}; }},
+  {n:'Turn off lights left on',d:'Any light that has been on for 2 hours is switched off.',mk:()=>state.length&&{t:{type:'lefton',mins:120},acts:[{k:'light',id:'@trigger',op:'off',mins:0}]}},
+  {n:'Camera battery reminder',d:'Shows a reminder when a camera battery gets low.',mk:()=>cams.length&&{t:{type:'lowbat'},acts:[{k:'notify',text:'A camera battery is low. Time to charge it.'}]}},
+  {n:'Power is back',d:'Shows a message when the power returns.',mk:()=>({t:{type:'restored'},acts:[{k:'notify',text:'Power is back.'}]})}
+];
+function renderTpls(){
+  const root=$('tpls'); root.innerHTML='';
+  TPL.forEach(t=>{
+    const el=document.createElement('div'); el.className='tpl';
+    const h=document.createElement('strong'); h.textContent=t.n;
+    const p=document.createElement('p'); p.className='sub'; p.textContent=t.d+(t.loc?' Needs your location in Settings.':'');
+    const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent='Add'; b.setAttribute('aria-label','Add idea: '+t.n);
+    b.onclick=()=>{
+      const m=t.mk(), msg=$('tplMsg');
+      if(!m){ msg.textContent='This idea needs a light or a camera first. Scan for devices on the Devices tab.'; return; }
+      rules.push({id:'r'+Date.now()+'-'+rules.length,on:true,name:m.name||t.n,t:m.t,c:m.c||[],acts:m.acts,once:false,last:null,count:0});
+      saveRules(); renderRules(); msg.textContent='Added “'+(m.name||t.n)+'”. Find it under Your automations.'; log('Automation added: '+(m.name||t.n));
+    };
+    el.append(h,p,b); root.appendChild(el);
+  });
+}
+
+/* ---- camera test ---- */
+const simSel=document.createElement('select'); simSel.setAttribute('aria-label','Camera to test');
+const simBtn=document.createElement('button'); simBtn.className='btn'; simBtn.textContent='Simulate motion'; simBtn.onclick=()=>{ if(simSel.value) motionAt(simSel.value); };
+$('sim').append(simSel,simBtn);
+function fillSim(){ const v=simSel.value; simSel.innerHTML=''; cams.forEach(c=>{ const o=document.createElement('option'); o.value=c.name; o.textContent=c.name; simSel.appendChild(o); }); if(v) simSel.value=v; }
+
+
+const DESIGNS=[['Dusk','#2a5bd7','#efe3e6'],['Midnight','#4de1d0','#0c1226'],['Meadow','#2f8f4e','#e4efe3'],['Ocean','#0b6fb8','#e3f0fa'],['Sunset','#b83a0a','#fdebd8'],['Forest','#5fd08a','#0c1a14'],['Blossom','#b81f66','#fde8ef'],['Lavender','#6538c8','#ece8fa'],['Sand','#85560f','#f5eee2'],['Graphite','#8ab4ff','#111316'],['Aurora','#7cf0c8','#06101c'],['Neon','#ff4fd8','#0b0614'],['Mint','#0b7a5a','#e1f5ee']];
+function setDesign(n){
+  if(!DESIGNS.some(x=>x[0]===n)) n='Dusk';
+  document.documentElement.dataset.design=n.toLowerCase();
+  document.querySelectorAll('#designs .dbtn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.n===n)));
+  try{ localStorage.setItem('hub-design',n); }catch(e){}
+}
+for(const [n,acc,bg] of DESIGNS){
+  const b=document.createElement('button'); b.className='dbtn'; b.dataset.n=n; b.type='button';
+  const dot=document.createElement('span'); dot.className='dot2'; dot.style.background='linear-gradient(135deg,'+bg+' 50%,'+acc+' 50%)';
+  b.append(dot,document.createTextNode(n)); b.onclick=()=>setDesign(n); $('designs').appendChild(b);
+}
+let startDesign='Dusk';
+try{ startDesign=localStorage.getItem('hub-design')||'Dusk'; }catch(e){}
+setDesign(startDesign);
+
+let soundOn=true, actx=null;
+try{ soundOn=localStorage.getItem('hub-sound')!=='off'; }catch(e){}
+function chime(up){
+  if(!soundOn) return;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended') actx.resume();
+    const t=actx.currentTime, notes=up?[660,880]:[880,587];
+    notes.forEach((f,i)=>{
+      const o=actx.createOscillator(), g=actx.createGain(), s=t+i*0.09;
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,s);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002,0.2*settings.volume/100),s+0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001,s+0.2);
+      o.connect(g); g.connect(actx.destination);
+      o.start(s); o.stop(s+0.22);
+    });
+  }catch(e){}
+}
+function setSound(on){
+  soundOn=on; $('snd').textContent='Sounds: '+(on?'on':'off'); $('snd').setAttribute('aria-pressed',String(on));
+  try{ localStorage.setItem('hub-sound',on?'on':'off'); }catch(e){}
+}
+$('snd').onclick=()=>{ setSound(!soundOn); chime(true); };
+setSound(soundOn);
+$('alloff').onclick=async()=>{
+  for(const d of state) await adapter.set(d.id,{on:false});
+  state=await adapter.list(); save(); render(); chime(false); log('All lights off');
+};
+const FIX_TIPS=[
+  'Check the bulb has power: the wall switch is on and the bulb is screwed in firmly.',
+  'Switch it off at the wall for 10 seconds, then back on to restart it.',
+  'Check your Wi-Fi. Most smart bulbs only use 2.4 GHz Wi-Fi, and a restarted router can take a minute to reconnect them.',
+  'If several lights are offline, restart your router.',
+  'Still offline? Open the Lepro app. If it shows offline there too, re-add the bulb using the app’s reset steps.'
+];
+function toast(msg,tips){
+  if(!settings.popups) return;
+  const warn=!!(tips&&tips.length);
+  const el=document.createElement('div'); el.className='toast '+(warn?'warn':'info');
+  el.innerHTML='<span class="ticon">'+(warn?'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>':'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>')+'</span><div class="tbody"><strong class="tmsg"></strong></div><button class="x" aria-label="Dismiss">×</button>';
+  el.querySelector('.tmsg').textContent=msg;
+  let tm;
+  const close=()=>{ clearTimeout(tm); if(el.dataset.closing) return; el.dataset.closing='1'; el.classList.add('out'); setTimeout(()=>el.remove(),300); };
+  el.querySelector('.x').onclick=close;
+  if(tips&&tips.length){
+    const body=el.querySelector('.tbody');
+    const ol=document.createElement('ol'); ol.className='tfix';
+    tips.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ol.appendChild(li); });
+    const small=window.matchMedia&&matchMedia('(max-width:760px)').matches; ol.hidden=small;
+    const link=document.createElement('button'); link.className='chip tlink'; link.type='button'; link.textContent=small?'How to fix':'Hide tips'; link.setAttribute('aria-expanded',String(!small));
+    link.onclick=()=>{ ol.hidden=!ol.hidden; link.textContent=ol.hidden?'How to fix':'Hide tips'; link.setAttribute('aria-expanded',String(!ol.hidden)); };
+    const h=document.createElement('span'); h.className='tsub'; h.textContent='Try these steps, in order';
+    body.append(h,ol,link);
+  }
+  const box=$('toasts');
+  while(box.children.length>=3) box.firstChild.remove();
+  box.appendChild(el);
+  tm=setTimeout(close,(tips&&tips.length?Math.max(settings.popupSecs,20):settings.popupSecs)*1000);
+}
+function syncNotif(){
+  const b=$('notifBtn'); if(!b) return;
+  const on=!!settings.popups;
+  b.querySelector('.lbl').textContent=on?'Hide notifications':'Show notifications';
+  b.querySelector('svg.on').hidden=!on; b.querySelector('svg.off').hidden=on;
+}
+$('notifBtn').onclick=()=>{
+  settings.popups=!settings.popups; saveSettings();
+  if(!settings.popups) $('toasts').innerHTML='';
+  syncNotif(); bindSettings();
+  if(settings.popups) toast('Notifications are on');
+};
+let seen=null;
+function renderInfo(){
+  $('alloff').disabled=!state.some(d=>d.on&&d.online!==false);
+  const outage=powerCheck();
+  const first=seen===null; seen=seen||{};
+  for(const d of state){
+    const now=d.online!==false;
+    if(!now && !outage && (first||seen[d.id]===true)){
+      if(settings.popups) toast(d.name+(first?' is offline':' went offline'),FIX_TIPS);
+      if(!first) fireTrigger('lightoff',{light:d.id});
+    }
+    seen[d.id]=now;
+  }
+  renderStats();
+}
+let offSel=null;
+function fillOffSim(){
+  if(!offSel){
+    offSel=document.createElement('select'); offSel.setAttribute('aria-label','Light to test');
+    const b=document.createElement('button'); b.className='btn'; b.textContent='Toggle offline';
+    b.onclick=async()=>{
+      const d=state.find(x=>x.id===offSel.value); if(!d) return;
+      const wasOff=d.online===false;
+      await adapter.set(d.id,{online:wasOff});
+      state=await adapter.list(); save(); render();
+      log(d.name+(wasOff?' is back online':' went offline'));
+    };
+    $('offsim').append(offSel,b);
+  }
+  const v=offSel.value; offSel.innerHTML='';
+  state.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; offSel.appendChild(o); });
+  if(v) offSel.value=v;
+}
+const TABS=['Devices','Automations','Activity','Apps','Settings'];
+let tabTok=0;
+function showTab(n){
+  const cur=document.querySelector('[data-tab]:not([hidden])');
+  document.querySelectorAll('#tabs .tab[data-go]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.go===n)));
+  try{ localStorage.setItem('hub-tab',n); }catch(e){}
+  const swap=()=>{
+    document.querySelectorAll('[data-tab]').forEach(sec=>{ sec.hidden=sec.dataset.tab!==n; sec.classList.remove('fadeout'); });
+    $('scenes').hidden = n!=='Devices';
+  };
+  const tok=++tabTok;
+  let still=false; try{ still=!!settings.reduceMotion; }catch(e){}
+  still=still||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
+  if(!cur||cur.dataset.tab===n||still){ swap(); return; }
+  cur.classList.add('fadeout');
+  setTimeout(()=>{ if(tok===tabTok) swap(); },200);
+}
+for(const n of TABS){
+  const b=document.createElement('button'); b.className='tab'; b.textContent=n; b.dataset.go=n; b.onclick=()=>showTab(n); $('tabs').appendChild(b);
+}
+
+let startTab='Devices';
+try{ startTab=localStorage.getItem('hub-tab')||'Devices'; }catch(e){}
+showTab(TABS.includes(startTab)?startTab:'Devices');
+
+/* ---- settings, accounts, splash ---- */
+let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splashDone=false;
+const MARK='<span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><span>Lumora</span>';
+document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
+const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
+const DEFAULTS={homeName:'Home',timeFormat:'12',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
+let settings={...DEFAULTS,...store.get('hub-settings',{})};
+const saveSettings=()=>store.set('hub-settings',settings);
+const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
+const users=()=>store.get('hub-users',{});
+const rand=()=>[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
+async function hashPw(pw,salt){
+  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:100000,hash:'SHA-256'},k,256);
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function armIdle(){
+  clearTimeout(idleT); const m=+settings.autoLock;
+  if(m>0&&user) idleT=setTimeout(()=>signOut('You were signed out after '+m+' minutes of inactivity.'),m*60000);
+}
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,armIdle,{passive:true}));
+function apply(){
+  syncNotif(); renderSunInfo(); renderPresence();
+  document.documentElement.dataset.motion=settings.reduceMotion?'reduced':'';
+  applyTV();
+  $('homeTitle').textContent=settings.homeName||'Home';
+  if(SRV) $('conn').textContent=REMOTE?'Connected to your Lumora server and Home Assistant. Lights are real.':'Connected to your Lumora server. Lights are simulated until the server is given a Home Assistant address.'; else
+  $('conn').textContent=settings.hubUrl?'Server address saved. Connecting to it isn’t built yet, so lights stay simulated.':'Demo mode: lights are simulated.';
+  if(started){ renderRules(); renderPower(); renderStats(); }
+  armIdle();
+}
+document.addEventListener('input',e=>{ if(e.target&&e.target.id==='sBri'){ const v=$('sBriV'); if(v) v.textContent=e.target.value+'%'; } });
+function bindSettings(){
+  document.querySelectorAll('[data-set]').forEach(el=>{
+    const k=el.dataset.set;
+    if(el.classList.contains('sw')){
+      const paint=()=>{ el.classList.toggle('on',!!settings[k]); el.setAttribute('aria-checked',String(!!settings[k])); };
+      paint(); el.onclick=()=>{ settings[k]=!settings[k]; saveSettings(); paint(); apply(); };
+    }else{
+      el.value=settings[k];
+      el.onchange=()=>{ settings[k]=typeof DEFAULTS[k]==='number'?+el.value:el.value.trim(); saveSettings(); apply(); if(k==='volume') chime(true); };
+    }
+  });
+}
+function confirmBtn(b,fn){
+  const t=b.textContent; let armed=false, tm;
+  b.onclick=()=>{
+    if(!armed){ armed=true; b.textContent='Tap again to confirm'; tm=setTimeout(()=>{ armed=false; b.textContent=t; },4000); }
+    else{ clearTimeout(tm); armed=false; b.textContent=t; fn(); }
+  };
+}
+function refreshAll(){
+  render(); renderRules(); fillSelects(); fillOffSim(); fillSim(); renderRoomOptions(); renderCams(); renderLightNames(); renderCamNames();
+}
+function dropRules(test){ const n=rules.length; rules=rules.filter(r=>!test(r)); if(rules.length!==n){ saveRules(); } return n-rules.length; }
+async function removeLight(d){
+  const removed=store.get('hub-removed',[]); if(!removed.includes(d.id)) removed.push(d.id); store.set('hub-removed',removed);
+  const i=adapter.devices.findIndex(x=>x.id===d.id); if(i>=0) adapter.devices.splice(i,1);
+  adapter.pool.push({id:d.id,name:d.name,room:d.room,on:false,bri:80,color:'#fff1d6'});
+  const gone=pruneLight(d.id);
+  if(openColor===d.id) openColor=null;
+  state=await adapter.list(); save(); refreshAll();
+  log('Removed light: '+d.name+(gone?' and '+gone+(gone===1?' automation':' automations'):''));
+}
+function removeCam(c){
+  cams=cams.filter(x=>x.id!==c.id); saveCams();
+  adapter.camPool.push({id:c.id,name:c.name,room:c.room,online:true,battery:c.battery,alerts:true,last:null});
+  const gone=pruneCam(c.name);
+  refreshAll();
+  log('Removed camera: '+c.name+(gone?' and '+gone+(gone===1?' automation':' automations'):''));
+}
+function rmButton(label,fn){
+  const b=document.createElement('button'); b.className='btn danger'; b.textContent='Remove'; b.setAttribute('aria-label','Remove '+label);
+  let armed=false, tm;
+  b.onclick=()=>{
+    if(!armed){ armed=true; b.textContent='Tap again'; tm=setTimeout(()=>{ armed=false; b.textContent='Remove'; },4000); }
+    else{ clearTimeout(tm); fn(); }
+  };
+  return b;
+}
+function renderLightNames(){
+  if(typeof renderPowerKeep==='function'&&started) renderPowerKeep();
+  const box=$('lightNames'); box.innerHTML='';
+  if(!state.length){ const p=document.createElement('p'); p.className='sub'; p.textContent='No lights. Use Scan for devices on the Devices tab to find some.'; box.appendChild(p); }
+  state.forEach((d,i)=>{
+    const row=document.createElement('div'); row.className='srow'; row.innerHTML='<span>Light '+(i+1)+'</span>';
+    const inp=document.createElement('input'); inp.className='in'; inp.maxLength=30; inp.value=d.name; inp.setAttribute('aria-label','Name for light '+(i+1));
+    inp.onchange=async()=>{
+      const n=inp.value.replace(/[<>&"']/g,'').trim()||d.name; inp.value=n;
+      await adapter.set(d.id,{name:n}); state=await adapter.list(); save(); render(); renderRules(); fillSelects();
+      fillOffSim();
+    };
+    row.append(inp,rmButton(d.name,()=>removeLight(d))); box.appendChild(row);
+  });
+}
+function renderCamNames(){
+  const box=$('camNames'); box.innerHTML='';
+  if(!cams.length){ const p=document.createElement('p'); p.className='sub'; p.textContent='No cameras. Use Scan for devices on the Devices tab to find some.'; box.appendChild(p); }
+  cams.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className='srow'; const sp=document.createElement('span'); sp.textContent=c.name;
+    row.append(sp,rmButton(c.name,()=>removeCam(c))); box.appendChild(row);
+  });
+}
+function startApp(){
+  if(started) return; started=true;
+  load().then(()=>{ fillSelects(); renderRules(); renderPresence(); renderTpls(); fillOffSim(); fillSim(); renderLightNames(); renderCamNames(); renderRoomOptions(); renderCams(); renderScenes(); renderLog(); renderPower(); syncFilters(); apply(); if(isTV()){ const fb=document.querySelector('.lt:not([hidden]) .bulb:not([disabled])'); if(fb) fb.focus(); } });
+}
+const err=m=>{ $('lErr').textContent=m||''; $('lErr').hidden=!m; };
+function setMode(m){
+  mode=m;
+  $('mIn').setAttribute('aria-pressed',String(m==='in')); $('mUp').setAttribute('aria-pressed',String(m==='up'));
+  document.querySelectorAll('#login .up').forEach(e=>e.hidden=m!=='up');
+  $('lGo').textContent=m==='in'?'Sign in':'Create account';
+  $('lPw').autocomplete=m==='in'?'current-password':'new-password'; err('');
+}
+function showLogin(msg){ $('login').hidden=false; setMode(Object.keys(users()).length?'in':'up'); if(msg) err(msg); $('lEmail').focus(); }
+function acctChip(){ const a=users()[user]; $('acct').querySelector('.av').textContent=a.name[0].toUpperCase(); $('acct').querySelector('.who').textContent=a.name; }
+function enter(email){
+  user=email; document.body.dataset.auth='in'; $('login').hidden=true;
+  $('acct').innerHTML='<div class="whorow"><span class="av"></span><span class="who"></span></div><button class="btn" id="acctOut">Sign out</button>';
+  $('acctOut').onclick=()=>signOut(); acctChip();
+  $('sName').value=users()[email].name; $('sEmail').textContent=email;
+  startApp(); armIdle();
+}
+function signOut(msg){
+  user=null; clearTimeout(idleT);
+  try{ localStorage.removeItem('hub-session'); sessionStorage.removeItem('hub-session'); }catch(e){}
+  document.body.dataset.auth='out'; showLogin(msg);
+}
+let busy=false;
+async function submit(){
+  if(busy) return; busy=true;
+  try{ await trySubmit(); } finally{ busy=false; }
+}
+async function trySubmit(){
+  err('');
+  if(Date.now()<lockUntil) return err('Too many attempts. Try again in '+Math.ceil((lockUntil-Date.now())/1000)+' seconds.');
+  if(!(window.crypto&&crypto.subtle)) return err('Secure storage isn’t available in this browser.');
+  const email=$('lEmail').value.trim().toLowerCase(), pw=$('lPw').value, all=users();
+  if(!/^\S+@\S+\.\S+$/.test(email)) return err('Enter a valid email address.');
+  if(mode==='up'){
+    const name=$('lName').value.replace(/[<>&"']/g,'').trim();
+    if(!name) return err('Enter your name.');
+    if(pw.length<8) return err('Use at least 8 characters for your password.');
+    if(pw!==$('lPw2').value) return err('The passwords don’t match.');
+    if(all[email]) return err('That email already has an account. Sign in instead.');
+    const salt=rand(); all[email]={name,salt,hash:await hashPw(pw,salt)};
+    if(!store.set('hub-users',all)) return err('This browser is blocking storage, so the account can’t be saved.');
+  }else{
+    const a=all[email];
+    if(!a||a.hash!==await hashPw(pw,a.salt)){
+      if(++fails>=5){ fails=0; lockUntil=Date.now()+30000; return err('Too many attempts. Try again in 30 seconds.'); }
+      return err('Email or password is incorrect.');
+    }
+  }
+  fails=0; $('lPw').value=''; $('lPw2').value='';
+  try{ ($('lKeep').checked?localStorage:sessionStorage).setItem('hub-session',email); }catch(e){}
+  enter(email);
+}
+$('mIn').onclick=()=>setMode('in'); $('mUp').onclick=()=>setMode('up'); $('lGo').onclick=submit;
+$('lShow').onclick=()=>{ const sh=$('lPw').type==='password'; $('lPw').type=sh?'text':'password'; $('lShow').textContent=sh?'Hide':'Show'; };
+['lName','lEmail','lPw','lPw2'].forEach(id=>$(id).addEventListener('keydown',e=>{ if(e.key==='Enter') submit(); }));
+$('sName').onchange=()=>{ const all=users(), n=$('sName').value.replace(/[<>&"']/g,'').trim(); if(!n||!all[user]) return; all[user].name=n; store.set('hub-users',all); acctChip(); };
+$('pwSave').onclick=async()=>{
+  const all=users(), a=all[user], m=$('pwMsg');
+  if(!a) return;
+  if(a.hash!==await hashPw($('pwOld').value,a.salt)){ m.textContent='Current password is incorrect.'; return; }
+  if($('pwNew').value.length<8){ m.textContent='Use at least 8 characters.'; return; }
+  a.salt=rand(); a.hash=await hashPw($('pwNew').value,a.salt); store.set('hub-users',all);
+  $('pwOld').value=''; $('pwNew').value=''; m.textContent='Password changed.';
+};
+$('signout').onclick=()=>signOut();
+confirmBtn($('delAcct'),()=>{ const all=users(); delete all[user]; store.set('hub-users',all); signOut('Your account was deleted.'); });
+confirmBtn($('rstSet'),()=>{ settings={...DEFAULTS}; saveSettings(); bindSettings(); setDesign('Dusk'); setSound(true); apply(); });
+confirmBtn($('rstData'),()=>{ try{ ['hub-lights','hub-rules','hub-cams','hub-removed','hub-power','hub-scenes'].forEach(k=>localStorage.removeItem(k)); }catch(e){} location.reload(); });
+/* ---- devices, rooms, power outage, scenes, activity ---- */
+let filters={q:'',room:'',mode:'all'};
+let grouped=false;
+try{ const g=localStorage.getItem('hub-group'); grouped = g===null ? null : g==='1'; }catch(e){ grouped=null; }
+let groupAuto=grouped===null;
+const isGrouped=()=>groupAuto ? state.length>6 : grouped;
+const matches=d=>{
+  const q=filters.q.toLowerCase();
+  if(q && !((d.name||'')+' '+(d.room||'')).toLowerCase().includes(q)) return false;
+  if(filters.room && d.room!==filters.room) return false;
+  const off=d.online===false;
+  switch(filters.mode){ case 'on': return d.on&&!off; case 'off': return !d.on&&!off; case 'offline': return off; case 'fav': return !!d.fav; default: return true; }
+};
+function renderRoomOptions(){
+  const rooms=[...new Set([...state.map(d=>d.room),...cams.map(c=>c.room)].filter(Boolean))].sort();
+  const sel=$('roomSel'), v=filters.room; sel.innerHTML='';
+  const all=document.createElement('option'); all.value=''; all.textContent='All rooms'; sel.appendChild(all);
+  rooms.forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o); });
+  sel.value=rooms.includes(v)?v:''; filters.room=sel.value; $('roombtns').hidden=!filters.room;
+}
+[['all','All'],['on','On'],['off','Off'],['offline','Offline'],['fav','Favorites']].forEach(([m,l])=>{
+  const b=document.createElement('button'); b.className='chip'; b.textContent=l; b.dataset.m=m; b.onclick=()=>{ filters.mode=m; syncFilters(); }; $('modes').appendChild(b);
+});
+function syncGroup(){ const g=$('grpBtn'); if(g) g.setAttribute('aria-pressed',String(isGrouped())); }
+$('grpBtn').onclick=()=>{ const now=!isGrouped(); groupAuto=false; grouped=now; try{ localStorage.setItem('hub-group',now?'1':'0'); }catch(e){} syncGroup(); render(); };
+const roomToggle=async room=>{
+  const ds=state.filter(x=>(x.room||'Home')===room&&x.online!==false); const on=!ds.some(d=>d.on);
+  for(const d of ds) await adapter.set(d.id,{on});
+  state=await adapter.list(); save(); render(); chime(on); log((on?'Turned on':'Turned off')+' all '+room+' lights');
+};
+function syncFilters(){ syncGroup(); document.querySelectorAll('#modes .chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.m===filters.mode))); render(); renderCams(); }
+$('q').oninput=e=>{ filters.q=e.target.value.trim(); syncFilters(); };
+$('roomSel').onchange=e=>{ filters.room=e.target.value; $('roombtns').hidden=!filters.room; syncFilters(); };
+const roomSet=async on=>{
+  for(const d of state.filter(x=>x.room===filters.room&&x.online!==false)) await adapter.set(d.id,{on});
+  state=await adapter.list(); save(); render(); chime(on); log((on?'Turned on':'Turned off')+' all '+filters.room+' lights');
+};
+$('roomOn').onclick=()=>roomSet(true); $('roomOff').onclick=()=>roomSet(false);
+
+function renderCams(){
+  const root=$('cams'); root.innerHTML='';
+  const q=filters.q.toLowerCase();
+  cams.filter(c=>(!filters.room||c.room===filters.room)&&(!q||(c.name+' '+c.room).toLowerCase().includes(q))).forEach(c=>{
+    const el=document.createElement('div'); el.className='cam';
+    el.innerHTML='<div class="row2"><span class="name"></span><span class="sub room"></span></div><div class="feed">Live view isn’t available here.<br>Open the Aosu app to watch.</div><div class="sub bat"></div><div class="mrow"><span>Motion alerts</span><button class="sw" role="switch"><i></i></button></div>';
+    el.querySelector('.name').textContent=c.name; el.querySelector('.room').textContent=c.room;
+    const low=c.battery<20, bt=el.querySelector('.bat');
+    bt.textContent='Battery '+c.battery+'%'+(low?' (low)':'')+(c.last?' · last motion '+tstr(c.last):''); bt.classList.toggle('low',low);
+    const sw=el.querySelector('.sw'), on=c.alerts!==false; sw.classList.toggle('on',on); sw.setAttribute('aria-checked',String(on)); sw.setAttribute('aria-label','Motion alerts for '+c.name);
+    sw.onclick=()=>{ c.alerts=!on; saveCams(); renderCams(); };
+    root.appendChild(el);
+  });
+  $('ccount').textContent=cams.length+' of '+MAX_CAMS;
+}
+function renderStats(){
+  const live=state.filter(d=>d.online!==false), on=live.filter(d=>d.on);
+  const t=[['Lights on',on.length+' / '+state.length],['Offline',String(state.length-live.length)],['Cameras',cams.filter(c=>c.online!==false).length+' / '+cams.length]];
+  $('stats').innerHTML=t.map(([l,v])=>'<div class="stat"><span class="sub">'+l+'</span><b>'+v+'</b></div>').join('');
+}
+
+let found=null;
+async function commitFound(f){
+  const L=f.lights.slice(0,Math.max(0,MAX_LIGHTS-state.length)), C=f.cams.slice(0,Math.max(0,MAX_CAMS-cams.length));
+  f.lights.slice(L.length).forEach(d=>adapter.pool.push(d)); f.cams.slice(C.length).forEach(c=>adapter.camPool.push(c));
+  L.forEach(d=>adapter.devices.push(d)); C.forEach(c=>cams.push(c));
+  if(L.length){ const rm=store.get('hub-removed',[]).filter(id=>!L.some(d=>d.id===id)); store.set('hub-removed',rm); }
+  const full=(L.length<f.lights.length?' Light limit ('+MAX_LIGHTS+') reached.':'')+(C.length<f.cams.length?' Camera limit ('+MAX_CAMS+') reached.':'');
+  $('scanMsg').textContent='Added '+L.length+' lights and '+C.length+' cameras.'+full;
+  log('Scan added '+L.length+' lights and '+C.length+' cameras');
+  state=await adapter.list(); save(); saveCams(); render(); renderCams(); renderRoomOptions(); fillSelects(); fillSim(); fillOffSim(); renderLightNames(); renderCamNames();
+}
+$('scan').onclick=async()=>{
+  const b=$('scan'), msg=$('scanMsg'); b.disabled=true; $('addFound').hidden=true; msg.textContent='Scanning your network…';
+  const f=await adapter.scan(); b.disabled=false;
+  f.cams=f.cams.filter(c=>!cams.some(x=>x.id===c.id));
+  if(!f.lights.length&&!f.cams.length){ msg.textContent='No new devices found.'; return; }
+  if(!settings.autoAdd){ found=f; $('addFound').hidden=false; $('addFound').textContent='Add '+f.lights.length+' lights and '+f.cams.length+' cameras'; msg.textContent='Found new devices.'; return; }
+  await commitFound(f);
+};
+$('addFound').onclick=async()=>{ if(found){ const f=found; found=null; $('addFound').hidden=true; await commitFound(f); } };
+
+let custom=store.get('hub-scenes',{}); Object.assign(SCENES,custom);
+const BUILTIN=['Evening','Movie','Bright','All off'];
+async function applyScene(name){ for(const [id,p] of Object.entries(expandScene(SCENES[name]))) await adapter.set(id,p); state=await adapter.list(); save(); render(); log('Scene: '+name); }
+function renderScenes(){
+  const root=$('scenes'); root.innerHTML='';
+  Object.keys(SCENES).filter(n=>n!=='All off').forEach(n=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=n; b.onclick=()=>applyScene(n); root.appendChild(b); });
+  rules.filter(r=>r.on&&r.t.type==='manual').forEach(r=>{ const b=document.createElement('button'); b.className='btn quick'; b.textContent=r.name||'Routine'; b.onclick=()=>runRule(r,{force:true}); root.appendChild(b); });
+  const box=$('sceneList'); box.innerHTML='';
+  const names=Object.keys(custom);
+  if(!names.length){ const p=document.createElement('p'); p.className='sub'; p.textContent='No saved scenes yet.'; box.appendChild(p); }
+  names.forEach(n=>{ const row=document.createElement('div'); row.className='srow'; const sp=document.createElement('span'); sp.textContent=n;
+    const b=document.createElement('button'); b.className='btn danger'; b.textContent='Delete';
+    b.onclick=()=>{ delete custom[n]; delete SCENES[n]; store.set('hub-scenes',custom); renderScenes(); fillSelects(); };
+    row.append(sp,b); box.appendChild(row); });
+}
+$('saveScene').onclick=()=>{
+  const name=$('sceneName').value.replace(/[<>&"']/g,'').trim().slice(0,20), msg=$('scanMsg');
+  if(!name){ msg.textContent='Give the scene a name first.'; return; }
+  if(BUILTIN.includes(name)){ msg.textContent='That name belongs to a built-in scene.'; return; }
+  SCENES[name]=Object.fromEntries(state.filter(d=>d.online!==false).map(d=>[d.id,{on:d.on,bri:d.bri,color:d.color}]));
+  custom[name]=SCENES[name]; store.set('hub-scenes',custom); $('sceneName').value=''; renderScenes(); fillSelects(); msg.textContent='Saved scene “'+name+'”.'; log('Saved scene: '+name);
+};
+$('clearLog').onclick=()=>{ activity=[]; try{ localStorage.removeItem('hub-activity'); }catch(e){} renderLog(); };
+
+/* Power outage sensor: every light going offline at once means the power is out. */
+let power={outage:false,since:null,expected:[],snapshot:{},done:[],history:[],...store.get('hub-power',{}),restoring:false};
+let lastOnline=[], allOffSince=null;
+const savePower=()=>store.set('hub-power',power);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function inNight(){
+  if(!settings.powerNight) return false;
+  const n=new Date(), m=n.getHours()*60+n.getMinutes();
+  const t=v=>{ const [h,mm]=String(v||'0:0').split(':'); return (parseInt(h,10)||0)*60+(parseInt(mm,10)||0); };
+  const a=t(settings.powerFrom), b=t(settings.powerTo);
+  return a===b ? false : a<b ? (m>=a&&m<b) : (m>=a||m<b);
+}
+function powerCheck(){
+  if(!settings.outageOn||state.length<2){ allOffSince=null; return false; }
+  const allOff=state.every(d=>d.online===false);
+  if(!allOff){ lastOnline=state.filter(d=>d.online!==false).map(d=>d.id); allOffSince=null; }
+  if(!power.outage&&allOff){
+    if(!allOffSince) allOffSince=Date.now();
+    if(Date.now()-allOffSince>=(+settings.powerMin||0)*1000){ startOutage(); }
+    return true;   /* while waiting, don't raise one alert per light */
+  }
+  if(power.outage){ handleRestore(); return true; }
+  return false;
+}
+function startOutage(){
+  allOffSince=null;
+  power={...power,outage:true,since:Date.now(),expected:lastOnline.length?lastOnline.slice():state.map(d=>d.id),snapshot:Object.fromEntries(state.map(d=>[d.id,{on:d.on,bri:d.bri,color:d.color}])),done:[]};
+  savePower(); log('Power outage detected: all lights went offline');
+  if(settings.powerNotify) toast('Power outage: all lights went offline');
+  if(settings.powerSound) chime(false);
+  fireTrigger('outage'); renderPower();
+}
+/* What to do with one light when it comes back. null means leave it alone. */
+function restorePatch(d){
+  const snap=power.snapshot[d.id]||{on:false};
+  if((settings.powerOn||[]).includes(d.id)) return {on:true,bri:snap.bri||settings.powerBri,color:snap.color||d.color};
+  const mode=inNight()?'keepOff':settings.afterPower;
+  if(mode==='keepOff') return {on:false};
+  if(mode==='restore') return {on:!!snap.on,bri:snap.bri,color:snap.color};
+  if(mode==='on') return {on:true,bri:+settings.powerBri||60};
+  return null;
+}
+async function handleRestore(){
+  if(power.restoring) return;
+  /* a light that dropped out again needs handling again when it returns */
+  power.done=power.done.filter(id=>{ const x=state.find(d=>d.id===id); return x&&x.online!==false; });
+  const back=state.filter(d=>d.online!==false&&!power.done.includes(d.id));
+  if(!back.length) return;
+  power.restoring=true;
+  const later=[], w=+settings.powerWait||0, g=+settings.powerGap||0;
+  try{
+    for(const d of back){
+      const patch=restorePatch(d);
+      if(patch&&patch.on&&(w>0||g>0)){ await adapter.set(d.id,{on:false}); later.push([d.id,patch]); }   /* hold it off, turn on below */
+      else if(patch) await adapter.set(d.id,patch);
+      power.done.push(d.id);
+    }
+    state=await adapter.list(); save();
+    if(power.expected.every(id=>(state.find(x=>x.id===id)||{}).online!==false)) endOutage();
+  }catch(e){ log('Power restore problem: '+(e&&e.message||e)); }
+  finally{ power.restoring=false; savePower(); render(); }
+  if(later.length){
+    log(w>0?'Waiting '+(w>=60?Math.round(w/60)+' min':w+' s')+' before turning '+later.length+' light'+(later.length>1?'s':'')+' back on':'Turning '+later.length+' light'+(later.length>1?'s':'')+' back on one at a time');
+    setTimeout(async()=>{
+      let i=0;
+      for(const [id,patch] of later){
+        if(i++&&g>0) await sleep(g*1000);
+        const x=state.find(d=>d.id===id);
+        if(!x||x.online===false) continue;    /* power went out again: leave it */
+        await adapter.set(id,patch); state=await adapter.list(); save(); render();
+      }
+      log('Lights are back on');
+    },w*1000);
+  }
+}
+function policyText(){
+  const m=settings.afterPower, bits=[];
+  bits.push({keepOff:'Lights will stay off when power returns.',restore:'Lights will go back to how they were when power returns.',on:'Lights will turn on at '+settings.powerBri+'% when power returns.',leave:'Lights will be left however they come back.'}[m]||'');
+  if(settings.powerNight&&m!=='keepOff') bits.push('Between '+fmt(settings.powerFrom||'22:00')+' and '+fmt(settings.powerTo||'07:00')+' they stay off.');
+  if((settings.powerOn||[]).length) bits.push((settings.powerOn.length)+' always come back on.');
+  if(+settings.powerWait>0&&m!=='keepOff'&&m!=='leave') bits.push('Turned on after a wait.');
+  return bits.join(' ');
+}
+function endOutage(){
+  const mins=Math.max(1,Math.round((Date.now()-power.since)/60000));
+  power.history=[{start:power.since,end:Date.now(),policy:settings.afterPower},...power.history].slice(0,20);
+  power.outage=false; power.since=null;
+  const msg='Power restored after '+mins+' min. '+({keepOff:'Lights were kept off.',restore:'Lights were put back as they were.',on:'Lights were turned on.',leave:''}[settings.afterPower]||'');
+  log(msg.trim()); if(settings.powerNotify) toast(msg.trim()); if(settings.powerSound) chime(true); fireTrigger('restored'); renderPower();
+}
+const POLICY_WORDS={keepOff:'lights kept off',restore:'lights restored',on:'lights turned on',leave:'lights left as they were'};
+function renderPower(){
+  const b=$('powerBanner'); b.hidden=!power.outage;
+  if(power.outage){ b.textContent='Power outage since '+tstr(power.since)+'. '+policyText(); }
+  const ul=$('powerLog'); ul.innerHTML=''; const add=t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); };
+  if(power.outage) add('Now: power is out (since '+tstr(power.since)+')');
+  if(!power.outage&&!power.history.length) add('No power outages recorded.');
+  power.history.forEach(h=>add(tstr(h.start)+' to '+tstr(h.end)+' ('+Math.max(1,Math.round((h.end-h.start)/60000))+' min), '+(POLICY_WORDS[h.policy]||'')));
+  const sum=$('powerSum');
+  if(sum){
+    const n=power.history.length, tot=power.history.reduce((a,h)=>a+Math.max(1,Math.round((h.end-h.start)/60000)),0);
+    sum.textContent=power.outage?'Power is out now, since '+tstr(power.since)+'. '+policyText():n?n+' outage'+(n>1?'s':'')+' recorded, '+tot+' min in total. The last one ended '+tstr(power.history[0].end)+'.':'No outages recorded.';
+  }
+  const bv=$('sBriV'); if(bv) bv.textContent=(settings.powerBri||60)+'%';
+  const pk=$('powerKeep'); if(pk) renderPowerKeep();
+}
+function renderPowerKeep(){
+  const box=$('powerKeep'); if(!box) return; box.innerHTML='';
+  const keep=(settings.powerOn||[]).filter(id=>state.some(d=>d.id===id));
+  if(keep.length!==(settings.powerOn||[]).length){ settings.powerOn=keep; saveSettings(); }
+  if(!state.length){ const p=document.createElement('span'); p.className='sub'; p.textContent='No lights yet.'; box.appendChild(p); return; }
+  state.forEach(d=>{
+    const c=document.createElement('button'); c.type='button'; c.className='chip'; c.textContent=d.name;
+    const on=keep.includes(d.id); c.setAttribute('aria-pressed',String(on));
+    c.onclick=()=>{ const cur=settings.powerOn||[]; settings.powerOn=cur.includes(d.id)?cur.filter(x=>x!==d.id):[...cur,d.id]; saveSettings(); renderPower(); };
+    box.appendChild(c);
+  });
+}
+$('clrPower').onclick=()=>{ power.history=[]; savePower(); renderPower(); };
+setInterval(()=>{ if(started&&allOffSince&&!power.outage) render(); },1000);
+$('simOut').onclick=async()=>{ for(const d of state) await adapter.set(d.id,{online:false}); state=await adapter.list(); save(); render(); };
+$('simBack').onclick=async()=>{
+  if(!power.outage&&!allOffSince){ toast('There is no power cut to end.'); return; }
+  const ids=power.outage?power.expected:state.map(d=>d.id);
+  for(const id of ids) await adapter.set(id,{online:true,on:true});
+  state=await adapter.list(); save(); render();
+};
+renderScenes();
+addEventListener('keydown',e=>{ if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)&&document.body.dataset.auth==='in'){ e.preventDefault(); showTab('Devices'); setTimeout(()=>$('q').focus(),230); } });
+
+/* ---- TV and remote control ---- */
+const TV_UA=/Android TV|GoogleTV|SMART-TV|SmartTV|AFT[A-Z]|BRAVIA|Tizen|Web0S|NetCast|HbbTV|CrKey|LumoraTV/i;
+const isTV=()=>settings.tvMode==='on'||(settings.tvMode!=='off'&&(TV_UA.test(navigator.userAgent)||/[?&]tv=1/.test(location.search)));
+let adjusting=null, backTrap=false;
+function applyTV(){
+  const tv=isTV();
+  document.documentElement.dataset.tv=tv?'1':'';
+  $('legend').hidden=!(tv&&settings.tvLegend);
+  if(tv&&!backTrap){ backTrap=true; try{ history.pushState({tv:1},'',location.href); addEventListener('popstate',()=>{ if(!isTV()) return; if(window.tvBack()) history.pushState({tv:1},'',location.href); else history.back(); }); }catch(e){} }
+}
+const FOCUSABLE='button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+function focusables(){
+  const scope=!$('login').hidden?$('login'):(document.body.dataset.auth==='in'?document:null);
+  if(!scope) return [];
+  return [...scope.querySelectorAll(FOCUSABLE)].filter(el=>{
+    if(el.closest('[hidden]')||el.closest('.toasts')||el.closest('.legend')) return false;
+    const r=el.getBoundingClientRect(); return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden';
+  });
+}
+function move(dir){
+  const list=focusables(), cur=document.activeElement, from=list.includes(cur)?cur:null;
+  if(!from){ const first=list.find(e=>e.getAttribute('aria-current')==='true')||list[0]; if(first) first.focus(); return; }
+  const a=from.getBoundingClientRect(), ax=a.left+a.width/2, ay=a.top+a.height/2;
+  let best=null, bs=Infinity;
+  for(const el of list){
+    if(el===from) continue;
+    const b=el.getBoundingClientRect(), bx=b.left+b.width/2, by=b.top+b.height/2;
+    let d, perp;
+    if(dir==='left'||dir==='right'){ d=dir==='right'?bx-ax:ax-bx; perp=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top); }
+    else{ d=dir==='down'?by-ay:ay-by; perp=Math.min(a.right,b.right)-Math.max(a.left,b.left); }
+    if(d<=1) continue;
+    const score=d+(perp>0?0:-perp)*3;
+    if(score<bs){ bs=score; best=el; }
+  }
+  if(best){ best.focus(); best.scrollIntoView({block:'nearest',inline:'nearest'}); }
+}
+function stopAdjust(){ if(adjusting){ adjusting.classList.remove('adjusting'); adjusting=null; } }
+function nudge(el,dir){
+  const step=Math.max(1,Math.round((el.max-el.min)/20));
+  el.value=Math.min(+el.max,Math.max(+el.min,+el.value+dir*step));
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+  clearTimeout(el._t); el._t=setTimeout(()=>el.dispatchEvent(new Event('change',{bubbles:true})),350);
+}
+function colorKey(c){ if(c==='red') $('alloff').click(); else applyScene({green:'Evening',yellow:'Movie',blue:'Bright'}[c]); }
+window.tvBack=function(){
+  if(adjusting){ stopAdjust(); return true; }
+  if(openColor){ const id=openColor; openColor=null; render(); const dot=document.querySelector('[data-id="'+id+'"] .dot'); if(dot) dot.focus(); return true; }
+  if(!$('login').hidden||document.body.dataset.auth!=='in') return false;
+  const active=TABS.find(t=>document.querySelector('[data-tab="'+t+'"]:not([hidden])'));
+  const homeTab=document.querySelector('#tabs .tab[data-go="Devices"]');
+  if(active&&active!=='Devices'){ showTab('Devices'); if(homeTab) homeTab.focus(); return true; }
+  if(!document.activeElement.closest('.dock')&&homeTab){ homeTab.focus(); return true; }
+  return false;
+};
+addEventListener('keydown',e=>{
+  if(!isTV()||$('splash')) return;
+  const k=e.key, kc=e.keyCode, cur=document.activeElement, inApp=document.body.dataset.auth==='in';
+  if(settings.remoteKeys&&inApp){
+    const col={ColorF0Red:'red',ColorF1Green:'green',ColorF2Yellow:'yellow',ColorF3Blue:'blue'}[k]||{183:'red',403:'red',184:'green',404:'green',185:'yellow',405:'yellow',186:'blue',406:'blue'}[kc];
+    if(col){ e.preventDefault(); colorKey(col); return; }
+  }
+  if(k==='Escape'||k==='GoBack'||k==='BrowserBack'||kc===4){ e.preventDefault(); window.tvBack(); return; }
+  const dir={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[k];
+  if(cur&&cur.tagName==='INPUT'&&!['range','checkbox','color','button'].includes(cur.type)){ if(dir==='up'||dir==='down'){ e.preventDefault(); move(dir); } return; }
+  if(adjusting){
+    if(dir==='left'||dir==='right'){ e.preventDefault(); nudge(adjusting,dir==='right'?1:-1); return; }
+    if(dir||k==='Enter'||kc===23){ e.preventDefault(); stopAdjust(); return; }
+  }
+  if(dir){ e.preventDefault(); move(dir); return; }
+  if(k==='Enter'||kc===23){
+    if(cur&&cur.type==='range'){ e.preventDefault(); adjusting=cur; cur.classList.add('adjusting'); return; }
+    if(kc===23&&cur&&cur.click&&k!=='Enter'){ e.preventDefault(); cur.click(); }
+  }
+},true);
+addEventListener('focusout',e=>{ if(adjusting&&e.target===adjusting) stopAdjust(); });
+
+/* ---- linked apps ---- */
+const APPS=[
+ {id:'lepro',name:'Lepro',cat:['Lights'],site:'https://www.lepro.com',ios:'https://apps.apple.com/us/app/lepro/id6443807626',note:'Your B1 lights. Use the Lepro app for setup and resets.'},
+ {id:'aosu',name:'Aosu',cat:['Cameras'],site:'https://www.aosulife.com',ios:'https://apps.apple.com/us/app/aosu/id1577324124',note:'Your cameras. Live video stays in the Aosu app.'},
+ {id:'hue',name:'Philips Hue',cat:['Lights'],site:'https://www.philips-hue.com'},
+ {id:'lifx',name:'LIFX',cat:['Lights'],site:'https://www.lifx.com'},
+ {id:'kasa',name:'TP-Link Kasa',cat:['Lights','Cameras'],site:'https://www.kasasmart.com'},
+ {id:'tapo',name:'TP-Link Tapo',cat:['Lights','Cameras'],site:'https://www.tapo.com'},
+ {id:'govee',name:'Govee',cat:['Lights'],site:'https://www.govee.com'},
+ {id:'wiz',name:'WiZ',cat:['Lights'],site:'https://www.wizconnected.com'},
+ {id:'nanoleaf',name:'Nanoleaf',cat:['Lights'],site:'https://nanoleaf.me'},
+ {id:'twinkly',name:'Twinkly',cat:['Lights'],site:'https://www.twinkly.com'},
+ {id:'yeelight',name:'Yeelight',cat:['Lights'],site:'https://www.yeelight.com'},
+ {id:'ikea',name:'IKEA Home smart',cat:['Lights'],site:'https://www.ikea.com'},
+ {id:'sengled',name:'Sengled',cat:['Lights'],site:'https://www.sengled.com'},
+ {id:'meross',name:'Meross',cat:['Lights'],site:'https://www.meross.com'},
+ {id:'tuya',name:'Smart Life (Tuya)',cat:['Lights','Cameras'],site:'https://www.tuya.com'},
+ {id:'wyze',name:'Wyze',cat:['Lights','Cameras'],site:'https://www.wyze.com'},
+ {id:'reolink',name:'Reolink',cat:['Cameras'],site:'https://reolink.com'},
+ {id:'ring',name:'Ring',cat:['Cameras'],site:'https://ring.com'},
+ {id:'eufy',name:'Eufy',cat:['Cameras'],site:'https://www.eufy.com'},
+ {id:'arlo',name:'Arlo',cat:['Cameras'],site:'https://www.arlo.com'},
+ {id:'blink',name:'Blink',cat:['Cameras'],site:'https://blinkforhome.com'},
+ {id:'ha',name:'Home Assistant',cat:['Hubs'],site:'https://www.home-assistant.io'},
+ {id:'ghome',name:'Google Home',cat:['Hubs','Cameras'],site:'https://home.google.com'},
+ {id:'alexa',name:'Amazon Alexa',cat:['Hubs'],site:'https://www.amazon.com/alexa'},
+ {id:'st',name:'SmartThings',cat:['Hubs'],site:'https://www.smartthings.com'},
+ {id:'ahome',name:'Apple Home',cat:['Hubs'],site:'https://www.apple.com/ios/home/'}
+];
+let appData=store.get('hub-apps',{used:{},custom:[]});
+if(!appData||typeof appData!=='object') appData={used:{},custom:[]};
+appData.used=appData.used||{}; appData.custom=Array.isArray(appData.custom)?appData.custom.filter(c=>c&&c.id&&c.name&&/^https:\/\//.test(c.url)).slice(0,20):[];
+const saveApps=()=>store.set('hub-apps',appData);
+let appCat='All';
+const openUrl=u=>{ if(/^https:\/\//.test(u)) window.open(u,'_blank','noopener,noreferrer'); };
+
+
+function renderApps(){
+  const root=$('appGrid'); root.innerHTML='';
+  const q=($('appQ').value||'').trim().toLowerCase();
+  const all=[...APPS,...appData.custom.map(c=>({id:c.id,name:c.name,cat:[c.cat],site:c.url,custom:true}))]
+    .filter(a=>(appCat==='All'||a.cat.includes(appCat))&&(!q||a.name.toLowerCase().includes(q)))
+    .sort((a,b)=>(!!appData.used[b.id])-(!!appData.used[a.id]));
+  if(!all.length){ const p=document.createElement('p'); p.className='note'; p.textContent='No brands match. You can add your own link below.'; root.appendChild(p); return; }
+  all.forEach(a=>{
+    const el=document.createElement('div'); el.className='appc'+(appData.used[a.id]?' used':'');
+    el.innerHTML='<div><div class="name"></div><div class="sub cats"></div></div><div class="sub note2"></div><div class="btns"></div><div class="mrow"><span>I use this</span><button class="sw" role="switch"><i></i></button></div>';
+    el.querySelector('.name').textContent=a.name; el.querySelector('.cats').textContent=a.cat.join(' · ')+(a.custom?' · Your link':'');
+    const n=el.querySelector('.note2'); if(a.note) n.textContent=a.note; else n.remove();
+    const btns=el.querySelector('.btns');
+    const mk=(t,u,label)=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=t; b.setAttribute('aria-label',label); b.onclick=()=>openUrl(u); btns.appendChild(b); };
+    mk(a.custom?'Open link':'Website',a.site,'Open '+a.name+(a.custom?' link':' website'));
+    if(!a.custom){
+      mk('Android app','https://play.google.com/store/search?q='+encodeURIComponent(a.q||a.name)+'&c=apps','Find the '+a.name+' app on Google Play');
+      if(a.ios) mk('iPhone app',a.ios,'Open the '+a.name+' app on the App Store');
+    }
+    if(a.custom){ const d=document.createElement('button'); d.className='btn danger'; d.textContent='Remove'; d.setAttribute('aria-label','Remove '+a.name); d.onclick=()=>{ appData.custom=appData.custom.filter(c=>c.id!==a.id); delete appData.used[a.id]; saveApps(); renderApps(); }; btns.appendChild(d); }
+    const sw=el.querySelector('.sw'), on=!!appData.used[a.id]; sw.classList.toggle('on',on); sw.setAttribute('aria-checked',String(on)); sw.setAttribute('aria-label','I use '+a.name);
+    sw.onclick=()=>{ appData.used[a.id]=!on; if(!appData.used[a.id]) delete appData.used[a.id]; saveApps(); renderApps(); };
+    root.appendChild(el);
+  });
+}
+['All','Lights','Cameras','Hubs'].forEach(c=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=c; b.dataset.c=c; b.onclick=()=>{ appCat=c; syncAppCats(); renderApps(); }; $('appCats').appendChild(b); });
+function syncAppCats(){ document.querySelectorAll('#appCats .chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.c===appCat))); }
+syncAppCats();
+$('appQ').oninput=renderApps;
+$('apAdd').onclick=()=>{
+  const m=$('apMsg'), name=$('apName').value.replace(/[<>&"']/g,'').trim().slice(0,30); let u=$('apUrl').value.trim();
+  if(!name){ m.textContent='Give the link a name.'; return; }
+  if(u&&!/^[a-z]+:\/\//i.test(u)) u='https://'+u;
+  let ok=false; try{ const x=new URL(u); ok=x.protocol==='https:'&&x.hostname.includes('.'); u=x.href; }catch(e){}
+  if(!ok){ m.textContent='Enter a web address that starts with https://'; return; }
+  if(appData.custom.length>=20){ m.textContent='You can add up to 20 of your own links.'; return; }
+  appData.custom.push({id:'u'+Date.now(),name,url:u,cat:$('apCat').value}); saveApps();
+  $('apName').value=''; $('apUrl').value=''; m.textContent='Added “'+name+'”.'; renderApps();
+};
+renderApps();
+
+bindSettings(); apply();
+function boot(){
+  let s=null; try{ s=localStorage.getItem('hub-session')||sessionStorage.getItem('hub-session'); }catch(e){}
+  if(s&&users()[s]) enter(s); else showLogin();
+}
+function endSplash(){
+  if(splashDone) return; splashDone=true;
+  $('splash').classList.add('out'); setTimeout(()=>$('splash').remove(),600); boot();
+}
+
+/* ---- sign-in through the server ---- */
+if(SRV){
+  const say=r=>(r.json&&r.json.message)||'Something went wrong. Try again.';
+  trySubmit=async function(){
+    err('');
+    const email=$('lEmail').value.trim().toLowerCase(), pw=$('lPw').value;
+    if(!/^\S+@\S+\.\S+$/.test(email)) return err('Enter a valid email address.');
+    let r;
+    if(mode==='up'){
+      const name=$('lName').value.replace(/[<>&"']/g,'').trim();
+      if(!name) return err('Enter your name.');
+      if(pw.length<8) return err('Use at least 8 characters for your password.');
+      if(pw!==$('lPw2').value) return err('The passwords don’t match.');
+      r=await srvApi('POST','/api/signup',{name,email,password:pw});
+    }else r=await srvApi('POST','/api/login',{email,password:pw,keep:$('lKeep').checked});
+    if(!r.ok) return err(say(r));
+    $('lPw').value=''; $('lPw2').value=''; location.reload();
+  };
+  signOut=async function(msg){
+    clearTimeout(idleT);
+    try{ if(window.__srvFlush) await window.__srvFlush(); }catch(e){}
+    await srvApi('POST','/api/logout',{});
+    try{ if(typeof msg==='string') sessionStorage.setItem('lumora-msg',msg); }catch(e){}
+    location.reload();
+  };
+  boot=function(){
+    const cfg=SRV.config||{};
+    let m=null; try{ m=sessionStorage.getItem('lumora-msg'); sessionStorage.removeItem('lumora-msg'); }catch(e){}
+    if(SRV.user){ enter(SRV.user.email); return; }
+    showLogin(); setMode(cfg.firstRun?'up':'in');
+    const canUp=!!(cfg.firstRun||cfg.allowSignup);
+    $('mUp').hidden=!canUp; $('mIn').hidden=!!cfg.firstRun;
+    $('gateNote').textContent=cfg.firstRun?'First time here: create the admin account for this Lumora server. It can add everyone else later.':canUp?'Accounts are saved on your Lumora server.':'Ask the household admin to add you.';
+    if(m) err(m);
+  };
+  $('pwSave').onclick=async()=>{
+    const r=await srvApi('POST','/api/password',{old:$('pwOld').value,new:$('pwNew').value});
+    $('pwMsg').textContent=r.ok?'Password changed. Other devices were signed out.':say(r);
+    if(r.ok){ $('pwOld').value=''; $('pwNew').value=''; }
+  };
+  $('sName').onchange=async()=>{
+    const n=$('sName').value.replace(/[<>&"']/g,'').trim(); if(!n) return;
+    const r=await srvApi('POST','/api/profile',{name:n});
+    if(r.ok){ const u=users(); if(u[user]){ u[user].name=n; localStorage.setItem('hub-users',JSON.stringify(u)); acctChip(); } }
+  };
+  confirmBtn($('delAcct'),async()=>{
+    const r=await srvApi('POST','/api/delete-account',{});
+    if(r.ok) signOut('Your account was deleted.'); else toast(say(r));
+  });
+  $('aboutVer').textContent='Lumora server '+(SRV.version||'');
+  /* household (admin) */
+  if(SRV.user&&SRV.user.role==='admin'){
+    $('hhPanel').hidden=false;
+    const renderHH=async()=>{
+      const r=await srvApi('GET','/api/admin/users'), box=$('hhList'); box.innerHTML=''; if(!r.ok) return;
+      (r.json.users||[]).forEach(u=>{
+        const row=document.createElement('div'); row.className='srow';
+        const sp=document.createElement('span'); sp.textContent=u.name+' · '+u.email+(u.role==='admin'?' (admin)':''); row.appendChild(sp);
+        if(u.email!==SRV.user.email){
+          const b=document.createElement('button'); b.className='btn danger'; b.textContent='Remove'; b.setAttribute('aria-label','Remove '+u.name);
+          confirmBtn(b,async()=>{ const d=await srvApi('DELETE','/api/admin/users/'+u.id); $('hhMsg').textContent=d.ok?'Removed '+u.name+'.':say(d); renderHH(); });
+          row.appendChild(b);
+        }
+        box.appendChild(row);
+      });
+    };
+    $('hhAdd').onclick=async()=>{
+      const r=await srvApi('POST','/api/admin/users',{name:$('hhName').value,email:$('hhEmail').value,password:$('hhPw').value});
+      if(r.ok){ $('hhMsg').textContent='Added '+r.json.user.name+'. Tell them the password you chose.'; $('hhName').value=''; $('hhEmail').value=''; $('hhPw').value=''; renderHH(); }
+      else $('hhMsg').textContent=say(r);
+    };
+    renderHH();
+  }
+  if('serviceWorker' in navigator && SRV.user) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
+$('splash').onclick=endSplash; setTimeout(endSplash,1800);
+</script>
+</body>
+</html>

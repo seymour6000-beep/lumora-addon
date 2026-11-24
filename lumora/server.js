@@ -1,0 +1,511 @@
+'use strict';
+/* Lumora server. No dependencies: needs only Node 18.17 or newer.
+   - serves the app from ./public
+   - accounts with scrypt-hashed passwords and cookie sessions
+   - stores the household's settings, rules, scenes and so on on disk
+   - controls real lights through Home Assistant (optional) */
+
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const zlib = require('node:zlib');
+const crypto = require('node:crypto');
+const haAdapter = require('./adapters/homeassistant');
+const VERSION = require('./package.json').version;
+
+const truthy = (v) => /^(1|true|yes|on)$/i.test(String(v || ''));
+
+function loadConfig(env = process.env) {
+  return {
+    port: Number(env.PORT) || 8080,
+    host: env.HOST || '0.0.0.0',
+    dataDir: path.resolve(env.DATA_DIR || path.join(__dirname, 'data')),
+    publicDir: path.join(__dirname, 'public'),
+    allowSignup: truthy(env.ALLOW_SIGNUP),
+    trustProxy: truthy(env.TRUST_PROXY),
+    cookieSecure: env.COOKIE_SECURE === undefined || env.COOKIE_SECURE === '' ? 'auto' : truthy(env.COOKIE_SECURE),
+    sessionDays: Number(env.SESSION_DAYS) || 30,
+    haUrl: env.HA_URL || '',
+    haToken: env.HA_TOKEN || '',
+    quiet: truthy(env.QUIET),
+  };
+}
+
+/* the keys the app saves on the server (everything else stays in the browser) */
+const SYNC_KEYS = new Set([
+  'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence',
+]);
+const MAX_VALUE = 512 * 1024;
+const MAX_BODY = 1024 * 1024;
+
+/* ---------- storage ---------- */
+class Store {
+  constructor(dir) {
+    this.dir = dir;
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    fs.mkdirSync(path.join(dir, 'backups'), { recursive: true, mode: 0o700 });
+    this.dbFile = path.join(dir, 'db.json');
+    this.sessFile = path.join(dir, 'sessions.json');
+    this.db = this.read(this.dbFile, { version: 1, users: {}, data: {}, rev: 0 });
+    this.sessions = this.read(this.sessFile, {});
+    this.timers = {};
+    this.prune();
+    this.backup();
+  }
+  read(file, fallback) {
+    try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
+    catch (e) {
+      if (e.code !== 'ENOENT') {
+        try { fs.copyFileSync(file, file + '.corrupt-' + Date.now()); } catch (_) { /* ignore */ }
+        console.error('Could not read ' + file + ' (' + e.message + '). A copy was kept next to it. Starting empty.');
+      }
+      return fallback;
+    }
+  }
+  write(file, obj) {
+    const tmp = file + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(obj), { mode: 0o600 });
+    fs.renameSync(tmp, file);
+  }
+  saveDb() { this.later('db', () => this.write(this.dbFile, this.db)); }
+  saveSessions() { this.later('sess', () => this.write(this.sessFile, this.sessions)); }
+  later(k, fn) {
+    clearTimeout(this.timers[k]);
+    this.timers[k] = setTimeout(() => { delete this.timers[k]; try { fn(); } catch (e) { console.error('Save failed:', e.message); } }, 150);
+    this.timers[k].unref();
+  }
+  flush() {
+    for (const k of Object.keys(this.timers)) clearTimeout(this.timers[k]);
+    this.timers = {};
+    this.write(this.dbFile, this.db);
+    this.write(this.sessFile, this.sessions);
+  }
+  prune() {
+    const now = Date.now();
+    let changed = false;
+    for (const k of Object.keys(this.sessions)) if (this.sessions[k].exp < now) { delete this.sessions[k]; changed = true; }
+    if (changed) this.saveSessions();
+  }
+  backup() {
+    try {
+      if (!fs.existsSync(this.dbFile)) return;
+      const day = new Date().toISOString().slice(0, 10);
+      const target = path.join(this.dir, 'backups', 'db-' + day + '.json');
+      if (!fs.existsSync(target)) fs.copyFileSync(this.dbFile, target);
+      const old = fs.readdirSync(path.join(this.dir, 'backups')).filter((f) => /^db-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
+      while (old.length > 14) fs.unlinkSync(path.join(this.dir, 'backups', old.shift()));
+    } catch (e) { console.error('Backup failed:', e.message); }
+  }
+}
+
+/* ---------- passwords and tokens ---------- */
+const scrypt = (pw, salt) => new Promise((res, rej) =>
+  crypto.scrypt(pw, salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }, (e, k) => (e ? rej(e) : res(k))));
+async function hashPassword(pw) {
+  const salt = crypto.randomBytes(16);
+  return 'scrypt$' + salt.toString('hex') + '$' + (await scrypt(pw, salt)).toString('hex');
+}
+async function checkPassword(pw, stored) {
+  const [kind, saltHex, hashHex] = String(stored || '').split('$');
+  if (kind !== 'scrypt' || !saltHex || !hashHex) { await scrypt(pw, Buffer.alloc(16)); return false; }
+  const want = Buffer.from(hashHex, 'hex');
+  const got = await scrypt(pw, Buffer.from(saltHex, 'hex'));
+  return want.length === got.length && crypto.timingSafeEqual(want, got);
+}
+const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const cleanName = (s) => String(s || '').replace(/[<>&"']/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
+const cleanEmail = (s) => String(s || '').trim().toLowerCase();
+const validEmail = (s) => s.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
+/* ---------- the app ---------- */
+function createApp(userConfig = {}) {
+  const cfg = { ...loadConfig({}), ...userConfig };
+  const store = new Store(cfg.dataDir);
+  const ha = cfg.haUrl && cfg.haToken ? haAdapter.create({ url: cfg.haUrl, token: cfg.haToken, fetchImpl: cfg.fetchImpl }) : null;
+  const log = (...a) => { if (!cfg.quiet) console.log(new Date().toISOString(), ...a); };
+
+  /* simple rate limiting, kept in memory */
+  const fails = new Map();
+  const hits = new Map();
+  const tidy = setInterval(() => {
+    const now = Date.now();
+    for (const [k, v] of fails) if (v.until < now && v.last < now - 600000) fails.delete(k);
+    for (const [k, v] of hits) if (v.reset < now) hits.delete(k);
+    store.prune();
+  }, 60000);
+  tidy.unref();
+
+  function clientIp(req) {
+    if (cfg.trustProxy) {
+      const xf = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+      if (xf) return xf;
+    }
+    return req.socket.remoteAddress || 'unknown';
+  }
+  function isHttps(req) {
+    if (cfg.cookieSecure === true) return true;
+    if (cfg.cookieSecure === false) return false;
+    return cfg.trustProxy && String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  }
+  function bump(map, key, limit, windowMs) {
+    const now = Date.now();
+    let e = map.get(key);
+    if (!e || e.reset < now) { e = { n: 0, reset: now + windowMs }; map.set(key, e); }
+    e.n++;
+    return e.n > limit ? Math.ceil((e.reset - now) / 1000) : 0;
+  }
+
+  /* static files, read once and compressed */
+  const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8' };
+  const statics = new Map();
+  function loadStatics() {
+    statics.clear();
+    (function walk(dir, rel) {
+      for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (f.name.startsWith('.')) continue;
+        const full = path.join(dir, f.name), r = rel + '/' + f.name;
+        if (f.isDirectory()) walk(full, r);
+        else {
+          const buf = fs.readFileSync(full), ext = path.extname(f.name).toLowerCase();
+          const text = ['.html', '.js', '.json', '.webmanifest', '.svg', '.txt'].includes(ext);
+          statics.set(r, { buf, gz: text ? zlib.gzipSync(buf) : null, type: mime[ext] || 'application/octet-stream', ext, name: f.name });
+        }
+      }
+    })(cfg.publicDir, '');
+  }
+  loadStatics();
+
+  function secHeaders(req, h = {}) {
+    const out = {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'same-origin',
+      'Permissions-Policy': 'geolocation=(self), camera=(), microphone=()',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      ...h,
+    };
+    if (isHttps(req)) out['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+    return out;
+  }
+
+  function send(req, res, code, body, headers = {}) {
+    res.writeHead(code, secHeaders(req, headers));
+    res.end(body);
+  }
+  function json(req, res, code, obj, headers = {}) {
+    send(req, res, code, JSON.stringify(obj), { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Lumora': '1', ...headers });
+  }
+  const fail = (req, res, code, error, message, extra = {}) => json(req, res, code, { error, message, ...extra });
+
+  function readBody(req) {
+    return new Promise((resolve, reject) => {
+      let size = 0; const chunks = [];
+      req.on('data', (c) => {
+        size += c.length;
+        if (size > MAX_BODY) { reject(Object.assign(new Error('too large'), { status: 413 })); req.destroy(); return; }
+        chunks.push(c);
+      });
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+      req.on('error', reject);
+    });
+  }
+  async function readJson(req) {
+    const t = await readBody(req);
+    if (!t) return {};
+    try {
+      const v = JSON.parse(t);
+      if (v === null || typeof v !== 'object' || Array.isArray(v)) throw new Error('shape');
+      return v;
+    } catch (e) { throw Object.assign(new Error('bad json'), { status: 400 }); }
+  }
+
+  /* sessions */
+  function parseCookies(req) {
+    const out = {};
+    String(req.headers.cookie || '').split(';').forEach((p) => {
+      const i = p.indexOf('=');
+      if (i > 0) out[p.slice(0, i).trim()] = p.slice(i + 1).trim();
+    });
+    return out;
+  }
+  function currentSession(req) {
+    const tok = parseCookies(req).lumora_sid;
+    if (!tok || tok.length < 20) return null;
+    const s = store.sessions[sha(tok)];
+    if (!s || s.exp < Date.now()) return null;
+    const user = store.db.users[s.uid];
+    if (!user) return null;
+    return { key: sha(tok), s, user };
+  }
+  function startSession(req, res, user, keep) {
+    const tok = crypto.randomBytes(32).toString('base64url');
+    const maxAge = keep ? cfg.sessionDays * 86400 : 12 * 3600;
+    store.sessions[sha(tok)] = { uid: user.id, exp: Date.now() + maxAge * 1000, created: Date.now() };
+    store.saveSessions();
+    return cookie(req, tok, keep ? maxAge : null);
+  }
+  function cookie(req, value, maxAge) {
+    return 'lumora_sid=' + value + '; Path=/; HttpOnly; SameSite=Lax' + (maxAge ? '; Max-Age=' + maxAge : '') + (isHttps(req) ? '; Secure' : '');
+  }
+  const clearCookie = (req) => 'lumora_sid=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0' + (isHttps(req) ? '; Secure' : '');
+  const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role });
+  const userCount = () => Object.keys(store.db.users).length;
+  const bootData = () => { const d = {}; for (const k of SYNC_KEYS) if (typeof store.db.data[k] === 'string') d[k] = store.db.data[k]; return d; };
+
+  function sameOrigin(req) {
+    const origin = req.headers.origin;
+    if (!origin) return true;
+    try {
+      const host = (cfg.trustProxy && req.headers['x-forwarded-host']) || req.headers.host;
+      return new URL(origin).host === String(host).split(',')[0].trim();
+    } catch (e) { return false; }
+  }
+
+  /* ---------- API ---------- */
+  async function api(req, res, url) {
+    const method = req.method, p = url.pathname;
+    const ip = clientIp(req);
+
+    if (p === '/api/health' && method === 'GET') return json(req, res, 200, { ok: true, version: VERSION, uptime: Math.round(process.uptime()) });
+
+    if (method !== 'GET' && method !== 'HEAD') {
+      if (String(req.headers['x-requested-with'] || '').toLowerCase() !== 'lumora' || !sameOrigin(req)) return fail(req, res, 403, 'forbidden', 'Request blocked.');
+    }
+
+    if (p === '/api/boot' && method === 'GET') {
+      const sess = currentSession(req);
+      return json(req, res, 200, {
+        server: true,
+        version: VERSION,
+        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo' },
+        user: sess ? publicUser(sess.user) : null,
+        data: sess ? bootData() : null,
+        rev: store.db.rev,
+      });
+    }
+
+    if (p === '/api/signup' && method === 'POST') {
+      const wait = bump(hits, 'auth|' + ip, 30, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      const first = userCount() === 0;
+      if (!first && !cfg.allowSignup) return fail(req, res, 403, 'signup_disabled', 'New sign-ups are turned off on this server. Ask the household admin to add you.');
+      const b = await readJson(req);
+      const name = cleanName(b.name), email = cleanEmail(b.email), pw = String(b.password || '');
+      if (!name) return fail(req, res, 400, 'name', 'Enter your name.');
+      if (!validEmail(email)) return fail(req, res, 400, 'email', 'Enter a valid email address.');
+      if (pw.length < 8 || pw.length > 200) return fail(req, res, 400, 'password', 'Use at least 8 characters for your password.');
+      if (Object.values(store.db.users).some((u) => u.email === email)) return fail(req, res, 409, 'email_taken', 'That email already has an account. Sign in instead.');
+      const user = { id: crypto.randomUUID(), email, name, role: first ? 'admin' : 'member', pw: await hashPassword(pw), created: Date.now() };
+      store.db.users[user.id] = user; store.flush();
+      log('account created', user.role);
+      return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, true) });
+    }
+
+    if (p === '/api/login' && method === 'POST') {
+      const wait0 = bump(hits, 'auth|' + ip, 30, 60000);
+      if (wait0) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait0 + ' seconds.', { retryAfter: wait0 });
+      const b = await readJson(req);
+      const email = cleanEmail(b.email), pw = String(b.password || '').slice(0, 200);
+      const key = ip + '|' + email;
+      const f = fails.get(key);
+      if (f && f.until > Date.now()) {
+        const s = Math.ceil((f.until - Date.now()) / 1000);
+        return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + s + ' seconds.', { retryAfter: s });
+      }
+      const user = Object.values(store.db.users).find((u) => u.email === email);
+      const good = await checkPassword(pw, user ? user.pw : '');
+      if (!user || !good) {
+        const e = f || { n: 0, until: 0, last: 0 };
+        e.n++; e.last = Date.now();
+        if (e.n >= 5) { e.n = 0; e.until = Date.now() + 30000; }
+        fails.set(key, e);
+        log('failed sign-in');
+        return fail(req, res, 401, 'invalid_credentials', 'Email or password is incorrect.');
+      }
+      fails.delete(key);
+      const old = currentSession(req); if (old) { delete store.sessions[old.key]; }
+      return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, b.keep !== false) });
+    }
+
+    /* everything below needs a signed-in user */
+    const sess = currentSession(req);
+    if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+    const me = sess.user;
+
+    if (p === '/api/logout' && method === 'POST') {
+      delete store.sessions[sess.key]; store.saveSessions();
+      return json(req, res, 200, { ok: true }, { 'Set-Cookie': clearCookie(req) });
+    }
+    if (p === '/api/rev' && method === 'GET') return json(req, res, 200, { rev: store.db.rev });
+
+    if (p === '/api/profile' && method === 'POST') {
+      const name = cleanName((await readJson(req)).name);
+      if (!name) return fail(req, res, 400, 'name', 'Enter your name.');
+      me.name = name; store.flush();
+      return json(req, res, 200, { user: publicUser(me) });
+    }
+    if (p === '/api/password' && method === 'POST') {
+      const b = await readJson(req);
+      const old = String(b.old || ''), next = String(b.new || '');
+      if (!(await checkPassword(old, me.pw))) return fail(req, res, 403, 'wrong_password', 'Current password is incorrect.');
+      if (next.length < 8 || next.length > 200) return fail(req, res, 400, 'password', 'Use at least 8 characters.');
+      me.pw = await hashPassword(next);
+      for (const k of Object.keys(store.sessions)) if (store.sessions[k].uid === me.id && k !== sess.key) delete store.sessions[k];
+      store.flush();
+      return json(req, res, 200, { ok: true });
+    }
+    if (p === '/api/delete-account' && method === 'POST') {
+      const others = Object.values(store.db.users).filter((u) => u.id !== me.id);
+      if (me.role === 'admin' && !Object.values(store.db.users).some((u) => u.id !== me.id && u.role === 'admin') && others.length)
+        return fail(req, res, 409, 'last_admin', 'You are the only admin. Remove the other members first.');
+      delete store.db.users[me.id];
+      for (const k of Object.keys(store.sessions)) if (store.sessions[k].uid === me.id) delete store.sessions[k];
+      if (!Object.keys(store.db.users).length) { store.db.data = {}; store.db.rev++; }
+      store.flush();
+      return json(req, res, 200, { ok: true }, { 'Set-Cookie': clearCookie(req) });
+    }
+
+    /* saved data */
+    let m;
+    if ((m = p.match(/^\/api\/data\/([a-z-]{3,30})$/))) {
+      const key = m[1];
+      if (!SYNC_KEYS.has(key)) return fail(req, res, 400, 'bad_key', 'Unknown key.');
+      if (method === 'PUT') {
+        const b = await readJson(req);
+        if (typeof b.value !== 'string' || b.value.length > MAX_VALUE) return fail(req, res, 400, 'bad_value', 'Value must be text under 512 KB.');
+        try { JSON.parse(b.value); } catch (e) { return fail(req, res, 400, 'bad_value', 'Value must be valid JSON.'); }
+        store.db.data[key] = b.value; store.db.rev++; store.saveDb();
+        return json(req, res, 200, { ok: true, rev: store.db.rev });
+      }
+      if (method === 'DELETE') {
+        delete store.db.data[key]; store.db.rev++; store.saveDb();
+        return json(req, res, 200, { ok: true, rev: store.db.rev });
+      }
+      return fail(req, res, 405, 'method', 'Method not allowed.');
+    }
+
+    /* household members (admin only) */
+    if (p.startsWith('/api/admin/')) {
+      if (me.role !== 'admin') return fail(req, res, 403, 'admin_only', 'Only the admin can do that.');
+      if (p === '/api/admin/users' && method === 'GET')
+        return json(req, res, 200, { users: Object.values(store.db.users).map((u) => ({ ...publicUser(u), created: u.created })), allowSignup: cfg.allowSignup });
+      if (p === '/api/admin/users' && method === 'POST') {
+        const b = await readJson(req);
+        const name = cleanName(b.name), email = cleanEmail(b.email), pw = String(b.password || '');
+        if (!name) return fail(req, res, 400, 'name', 'Enter a name.');
+        if (!validEmail(email)) return fail(req, res, 400, 'email', 'Enter a valid email address.');
+        if (pw.length < 8 || pw.length > 200) return fail(req, res, 400, 'password', 'Use at least 8 characters for the password.');
+        if (Object.values(store.db.users).some((u) => u.email === email)) return fail(req, res, 409, 'email_taken', 'That email already has an account.');
+        if (userCount() >= 20) return fail(req, res, 400, 'limit', 'A household can have up to 20 members.');
+        const user = { id: crypto.randomUUID(), email, name, role: 'member', pw: await hashPassword(pw), created: Date.now() };
+        store.db.users[user.id] = user; store.flush();
+        return json(req, res, 200, { user: publicUser(user) });
+      }
+      if ((m = p.match(/^\/api\/admin\/users\/([0-9a-f-]{36})$/)) && method === 'DELETE') {
+        const u = store.db.users[m[1]];
+        if (!u) return fail(req, res, 404, 'not_found', 'No such member.');
+        if (u.id === me.id) return fail(req, res, 400, 'self', 'You can’t remove yourself here.');
+        delete store.db.users[u.id];
+        for (const k of Object.keys(store.sessions)) if (store.sessions[k].uid === u.id) delete store.sessions[k];
+        store.flush();
+        return json(req, res, 200, { ok: true });
+      }
+      return fail(req, res, 404, 'not_found', 'Not found.');
+    }
+
+    /* real lights */
+    if (p.startsWith('/api/devices/')) {
+      if (!ha) return fail(req, res, 404, 'no_adapter', 'No device connection is set up on this server.');
+      const wait = bump(hits, 'dev|' + me.id, 600, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Slow down a little.', { retryAfter: wait });
+      try {
+        if (p === '/api/devices/discover' && method === 'GET') {
+          const known = String(url.searchParams.get('known') || '').split(',').filter((x) => ha.isLightId(x)).slice(0, 100);
+          return json(req, res, 200, { lights: (await ha.discover(known)).slice(0, 100) });
+        }
+        if (p === '/api/devices/state' && method === 'POST') {
+          const b = await readJson(req);
+          const ids = Array.isArray(b.ids) ? b.ids.filter((x) => ha.isLightId(x)).slice(0, 100) : [];
+          return json(req, res, 200, { states: await ha.states(ids) });
+        }
+        if ((m = p.match(/^\/api\/devices\/([a-z0-9_.]{1,110})\/set$/)) && method === 'POST') {
+          const id = m[1];
+          if (!ha.isLightId(id)) return fail(req, res, 400, 'bad_id', 'That is not a light.');
+          const b = await readJson(req), patch = {};
+          if (typeof b.on === 'boolean') patch.on = b.on;
+          if (Number.isFinite(b.bri)) patch.bri = b.bri;
+          if (Number.isFinite(b.temp)) patch.temp = b.temp;
+          if (typeof b.color === 'string' && /^#[0-9a-f]{6}$/i.test(b.color)) patch.color = b.color;
+          if (!Object.keys(patch).length) return fail(req, res, 400, 'empty', 'Nothing to change.');
+          await ha.setLight(id, patch);
+          return json(req, res, 200, { ok: true });
+        }
+      } catch (e) {
+        if (e.message === 'bad json' || e.message === 'too large') throw e;
+        log('device error:', e.message);
+        return fail(req, res, e.status || 502, 'device_error', e.message);
+      }
+      return fail(req, res, 404, 'not_found', 'Not found.');
+    }
+
+    return fail(req, res, 404, 'not_found', 'Not found.');
+  }
+
+  /* ---------- static ---------- */
+  function serveStatic(req, res, url) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return send(req, res, 405, 'Method not allowed', { Allow: 'GET, HEAD' });
+    let p;
+    try { p = decodeURIComponent(url.pathname); } catch (e) { return send(req, res, 400, 'Bad request'); }
+    if (p === '/' || p === '') p = '/index.html';
+    if (p.includes('\0') || p.split('/').some((s) => s === '..' || s.startsWith('.'))) return send(req, res, 404, 'Not found');
+    const f = statics.get(p);
+    if (!f) return send(req, res, 404, 'Not found', { 'Content-Type': 'text/plain; charset=utf-8' });
+    const noCache = f.name === 'index.html' || f.name === 'sw.js' || f.ext === '.webmanifest';
+    const h = { 'Content-Type': f.type, 'Cache-Control': noCache ? 'no-cache' : 'public, max-age=86400', Vary: 'Accept-Encoding' };
+    let body = f.buf;
+    if (f.gz && /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) { body = f.gz; h['Content-Encoding'] = 'gzip'; }
+    h['Content-Length'] = body.length;
+    res.writeHead(200, secHeaders(req, h));
+    res.end(req.method === 'HEAD' ? undefined : body);
+  }
+
+  const server = http.createServer(async (req, res) => {
+    const t0 = Date.now();
+    res.on('finish', () => log(clientIp(req), req.method, String(req.url).split('?')[0], res.statusCode, (Date.now() - t0) + 'ms'));
+    let url;
+    try { url = new URL(req.url, 'http://x'); } catch (e) { return send(req, res, 400, 'Bad request'); }
+    try {
+      if (url.pathname.startsWith('/api/')) await api(req, res, url);
+      else serveStatic(req, res, url);
+    } catch (e) {
+      if (res.headersSent) return res.destroy();
+      if (e.status === 400) return fail(req, res, 400, 'bad_request', 'That request could not be read.');
+      if (e.status === 413) return fail(req, res, 413, 'too_large', 'That is too much data.');
+      console.error('Error:', e && e.stack || e);
+      fail(req, res, 500, 'server_error', 'Something went wrong on the server.');
+    }
+  });
+  server.headersTimeout = 15000; server.requestTimeout = 30000; server.keepAliveTimeout = 5000;
+
+  return {
+    server, store, cfg, hasAdapter: !!ha,
+    close() { clearInterval(tidy); store.flush(); return new Promise((r) => server.close(() => r())); },
+  };
+}
+
+module.exports = { createApp, loadConfig, SYNC_KEYS };
+
+if (require.main === module) {
+  const cfg = loadConfig();
+  const app = createApp(cfg);
+  app.server.listen(cfg.port, cfg.host, () => {
+    console.log('Lumora ' + VERSION + ' is running at http://' + (cfg.host === '0.0.0.0' ? 'localhost' : cfg.host) + ':' + cfg.port);
+    console.log('Data folder: ' + cfg.dataDir);
+    console.log('Lights: ' + (app.hasAdapter ? 'Home Assistant at ' + cfg.haUrl : 'demo (set HA_URL and HA_TOKEN to control real lights)'));
+    if (cfg.cookieSecure === 'auto' && !cfg.trustProxy) console.log('Tip: put this behind HTTPS (see README) before using it away from home.');
+  });
+  const stop = () => { console.log('Shutting down…'); app.close().then(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };
+  process.on('SIGTERM', stop); process.on('SIGINT', stop);
+}
