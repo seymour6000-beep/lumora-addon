@@ -521,6 +521,8 @@ main{max-width:1200px}
 html[data-server] .demoonly{display:none}
 html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,html[data-remote] h3.gap:has(+#sim){display:none}
 .srow.stackrow{flex-wrap:wrap}
+.vtag{align-self:flex-start;margin-left:auto;font:600 .78rem system-ui,sans-serif;padding:5px 11px;border-radius:999px;border:1px solid var(--glass-line,var(--line));background:var(--glass-in,transparent);color:var(--muted);cursor:default;min-height:30px}
+.vtag.new{color:var(--accent);border-color:var(--accent);cursor:pointer}
 </style>
 </head>
 <body data-auth="out">
@@ -531,6 +533,7 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
     <h1 id="homeTitle">Home</h1>
     <p id="summary">Loading lights…</p>
   </div>
+  <button class="vtag" id="verTag" type="button" aria-live="polite"></button>
 </header>
 
 <section data-tab="Devices">
@@ -2270,7 +2273,7 @@ if(SRV){
     const r=await srvApi('POST','/api/delete-account',{});
     if(r.ok) signOut('Your account was deleted.'); else toast(say(r));
   });
-  $('aboutVer').textContent='Lumora server '+(SRV.version||'')+' (app 1.1.1)';
+  $('aboutVer').textContent='Lumora server '+(SRV.version||'');
   /* household (admin) */
   if(SRV.user&&SRV.user.role==='admin'){
     $('hhPanel').hidden=false;
@@ -2295,6 +2298,38 @@ if(SRV){
     renderHH();
   }
   if('serviceWorker' in navigator && SRV.user) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+/* ---- version tag and update popups ---- */
+const APP_VERSION='1.2.0';
+const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=String(b).split('.').map(n=>parseInt(n,10)||0); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)?1:-1; } return 0; };
+{
+  const tag=$('verTag'), cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
+  const paint=latest=>{
+    tag.className='vtag'; tag.onclick=null;
+    if(stale){ tag.classList.add('new'); tag.textContent='Updated · Reload'; tag.setAttribute('aria-label','Lumora was updated. Reload to use the new version.'); tag.onclick=()=>location.reload(); }
+    else if(latest){ tag.classList.add('new'); tag.textContent='v'+cur+' · update available'; tag.setAttribute('aria-label','Version '+latest+' is available'); tag.onclick=()=>toast('Version '+latest+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+    else { tag.textContent='v'+cur+(SRV?'':' preview'); tag.setAttribute('aria-label','Lumora version '+cur); }
+  };
+  paint(SRV&&SRV.latest&&vcmp(SRV.latest,cur)>0?SRV.latest:null);
+  if(SRV&&SRV.user){
+    const seenKey='hub-seenver'; let seen=null; try{ seen=localStorage.getItem(seenKey); }catch(e){}
+    setTimeout(()=>{
+      if(seen&&seen!==cur&&vcmp(cur,seen)>0) toast('Lumora was updated to version '+cur+'.');
+      try{ localStorage.setItem(seenKey,cur); }catch(e){}
+      if(SRV.latest&&vcmp(SRV.latest,cur)>0){ shownLatest=SRV.latest; toast('Version '+SRV.latest+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+    },3000);
+    /* the server may be updated while this page stays open */
+    setInterval(async()=>{
+      if(document.hidden) return;
+      try{
+        const r=await fetch('/api/health',{credentials:'same-origin'}); if(!r.ok) return; const h=await r.json();
+        if(h.version&&h.version!==cur&&!stale){ stale=true; paint(null); toast('Lumora was updated to version '+h.version+'. Reload this page to use it.'); return; }
+        const l=h.latest&&vcmp(h.latest,cur)>0?h.latest:null; paint(l);
+        if(l&&l!==shownLatest){ shownLatest=l; toast('Version '+l+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+      }catch(e){}
+    },60000);
+  }
 }
 ['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
 $('splash').onclick=endSplash; setTimeout(endSplash,1800);

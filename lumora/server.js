@@ -28,6 +28,7 @@ function loadConfig(env = process.env) {
     haUrl: env.HA_URL || '',
     haToken: env.HA_TOKEN || '',
     quiet: truthy(env.QUIET),
+    updateUrl: env.UPDATE_URL || '',
   };
 }
 
@@ -135,6 +136,25 @@ function createApp(userConfig = {}) {
     store.prune();
   }, 60000);
   tidy.unref();
+
+  /* optional: look for a newer published version (reads the 'version:' line of a config.yaml or package.json) */
+  const vnum = (v) => String(v).split('.').map((n) => parseInt(n, 10) || 0);
+  const isNewer = (a, b) => { const x = vnum(a), y = vnum(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+  let latest = null;
+  async function checkUpdate() {
+    if (!cfg.updateUrl) return null;
+    try {
+      const r = await fetch(cfg.updateUrl, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return latest;
+      const m = (await r.text()).match(/["']?version["']?\s*[:=]\s*["']?(\d+\.\d+\.\d+)/);
+      latest = m && isNewer(m[1], VERSION) ? m[1] : null;
+    } catch (e) { /* offline: keep what we knew */ }
+    return latest;
+  }
+  const updTimer = cfg.updateUrl ? setInterval(checkUpdate, 6 * 3600 * 1000) : null;
+  if (updTimer) updTimer.unref();
+  const updFirst = cfg.updateUrl ? setTimeout(checkUpdate, 5000) : null;
+  if (updFirst) updFirst.unref();
 
   function clientIp(req) {
     if (cfg.trustProxy) {
@@ -268,7 +288,7 @@ function createApp(userConfig = {}) {
     const method = req.method, p = url.pathname;
     const ip = clientIp(req);
 
-    if (p === '/api/health' && method === 'GET') return json(req, res, 200, { ok: true, version: VERSION, uptime: Math.round(process.uptime()) });
+    if (p === '/api/health' && method === 'GET') return json(req, res, 200, { ok: true, version: VERSION, latest, uptime: Math.round(process.uptime()) });
 
     if (method !== 'GET' && method !== 'HEAD') {
       if (String(req.headers['x-requested-with'] || '').toLowerCase() !== 'lumora' || !sameOrigin(req)) return fail(req, res, 403, 'forbidden', 'Request blocked.');
@@ -279,6 +299,7 @@ function createApp(userConfig = {}) {
       return json(req, res, 200, {
         server: true,
         version: VERSION,
+        latest,
         config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo' },
         user: sess ? publicUser(sess.user) : null,
         data: sess ? bootData() : null,
@@ -490,8 +511,8 @@ function createApp(userConfig = {}) {
   server.headersTimeout = 15000; server.requestTimeout = 30000; server.keepAliveTimeout = 5000;
 
   return {
-    server, store, cfg, hasAdapter: !!ha,
-    close() { clearInterval(tidy); store.flush(); return new Promise((r) => server.close(() => r())); },
+    server, store, cfg, hasAdapter: !!ha, checkUpdate,
+    close() { clearInterval(tidy); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 
