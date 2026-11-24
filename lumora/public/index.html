@@ -2270,7 +2270,7 @@ if(SRV){
     const r=await srvApi('POST','/api/delete-account',{});
     if(r.ok) signOut('Your account was deleted.'); else toast(say(r));
   });
-  $('aboutVer').textContent='Lumora server '+(SRV.version||'');
+  $('aboutVer').textContent='Lumora server '+(SRV.version||'')+' (app 1.1.1)';
   /* household (admin) */
   if(SRV.user&&SRV.user.role==='admin'){
     $('hhPanel').hidden=false;
