@@ -2301,7 +2301,7 @@ if(SRV){
 }
 
 /* ---- version tag and update popups ---- */
-const APP_VERSION='1.2.0';
+const APP_VERSION='1.2.1';
 const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=String(b).split('.').map(n=>parseInt(n,10)||0); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)?1:-1; } return 0; };
 {
   const tag=$('verTag'), cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
