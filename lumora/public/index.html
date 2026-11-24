@@ -521,6 +521,43 @@ main{max-width:1200px}
 html[data-server] .demoonly{display:none}
 html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,html[data-remote] h3.gap:has(+#sim){display:none}
 .srow.stackrow{flex-wrap:wrap}
+.sidewidget{order:2;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.sidewidget[hidden]{display:none}
+.updbtn{order:3;align-self:flex-start;margin-top:8px}
+@media (max-width:760px){.updbtn{display:none}}
+.sclock{font:700 1.75rem "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+.sclock small{font-size:.72rem;margin-left:4px;color:var(--muted);font-weight:600}
+.sdate{font-size:.8rem;color:var(--muted)}
+.calnav{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:.82rem;font-weight:700;margin-top:4px}
+.calnav button{background:transparent;border:0;color:inherit;min-width:30px;min-height:30px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1}
+.calnav button:hover,.calnav button:focus-visible{background:var(--glass-in,var(--line))}
+.mcal{width:100%;border-collapse:collapse;font-size:.72rem;text-align:center;table-layout:fixed}
+.mcal th{color:var(--muted);font-weight:600;padding:2px 0}
+.mcal td{padding:1px 0}
+.mcal td span{display:grid;place-items:center;width:100%;max-width:26px;aspect-ratio:1;border-radius:50%;margin:0 auto}
+.mcal td.out span{color:var(--muted);opacity:.45}
+.mcal td.today span{background:var(--accent);color:var(--onaccent,#fff);font-weight:700}
+@media (max-width:760px){.sidewidget{display:none}}
+.bigclock{font:700 clamp(2.6rem,12vw,5rem) "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1.05;margin:4px 0 2px}
+.bigclock small{font-size:.35em;margin-left:8px;color:var(--muted);font-weight:600}
+.clockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:var(--gap,12px);align-items:start;margin-top:12px}
+.tmadd{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:8px 0}
+.tmadd label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted)}
+.tmadd input{width:64px;text-align:center}
+.tmchips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px}
+.tmcard{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:12px;border-radius:calc(var(--r,20px) - 4px);background:var(--glass-in);border:1px solid var(--glass-line);margin-top:8px}
+.tmcard.done{border-color:var(--accent);animation:tmpulse 1s ease-in-out 6}
+@keyframes tmpulse{50%{background:color-mix(in srgb,var(--accent) 22%,transparent)}}
+:root[data-motion="reduced"] .tmcard.done{animation:none}
+.tmcard .tmn{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmcard .tmt,.swread{font:700 2rem "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1.1}
+.tmbar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.tmbar i{display:block;height:100%;background:var(--accent);width:0}
+.tmbtns{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.tmbtns .btn{flex:1 1 80px}
+.swread{font-size:clamp(2.2rem,9vw,3.4rem);margin:6px 0 10px}
+.laps{list-style:none;margin:10px 0 0;padding:0;max-height:240px;overflow:auto;font-variant-numeric:tabular-nums}
+.laps li{display:flex;justify-content:space-between;gap:8px;padding:6px 2px;border-top:1px solid var(--line);font-size:.9rem}
 .vtag{align-self:flex-start;margin-left:auto;font:600 .78rem system-ui,sans-serif;padding:5px 11px;border-radius:999px;border:1px solid var(--glass-line,var(--line));background:var(--glass-in,transparent);color:var(--muted);cursor:default;min-height:30px}
 .vtag.new{color:var(--accent);border-color:var(--accent);cursor:pointer}
 </style>
@@ -601,6 +638,33 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
 <div class="simrow" id="sim"><span class="sub">Test a camera event:</span></div>
 </section>
 
+<section data-tab="Clock" hidden>
+<h2>Clock</h2>
+<div class="bigclock" id="bClock" role="timer" aria-live="off"></div>
+<p class="sub" id="bDate"></p>
+<div class="clockgrid">
+  <div class="panel">
+    <h3>Timers</h3>
+    <div class="tmchips" id="tmChips" role="group" aria-label="Quick timers"></div>
+    <div class="tmadd">
+      <label>Hours<input class="in" id="tmH" type="number" min="0" max="99" value="0" inputmode="numeric"></label>
+      <label>Min<input class="in" id="tmM" type="number" min="0" max="59" value="5" inputmode="numeric"></label>
+      <label>Sec<input class="in" id="tmS" type="number" min="0" max="59" value="0" inputmode="numeric"></label>
+      <label>Name<input class="in" id="tmN" maxlength="20" placeholder="Optional" style="width:130px"></label>
+      <button class="btn primary" id="tmAdd" type="button">Start timer</button>
+    </div>
+    <p class="sub" id="tmMsg" role="status"></p>
+    <div id="tmList"></div>
+  </div>
+  <div class="panel">
+    <h3>Stopwatch</h3>
+    <div class="swread" id="swRead" role="timer" aria-live="off">00:00.00</div>
+    <div class="tmbtns"><button class="btn primary" id="swGo" type="button">Start</button><button class="btn" id="swLap" type="button" disabled>Lap</button><button class="btn" id="swReset" type="button" disabled>Reset</button></div>
+    <ol class="laps" id="swLaps" aria-label="Laps"></ol>
+  </div>
+</div>
+</section>
+
 <section data-tab="Activity" hidden>
 <h2>Activity</h2>
 <div class="simrow"><button class="btn" id="clearLog">Clear activity</button></div>
@@ -642,7 +706,8 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
 </div>
 <div class="panel"><h3>Home</h3>
   <div class="srow"><label for="sHome">Home name</label><input class="in" id="sHome" data-set="homeName" maxlength="24"></div>
-        <div class="srow"><label for="sTime">Time format</label><select id="sTime" data-set="timeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
+        <div class="srow"><span>Show clock and calendar in the sidebar</span><button class="sw" role="switch" data-set="sideClock" aria-label="Show clock and calendar in the sidebar"><i></i></button></div>
+  <div class="srow"><label for="sTime">Time format</label><select id="sTime" data-set="timeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
   <div class="srow"><span>Reduce motion</span><button class="sw" role="switch" data-set="reduceMotion" aria-label="Reduce motion"><i></i></button></div>
 </div>
 <div class="panel wide"><h3>Design</h3><div class="dgrid" id="designs" role="group" aria-label="Design"></div></div>
@@ -733,6 +798,13 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
   <div class="brand" data-brand></div>
   <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
   <div class="tabs" id="tabs"></div>
+  <div class="sidewidget" id="sideClock" aria-label="Clock and calendar">
+    <div class="sclock" id="sClock" role="timer" aria-live="off"></div>
+    <div class="sdate" id="sDate"></div>
+    <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
+    <table class="mcal" id="mcal" aria-label="Calendar"></table>
+  </div>
+  <button class="btn sm updbtn" id="updBtn" type="button">Check for updates</button>
   <div class="acct" id="acct"></div>
 </div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -1625,7 +1697,7 @@ function fillOffSim(){
   state.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; offSel.appendChild(o); });
   if(v) offSel.value=v;
 }
-const TABS=['Devices','Automations','Activity','Apps','Settings'];
+const TABS=['Devices','Automations','Activity','Clock','Apps','Settings'];
 let tabTok=0;
 function showTab(n){
   const cur=document.querySelector('[data-tab]:not([hidden])');
@@ -1655,7 +1727,7 @@ let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splas
 const MARK='<span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -1675,6 +1747,7 @@ function apply(){
   syncNotif(); renderSunInfo(); renderPresence();
   document.documentElement.dataset.motion=settings.reduceMotion?'reduced':'';
   applyTV();
+  $('sideClock').hidden=!settings.sideClock;
   $('homeTitle').textContent=settings.homeName||'Home';
   if(SRV) $('conn').textContent=REMOTE?'Connected to your Lumora server and Home Assistant. Lights are real.':'Connected to your Lumora server. Lights are simulated until the server is given a Home Assistant address.'; else
   $('conn').textContent=settings.hubUrl?'Server address saved. Connecting to it isn’t built yet, so lights stay simulated.':'Demo mode: lights are simulated.';
@@ -2301,7 +2374,19 @@ if(SRV){
 }
 
 /* ---- version tag and update popups ---- */
-const APP_VERSION='1.2.1';
+$('updBtn').onclick=async()=>{
+  const b=$('updBtn'), cur=window.__verCur||APP_VERSION; b.disabled=true; b.textContent='Checking…';
+  try{
+    if(!SRV){ toast('This is the preview, so there is nothing to update. Your Lumora server checks for updates.'); return; }
+    const r=await srvApi('POST','/api/check-update',{});
+    if(!r.ok){ toast((r.json&&r.json.message)||'Couldn’t check for updates right now.'); return; }
+    const l=r.json.latest;
+    if(l&&vcmp(l,cur)>0){ if(window.__verPaint) window.__verPaint(l); toast('Version '+l+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+    else if(!r.json.checked) toast('This server isn’t set up to look for updates. In Home Assistant, open Apps to see if there is one.');
+    else toast('You’re up to date. Version '+cur+' is the latest.');
+  } finally{ b.disabled=false; b.textContent='Check for updates'; }
+};
+const APP_VERSION='1.3.0';
 const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=String(b).split('.').map(n=>parseInt(n,10)||0); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)?1:-1; } return 0; };
 {
   const tag=$('verTag'), cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
@@ -2311,7 +2396,7 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
     else if(latest){ tag.classList.add('new'); tag.textContent='v'+cur+' · update available'; tag.setAttribute('aria-label','Version '+latest+' is available'); tag.onclick=()=>toast('Version '+latest+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
     else { tag.textContent='v'+cur+(SRV?'':' preview'); tag.setAttribute('aria-label','Lumora version '+cur); }
   };
-  paint(SRV&&SRV.latest&&vcmp(SRV.latest,cur)>0?SRV.latest:null);
+  paint(SRV&&SRV.latest&&vcmp(SRV.latest,cur)>0?SRV.latest:null); window.__verPaint=paint; window.__verCur=cur;
   if(SRV&&SRV.user){
     const seenKey='hub-seenver'; let seen=null; try{ seen=localStorage.getItem(seenKey); }catch(e){}
     setTimeout(()=>{
@@ -2331,6 +2416,138 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
     },60000);
   }
 }
+
+/* ---- clock, calendar, timers and stopwatch ---- */
+(function(){
+  const pad=n=>String(n).padStart(2,'0');
+  const clockHTML=d=>{
+    if(settings.timeFormat==='24') return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+    return ((d.getHours()%12)||12)+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+'<small>'+(d.getHours()<12?'AM':'PM')+'</small>';
+  };
+  const dateStr=d=>d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  /* mini calendar */
+  let calY=0, calM=0, calSeen='';
+  function drawCal(force){
+    const now=new Date(), key=now.getFullYear()+'-'+now.getMonth()+'-'+now.getDate();
+    if(!calSeen){ calY=now.getFullYear(); calM=now.getMonth(); }
+    if(!force&&calSeen===key) return; calSeen=key;
+    const first=new Date(calY,calM,1), start=new Date(calY,calM,1-first.getDay());
+    $('calTitle').textContent=first.toLocaleDateString([], {month:'long',year:'numeric'});
+    const t=$('mcal'); t.innerHTML='';
+    const hr=t.insertRow(); ['S','M','T','W','T','F','S'].forEach((c,i)=>{ const th=document.createElement('th'); th.scope='col'; th.textContent=c; th.title=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i]; hr.appendChild(th); });
+    for(let r=0;r<6;r++){
+      const row=t.insertRow();
+      for(let c=0;c<7;c++){
+        const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+r*7+c), td=row.insertCell(), sp=document.createElement('span');
+        sp.textContent=d.getDate(); td.appendChild(sp);
+        if(d.getMonth()!==calM) td.className='out';
+        if(d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()){ td.className+=' today'; td.setAttribute('aria-current','date'); }
+        td.setAttribute('aria-label',d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'}));
+      }
+    }
+  }
+  $('calPrev').onclick=()=>{ calM--; if(calM<0){ calM=11; calY--; } drawCal(true); };
+  $('calNext').onclick=()=>{ calM++; if(calM>11){ calM=0; calY++; } drawCal(true); };
+  $('calTitle').onclick=()=>{ calSeen=''; drawCal(true); };
+  $('calTitle').title='Back to this month'; $('calTitle').style.cursor='pointer';
+
+  /* timers: kept as end times, so they stay right if the page is slow or asleep */
+  const TK='hub-timers', MAXT=6;
+  let timers=[]; try{ const t=JSON.parse(localStorage.getItem(TK)||'[]'); if(Array.isArray(t)) timers=t.filter(x=>x&&x.id&&x.total>0).slice(0,MAXT); }catch(e){}
+  const saveT=()=>{ try{ localStorage.setItem(TK,JSON.stringify(timers)); }catch(e){} };
+  const left=t=>t.endAt?Math.max(0,Math.ceil((t.endAt-Date.now())/1000)):t.left;
+  const hms=sec=>{ const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; return (h?h+':'+pad(m):m)+':'+pad(s); };
+  function addTimer(sec,name){
+    sec=Math.max(1,Math.min(99*3600+3599,Math.floor(sec)));
+    if(timers.length>=MAXT){ $('tmMsg').textContent='You can run up to '+MAXT+' timers at once. Remove one first.'; return; }
+    $('tmMsg').textContent='';
+    timers.push({id:'t'+Date.now()+Math.floor(Math.random()*1000),name:String(name||'').replace(/[<>&"']/g,'').trim().slice(0,20),total:sec,endAt:Date.now()+sec*1000,left:sec,done:false});
+    saveT(); drawTimers();
+  }
+  function drawTimers(){
+    const box=$('tmList'); box.innerHTML='';
+    if(!timers.length){ const p=document.createElement('p'); p.className='sub'; p.textContent='No timers yet. Pick a quick one above or set your own.'; box.appendChild(p); return; }
+    timers.forEach((t,i)=>{
+      const el=document.createElement('div'); el.className='tmcard'+(t.done?' done':''); el.dataset.id=t.id;
+      const n=document.createElement('span'); n.className='tmn'; n.textContent=t.name||('Timer '+(i+1));
+      const v=document.createElement('span'); v.className='tmt'; v.dataset.v='1';
+      const bar=document.createElement('div'); bar.className='tmbar'; bar.setAttribute('aria-hidden','true'); bar.innerHTML='<i></i>';
+      const btns=document.createElement('div'); btns.className='tmbtns';
+      const run=document.createElement('button'); run.className='btn primary'; run.type='button';
+      const reset=document.createElement('button'); reset.className='btn'; reset.type='button'; reset.textContent='Reset';
+      const rm=document.createElement('button'); rm.className='btn'; rm.type='button'; rm.textContent='Remove'; rm.setAttribute('aria-label','Remove '+n.textContent);
+      run.textContent=t.done?'Dismiss':t.endAt?'Pause':'Start';
+      run.onclick=()=>{
+        if(t.done){ timers=timers.filter(x=>x.id!==t.id); }
+        else if(t.endAt){ t.left=left(t); t.endAt=null; }
+        else{ t.endAt=Date.now()+t.left*1000; }
+        saveT(); drawTimers();
+      };
+      reset.onclick=()=>{ t.endAt=null; t.left=t.total; t.done=false; saveT(); drawTimers(); };
+      rm.onclick=()=>{ timers=timers.filter(x=>x.id!==t.id); saveT(); drawTimers(); };
+      btns.append(run,reset,rm); el.append(n,v,bar,btns); box.appendChild(el);
+    });
+    tickTimers();
+  }
+  function tickTimers(){
+    let changed=false;
+    timers.forEach(t=>{
+      if(t.endAt&&!t.done&&Date.now()>=t.endAt){
+        t.done=true; t.endAt=null; t.left=0; changed=true;
+        const nm=t.name||'Timer';
+        try{ toast(nm+' is done.'); log(nm+' finished ('+hms(t.total)+')'); }catch(e){}
+        chime(true); setTimeout(()=>chime(true),500); setTimeout(()=>chime(false),1000);
+      }
+    });
+    if(changed){ saveT(); drawTimers(); return; }
+    document.querySelectorAll('#tmList .tmcard').forEach(el=>{
+      const t=timers.find(x=>x.id===el.dataset.id); if(!t) return;
+      const l=t.done?0:left(t);
+      el.querySelector('[data-v]').textContent=hms(l);
+      el.querySelector('.tmbar i').style.width=(t.total?Math.min(100,(1-l/t.total)*100):0)+'%';
+    });
+  }
+  [['1 min',60],['5 min',300],['10 min',600],['15 min',900],['30 min',1800],['1 hour',3600]].forEach(([l,sec])=>{
+    const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=l; b.onclick=()=>addTimer(sec,''); $('tmChips').appendChild(b);
+  });
+  $('tmAdd').onclick=()=>{
+    const num=(id,max)=>Math.max(0,Math.min(max,Math.floor(+$(id).value)||0));
+    const sec=num('tmH',99)*3600+num('tmM',59)*60+num('tmS',59);
+    if(sec<1){ $('tmMsg').textContent='Set a time longer than zero.'; return; }
+    addTimer(sec,$('tmN').value); $('tmN').value='';
+  };
+
+  /* stopwatch */
+  const SK='hub-stopwatch'; let sw={run:false,start:0,acc:0,laps:[]};
+  try{ const x=JSON.parse(localStorage.getItem(SK)||'null'); if(x&&typeof x.acc==='number'&&Array.isArray(x.laps)) sw={run:!!x.run,start:+x.start||0,acc:x.acc,laps:x.laps.filter(n=>typeof n==='number').slice(0,200)}; }catch(e){}
+  const saveSw=()=>{ try{ localStorage.setItem(SK,JSON.stringify(sw)); }catch(e){} };
+  const swMs=()=>sw.acc+(sw.run?Date.now()-sw.start:0);
+  const swFmt=ms=>{ const cs=Math.floor(ms/10)%100, s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000); return (h?h+':':'')+pad(m)+':'+pad(s)+'.'+pad(cs); };
+  function drawSw(){
+    $('swRead').textContent=swFmt(swMs());
+    $('swGo').textContent=sw.run?'Stop':(sw.acc?'Resume':'Start');
+    $('swLap').disabled=!sw.run; $('swReset').disabled=sw.run||(!sw.acc&&!sw.laps.length);
+    const ol=$('swLaps'); ol.innerHTML='';
+    sw.laps.slice().reverse().forEach((tot,i,arr)=>{
+      const n=arr.length-i, prev=n>1?sw.laps[n-2]:0, li=document.createElement('li');
+      const a=document.createElement('span'); a.textContent='Lap '+n; const b=document.createElement('span'); b.textContent=swFmt(tot-prev); const c=document.createElement('span'); c.textContent=swFmt(tot); c.style.color='var(--muted)';
+      li.append(a,b,c); ol.appendChild(li);
+    });
+  }
+  $('swGo').onclick=()=>{ if(sw.run){ sw.acc=swMs(); sw.run=false; } else { sw.start=Date.now(); sw.run=true; } saveSw(); drawSw(); };
+  $('swLap').onclick=()=>{ if(!sw.run) return; sw.laps.push(swMs()); saveSw(); drawSw(); };
+  $('swReset').onclick=()=>{ sw={run:false,start:0,acc:0,laps:[]}; saveSw(); drawSw(); };
+
+  /* one loop drives everything on screen */
+  const visible=n=>{ const s=document.querySelector('[data-tab="'+n+'"]'); return !!s&&!s.hidden; };
+  function tick(){
+    const d=new Date();
+    if(!$('sideClock').hidden){ $('sClock').innerHTML=clockHTML(d); $('sDate').textContent=d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'}); drawCal(false); }
+    if(visible('Clock')){ $('bClock').innerHTML=clockHTML(d); $('bDate').textContent=dateStr(d); $('swRead').textContent=swFmt(swMs()); }
+    tickTimers();
+  }
+  drawTimers(); drawSw(); drawCal(true); tick(); setInterval(tick,200);
+})();
 ['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
 $('splash').onclick=endSplash; setTimeout(endSplash,1800);
 </script>

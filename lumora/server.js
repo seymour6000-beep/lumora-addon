@@ -307,6 +307,14 @@ function createApp(userConfig = {}) {
       });
     }
 
+    if (p === '/api/check-update' && method === 'POST') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      const wait = bump(hits, 'upd|' + ip, 6, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Checked a moment ago. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      await checkUpdate();
+      return json(req, res, 200, { version: VERSION, latest, checked: !!cfg.updateUrl });
+    }
+
     if (p === '/api/signup' && method === 'POST') {
       const wait = bump(hits, 'auth|' + ip, 30, 60000);
       if (wait) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait + ' seconds.', { retryAfter: wait });
