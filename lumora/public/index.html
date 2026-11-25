@@ -2487,6 +2487,23 @@ $('scan').onclick=async()=>{
   if(!settings.autoAdd){ found=f; $('addFound').hidden=false; $('addFound').textContent='Add '+f.lights.length+' lights and '+f.cams.length+' cameras'; msg.textContent='Found new devices.'; return; }
   await commitFound(f);
 };
+/* with a real home server, look for new lights every 5 seconds (not while the tab is hidden or a scan is running) */
+if(REMOTE){
+  let busy=false;
+  setInterval(async()=>{
+    if(busy||document.hidden||typeof started==='undefined'||!started||$('scan').disabled||state.length>=MAX_LIGHTS) return;
+    busy=true;
+    try{
+      const gone=store.get('hub-removed',[]);
+      const f=await adapter.scan();
+      f.lights=f.lights.filter(d=>!gone.includes(d.id)&&!state.some(x=>x.id===d.id));
+      f.cams=[];
+      if(!f.lights.length) return;
+      if(settings.autoAdd){ await commitFound(f); $('scanMsg').textContent='Found and added '+f.lights.length+' new light'+(f.lights.length>1?'s':'')+'.'; }
+      else { found=f; $('addFound').hidden=false; $('addFound').textContent='Add '+f.lights.length+' light'+(f.lights.length>1?'s':''); $('scanMsg').textContent='Found new lights.'; }
+    }catch(e){} finally{ busy=false; }
+  },5000);
+}
 $('addFound').onclick=async()=>{ if(found){ const f=found; found=null; $('addFound').hidden=true; await commitFound(f); } };
 
 let custom=store.get('hub-scenes',{}); Object.assign(SCENES,custom);
@@ -2954,7 +2971,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.3.0';
+const APP_VERSION='2.3.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
