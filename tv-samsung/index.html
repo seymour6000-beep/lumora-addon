@@ -25,9 +25,24 @@ input:focus,button:focus{outline:4px solid #fff;outline-offset:3px}
   try{if(window.tizen&&tizen.tvinputdevice){['ColorF0Red','ColorF1Green','ColorF2Yellow','ColorF3Blue','MediaPlayPause'].forEach(function(k){try{tizen.tvinputdevice.registerKey(k)}catch(e){}})}}catch(e){}
   document.addEventListener('keydown',function(e){if(e.keyCode===10009){try{tizen.application.getCurrentApplication().exit()}catch(x){}}});
   var saved='';try{saved=localStorage.getItem(KEY)||''}catch(e){}
-  var change=/[?&]change=1/.test(location.search);
+  var change=/[?&]change=1/.test(location.search), cancelled=false;
   a.value=saved.replace(/^https?:\/\//,'');
-  if(saved&&!change){m.textContent='Opening Lumora…';setTimeout(function(){open(saved)},400)}
-  else a.focus();
+  /* Back during the short wait cancels the automatic start so the address can be changed */
+  document.addEventListener('keydown',function(e){if(e.keyCode===10009||e.key==='Escape'){cancelled=true;m.textContent='Type the address of your Lumora server, for example 192.168.1.50:8080';a.focus()}});
+  function reachable(u,done){
+    var finished=false,t=setTimeout(function(){if(!finished){finished=true;done(false)}},5000);
+    try{fetch(u+'/api/health',{mode:'no-cors',cache:'no-store'}).then(function(){if(!finished){finished=true;clearTimeout(t);done(true)}},function(){if(!finished){finished=true;clearTimeout(t);done(false)}})}catch(e){clearTimeout(t);done(true)}
+  }
+  if(saved&&!change){
+    m.textContent='Opening Lumora… (press Back to change the address)';
+    setTimeout(function(){
+      if(cancelled)return;
+      reachable(saved,function(ok){
+        if(cancelled)return;
+        if(ok)open(saved);
+        else{m.textContent='Can’t reach Lumora at '+saved+'. Check the TV and the server are on the same network, or change the address.';a.focus()}
+      });
+    },1500);
+  }else a.focus();
 })();
 </script></body></html>

@@ -78,7 +78,10 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
       if (!res.ok) throw Object.assign(new Error('Home Assistant returned ' + res.status), { status: 502 });
       const type = String(res.headers.get('content-type') || '');
       if (!/^image\/(jpeg|png|gif|webp)/.test(type)) throw Object.assign(new Error('Not an image'), { status: 502 });
-      return { type: type.split(';')[0], body: Buffer.from(await res.arrayBuffer()) };
+      if (Number(res.headers.get('content-length')) > 8 * 1024 * 1024) throw Object.assign(new Error('Picture too large'), { status: 502 });
+      const body = Buffer.from(await res.arrayBuffer());
+      if (body.length > 8 * 1024 * 1024) throw Object.assign(new Error('Picture too large'), { status: 502 });
+      return { type: type.split(';')[0], body };
     },
     async notifyServices() {
       const svc = await req('/api/services');

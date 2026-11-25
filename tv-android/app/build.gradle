@@ -8,14 +8,22 @@ android {
         applicationId 'ca.lumora.tv'
         minSdk 21
         targetSdk 34
-        versionCode 230
-        versionName '2.3.0'
+        versionCode (System.getenv('GITHUB_RUN_NUMBER') ? 1000 + System.getenv('GITHUB_RUN_NUMBER').toInteger() : 230)
+        versionName '2.4.3'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    signingConfigs {
+        lumora {
+            storeFile file('../lumora.keystore')
+            storePassword 'lumora-tv'
+            keyAlias 'lumora'
+            keyPassword 'lumora-tv'
+        }
+    }
     buildTypes {
-        debug { debuggable false }
+        debug { debuggable false; signingConfig signingConfigs.lumora }
     }
 }

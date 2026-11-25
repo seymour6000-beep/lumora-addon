@@ -3051,7 +3051,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.4.2';
+const APP_VERSION='2.4.3';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3090,6 +3090,7 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '2.4.3':{t:'Lumora 2.4.3',items:['Fixes: the version line in Settings, camera pictures are size-limited, phone alert checks can no longer overlap, and the TV apps are now signed the same way every time so they can update in place.']},
   '2.4.2':{t:'Lumora 2.4.2',items:['When a phone alert test fails, Lumora now says which phone failed and what to check.']},
   '2.4.1':{t:'Lumora 2.4.1',items:['Search box at the top of Settings. Type a word like “camera” or “weather” to show only the matching sections.','Text messages: add a phone number under Phone alerts and pick a text service from Home Assistant (such as Twilio SMS) to get alerts by text as well.']},
   '2.4.0':{t:'Lumora 2.4',items:['Phone alerts: severe weather warnings, lights left on when everyone is out, and a light going offline. They come through the Home Assistant app on your phone (Settings, Phone alerts).','Rooms: tap a room at the top of Devices to switch every light in it, and run Evening, Movie or Bright in just that room.','Cameras: cameras that Home Assistant can see show a live picture, refreshed every 2 seconds. Tap one to enlarge it.','TV screensaver: after a few minutes idle, the TV shows the clock, weather and warnings. Press any button to come back.','This “What’s new” note.']},
@@ -3109,7 +3110,7 @@ $('newBox').addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.stopPropagat
 $('verTag').addEventListener('contextmenu',e=>{ e.preventDefault(); showWhatsNew(APP_VERSION,true); });
 (function(){
   const b=document.createElement('button'); b.className='btn'; b.type='button'; b.textContent='What’s new'; b.onclick=()=>showWhatsNew(APP_VERSION,true);
-  const host=$('tvUse')&&$('tvUse').parentNode; if(host){ const p=document.createElement('div'); p.className='panel'; p.innerHTML='<h3>About Lumora</h3><p class="sub" id="aboutVer"></p><div class="srow" id="aboutRow"></div>'; host.insertBefore(p,$('tvUse')); $('aboutVer').textContent='Version '+APP_VERSION; $('aboutRow').appendChild(b); }
+  const host=$('tvUse')&&$('tvUse').parentNode; if(host){ const p=document.createElement('div'); p.className='panel'; p.innerHTML='<h3>About Lumora</h3><p class="sub" id="aboutVer2"></p><div class="srow" id="aboutRow"></div>'; host.insertBefore(p,$('tvUse')); $('aboutVer2').textContent='Version '+APP_VERSION; $('aboutRow').appendChild(b); }
 })();
 
 if(REMOTE){

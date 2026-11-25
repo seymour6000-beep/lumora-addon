@@ -307,7 +307,7 @@ function createApp(userConfig = {}) {
 
 
   /* ---- phone alerts: Lumora asks Home Assistant to send them through its mobile app (or any notify service) ---- */
-  const nState = { leftOnSince: 0, leftOnSent: false, offlineSeen: new Map(), offlineSent: new Set(), first: true };
+  const nState = { leftOnSince: 0, leftOnSent: false, offlineSeen: new Map(), offlineSent: new Set(), busy: false };
   const readJson2 = (k, d) => { try { const v = JSON.parse(store.db.data[k]); return v == null ? d : v; } catch (e) { return d; } };
   async function notifyTick() {
     if (!ha) return;
@@ -355,7 +355,7 @@ function createApp(userConfig = {}) {
       }
     }
   }
-  const notifyTimer = ha ? setInterval(() => { notifyTick().catch(() => {}); }, cfg.notifyEveryMs || 30000) : null;
+  const notifyTimer = ha ? setInterval(() => { if (nState.busy) return; nState.busy = true; notifyTick().catch(() => {}).finally(() => { nState.busy = false; }); }, cfg.notifyEveryMs || 30000) : null;
   if (notifyTimer) notifyTimer.unref();
 
   function clientIp(req) {
@@ -713,7 +713,7 @@ function createApp(userConfig = {}) {
     /* real lights */
     if (p.startsWith('/api/devices/') || p.startsWith('/api/notify/') || p.startsWith('/api/cameras')) {
       if (!ha) return fail(req, res, 404, 'no_adapter', 'No device connection is set up on this server.');
-      const wait = bump(hits, 'dev|' + me.id, 600, 60000);
+      const wait = p.startsWith('/api/cameras/') ? bump(hits, 'cam|' + me.id, 1800, 60000) : bump(hits, 'dev|' + me.id, 600, 60000);
       if (wait) return fail(req, res, 429, 'rate_limited', 'Slow down a little.', { retryAfter: wait });
       try {
       if (p === '/api/notify/services' && method === 'GET') {
