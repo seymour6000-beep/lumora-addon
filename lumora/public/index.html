@@ -10,14 +10,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Lumora">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="icon" type="image/svg+xml" href="/icons/lumora.svg">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2718%27 fill=%27%230f2f33%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2717%27 fill=%27none%27 stroke=%27%23ffc233%27 stroke-width=%275.5%27 stroke-linecap=%27round%27 stroke-dasharray=%2780 27%27 transform=%27rotate(135 32 32)%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%276%27 fill=%27%23ffc233%27/%3E%3C/svg%3E">
 <script>
 /* Server mode. When this page is served by the Lumora server, load the household's saved data
    before the app starts, and save changes back as they happen. Anywhere else (a file, a preview)
    none of this runs and the app stays a self-contained demo. */
 (function(){
   window.__SRV=null;
-  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence'];
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money'];
   try{
     if(!/^https?:$/.test(location.protocol)) return;
     var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
@@ -669,11 +669,11 @@ html[data-bg]:not([data-bg="waves"]) .waves{display:none}
 /* ===================== Lumora 2.0 ===================== */
 :root{--glass-a:var(--surface);--glass-b:var(--surface);--glass-line:var(--line);--glass-hi:transparent;--glass-shadow:transparent;--glass-in:var(--off);--r:14px;--bgimg:none;--o1:var(--accent);--o2:var(--accent);--o3:var(--accent);
   --f:"Red Hat Text",system-ui,sans-serif;--fd:"Red Hat Display","Red Hat Text",system-ui,sans-serif;--rail:84px;--today:300px}
-:root[data-design="fog"]{color-scheme:light;--bg:#e4eaeb;--surface:#f5f8f8;--ink:#12262b;--muted:#53686e;--line:#c7d2d4;--accent:#1b5e57;--onaccent:#fff;--off:#d6dfe0;--knob:#fff}
-:root[data-design="gull"]{color-scheme:light;--bg:#e9ecee;--surface:#fafbfb;--ink:#1a1d22;--muted:#5a626c;--line:#cfd4da;--accent:#c8301f;--onaccent:#fff;--off:#dcdfe3;--knob:#fff}
-:root[data-design="harbour"]{color-scheme:dark;--bg:#0c171d;--surface:#14242c;--ink:#e6eef0;--muted:#8ea5ac;--line:#25414c;--accent:#ffc233;--onaccent:#2a1c00;--off:#1c313b;--knob:#e6eef0}
-:root[data-design="spruce"]{color-scheme:dark;--bg:#0b1c18;--surface:#12302a;--ink:#e3f1ec;--muted:#86aaa0;--line:#244a40;--accent:#8fe0b4;--onaccent:#052016;--off:#1a3d35;--knob:#e3f1ec}
-:root[data-design="twilight"]{color-scheme:dark;--bg:#15122a;--surface:#1e1a3a;--ink:#ece8ff;--muted:#a299cc;--line:#37306a;--accent:#b9a4ff;--onaccent:#1a1040;--off:#2a2552;--knob:#ece8ff}
+:root[data-design="fog"]{--ok:#1d6e40;--warn:#8a5a00;--bad:#b3261e;--info:#1d62b8;color-scheme:light;--bg:#e4eaeb;--surface:#f5f8f8;--ink:#12262b;--muted:#53686e;--line:#c7d2d4;--accent:#1b5e57;--onaccent:#fff;--off:#d6dfe0;--knob:#fff}
+:root[data-design="gull"]{--ok:#1d6e40;--warn:#8a5a00;--bad:#b3261e;--info:#1d62b8;color-scheme:light;--bg:#e9ecee;--surface:#fafbfb;--ink:#1a1d22;--muted:#5a626c;--line:#cfd4da;--accent:#c8301f;--onaccent:#fff;--off:#dcdfe3;--knob:#fff}
+:root[data-design="harbour"]{--ok:#6fd49a;--warn:#ffc233;--bad:#ff8a80;--info:#8ab8ff;color-scheme:dark;--bg:#0c171d;--surface:#14242c;--ink:#e6eef0;--muted:#8ea5ac;--line:#25414c;--accent:#ffc233;--onaccent:#2a1c00;--off:#1c313b;--knob:#e6eef0}
+:root[data-design="spruce"]{--ok:#8fe0b4;--warn:#ffc233;--bad:#ff8a80;--info:#8ab8ff;color-scheme:dark;--bg:#0b1c18;--surface:#12302a;--ink:#e3f1ec;--muted:#86aaa0;--line:#244a40;--accent:#8fe0b4;--onaccent:#052016;--off:#1a3d35;--knob:#e3f1ec}
+:root[data-design="twilight"]{--ok:#7fe0a8;--warn:#ffc233;--bad:#ff8a80;--info:#9cc2ff;color-scheme:dark;--bg:#15122a;--surface:#1e1a3a;--ink:#ece8ff;--muted:#a299cc;--line:#37306a;--accent:#b9a4ff;--onaccent:#1a1040;--off:#2a2552;--knob:#ece8ff}
 body{background-image:none;font:400 16px/1.55 var(--f);padding-left:var(--rail);padding-right:0;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4,.brand,.sclock,.name,.wxtemp,.stat b{font-family:var(--fd)}
 *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
@@ -832,7 +832,90 @@ h2{font:800 1.45rem/1.2 var(--fd);letter-spacing:-.02em;margin:38px 0 14px}
   .bellbtn{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto;right:14px;z-index:30}
   .rule{flex-wrap:wrap}.rule .txt{flex:1 1 100%}
 }
-@media (max-width:360px){.dock .tab,.tab{font-size:0;gap:0;min-height:52px}.dock .tab .ti,.tab .ti{width:26px;height:26px}}
+@media (max-width:360px){.dock{padding-left:2px;padding-right:2px}.tabs{gap:0}.dock .tab,.tab{font-size:0;gap:0;min-height:52px}.dock .tab .ti,.tab .ti{width:26px;height:26px}}
+
+/* Sky tab */
+.skyh{margin-top:0}
+.skyhero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,1fr);gap:28px;align-items:center;margin:6px 0 22px;padding:26px 28px;border-radius:26px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1.5px solid color-mix(in srgb,var(--accent) 22%,var(--line))}
+.skynow{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic t" "ic c" "m m";gap:0 18px;align-items:center}
+.skybig{grid-area:ic;width:84px;height:84px;color:var(--accent)}
+.skytemp{grid-area:t;font:900 clamp(3.4rem,8vw,5.6rem)/.95 var(--fd);letter-spacing:-.045em}
+.skycond{grid-area:c;font:700 1.25rem/1.3 var(--fd)}
+.skymeta{grid-area:m;display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:16px;color:var(--muted);font-size:.95rem}
+.skymeta span{white-space:nowrap}
+.skysun{margin:0;display:flex;flex-direction:column;gap:6px}
+.skysun svg{width:100%;height:auto;overflow:visible}
+.skysun figcaption{color:var(--muted);font-size:.95rem;text-align:center;min-height:1.5em}
+.sunhz{stroke:var(--line);stroke-width:2}
+.sunpath{fill:none;stroke:color-mix(in srgb,var(--ink) 22%,transparent);stroke-width:3;stroke-dasharray:2 7;stroke-linecap:round}
+.sunlit{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round}
+.sunglow{fill:color-mix(in srgb,#ffc233 40%,transparent)}
+.sundot{fill:#ffc233;stroke:var(--ink);stroke-width:2}
+.sundot.down{fill:var(--off);stroke:var(--muted)}
+.suntxt{fill:var(--muted);font:600 12px var(--f)}
+.skypanel{margin-bottom:16px}
+.skyscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+#hrChart{width:100%;min-width:620px;height:auto;display:block}
+.hrline{fill:none;stroke:var(--accent);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.hrarea{fill:color-mix(in srgb,var(--accent) 14%,transparent);stroke:none}
+.hrpop{fill:color-mix(in srgb,#4da3ff 55%,transparent)}
+.hraxis{stroke:var(--line);stroke-width:1.5}
+.hrnow{fill:var(--surface);stroke:var(--accent);stroke-width:3.5}
+.hrval{fill:var(--ink);font:700 13px var(--fd)}
+.hrx{fill:var(--muted);font:600 12px var(--f)}
+.hric{color:var(--muted)}
+.skyweek{display:grid}
+.wkrow{display:grid;grid-template-columns:minmax(78px,1.1fr) 28px minmax(0,1.6fr) 44px 46px minmax(70px,2fr) 46px;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.wkrow:first-child{border-top:0}
+.wkd{font-weight:700}
+.wkic{width:24px;height:24px;color:var(--accent)}
+.wkc{color:var(--muted);font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wkp{color:var(--info);font-weight:600;font-size:.88rem;text-align:right}
+.wkl{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.wkh{font-weight:700;font-variant-numeric:tabular-nums}
+.wkbar{position:relative;height:8px;border-radius:4px;background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.wkbar i{position:absolute;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,#4da3ff,var(--accent))}
+@media (max-width:999px){.skyhero{grid-template-columns:minmax(0,1fr);padding:20px}.skynow{min-width:0}.skymeta span{white-space:normal}.wkrow{min-width:0}.wkrow{grid-template-columns:minmax(70px,1fr) 24px 40px 44px minmax(50px,1.2fr) 44px}.wkc{display:none}.wkp{grid-column:3}.skysun{max-width:420px;width:100%;margin:0 auto}}
+:root[data-motion="reduced"] .sunglow{display:none}
+/* Money tab */
+.grow{flex:1}
+.mnhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:12px}
+.mnhead h2{margin:0}
+.mnmonth{display:flex;align-items:center;gap:8px}.mnmonth b{min-width:9.5em;text-align:center;font-family:var(--fd)}
+.mnhero{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(220px,300px);gap:26px;align-items:center;padding:24px 28px;border-radius:26px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));border:1.5px solid color-mix(in srgb,var(--accent) 22%,var(--line));margin-bottom:18px}
+.mndial{--p:0;width:132px;height:132px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*3.6deg),color-mix(in srgb,var(--ink) 13%,transparent) 0);display:grid;place-items:center;position:relative}
+.mndial.over{background:conic-gradient(var(--bad) 360deg,var(--bad) 0)}
+.mndial::before{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--surface)}
+.mndin{position:relative;text-align:center;line-height:1.1}.mndin b{display:block;font:900 1.7rem var(--fd)}.mndin span{color:var(--muted);font-size:.8rem}
+.mnk{margin:0;color:var(--muted);font-weight:600}
+.mnbig{margin:2px 0 4px;font:900 clamp(2.4rem,5vw,3.6rem)/1 var(--fd);letter-spacing:-.04em}.mnbig.neg{color:var(--bad)}
+.mnstats{margin:0;display:grid;gap:12px}.mnstats>div{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:10px}.mnstats>div:last-child{border:0;padding:0}
+.mnstats dt{color:var(--muted)}.mnstats dd{margin:0;font:800 1.15rem var(--fd);font-variant-numeric:tabular-nums}
+.mnbud{display:flex;align-items:center;gap:4px}.mnbud .in{width:120px;text-align:right;font-weight:700}.amt-pre{color:var(--muted)}
+.mncols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.mnside{display:grid;gap:16px}
+.mnform{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;align-items:end}
+.mnform .wide{grid-column:1/-1}.mnform .err,.mnform button{grid-column:1/-1}
+.mnform.bill{grid-template-columns:1.4fr 1fr .8fr}
+.mnsub{margin-top:22px}
+.mnrow,.mnbill{display:grid;grid-template-columns:54px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mnbill{grid-template-columns:minmax(0,1fr) auto auto auto}
+.mnn{display:flex;flex-direction:column;min-width:0}.mnn small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mnn .st.ok{color:var(--ok)}.mnn .st.warn{color:var(--warn);font-weight:600}.mnn .st.bad{color:var(--bad);font-weight:600}
+.mnd{color:var(--muted);font-size:.9rem}
+.mna{font:700 1rem var(--fd);font-variant-numeric:tabular-nums;text-align:right}
+.mndel{color:var(--muted)}
+.mncat{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0}
+.mnbar{height:10px;border-radius:5px;background:color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden}.mnbar i{display:block;height:100%;border-radius:5px;background:var(--accent)}
+.hidemoney .amt{color:transparent!important;text-shadow:0 0 12px var(--ink);user-select:none}
+.hidemoney .mnbud .in{color:transparent;text-shadow:0 0 10px var(--ink)}
+@media (max-width:999px){.mnhero{grid-template-columns:auto minmax(0,1fr);padding:20px}.mnstats{grid-column:1/-1}.mncols{grid-template-columns:1fr}}
+@media (max-width:480px){.wkrow{grid-template-columns:minmax(58px,1fr) 22px 38px minmax(30px,1fr) 38px;gap:6px}.wkp{display:none}.mnhero{grid-template-columns:1fr;justify-items:start}.mnform{grid-template-columns:1fr}.mnform.bill{grid-template-columns:1fr 1fr}.mnform.bill label:first-child{grid-column:1/-1}.mnrow{grid-template-columns:48px minmax(0,1fr) auto}.mnrow .mndel{grid-column:2/-1;justify-self:start}.mnbill{grid-template-columns:minmax(0,1fr) auto}.mnbill .btn{justify-self:start}.mnmonth b{min-width:7.5em}
+  .dock .tab,.tab{font-size:0;gap:0}.dock .tab .ti,.tab .ti{width:26px;height:26px}}
+body[data-tabnow]:not([data-tabnow="Devices"]) header>div{display:none}
+body[data-tabnow]:not([data-tabnow="Devices"]) header{margin:0;min-height:0;justify-content:flex-end}
+body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden]))){display:none}
+@media (max-width:999px){.topbar{padding-right:52px}}
 </style>
 </head>
 <body data-auth="out">
@@ -961,6 +1044,62 @@ h2{font:800 1.45rem/1.2 var(--fd);letter-spacing:-.02em;margin:38px 0 14px}
 <ul class="log" id="log"></ul>
 <h2>Power events</h2>
 <ul class="log" id="powerLog"></ul>
+</section>
+
+<section data-tab="Sky" hidden>
+<h2 class="skyh">Sky <span class="sub" id="skyPlace"></span></h2>
+<div class="skyhero" id="skyHero">
+  <div class="skynow" id="skyNow"><p class="sub">Loading the forecast…</p></div>
+  <figure class="skysun" id="skySun"><svg id="sunArc" viewBox="0 0 340 150" role="img" aria-label="Sun position today"></svg><figcaption id="sunTxt"></figcaption></figure>
+</div>
+<div class="panel skypanel"><h3>Next 24 hours</h3><div class="skyscroll"><svg id="hrChart" viewBox="0 0 760 210" role="img" aria-label="Temperature for the next 24 hours"></svg></div></div>
+<div class="panel skypanel"><h3>This week</h3><div class="skyweek" id="skyWeek"></div></div>
+<p class="sub" id="skyNote" role="status"></p>
+</section>
+
+<section data-tab="Money" hidden>
+<div class="mnhead"><h2 class="skyh">Money</h2>
+  <div class="mnmonth" role="group" aria-label="Month"><button class="btn" id="mnPrev" type="button" aria-label="Previous month">‹</button><b id="mnTitle" aria-live="polite"></b><button class="btn" id="mnNext" type="button" aria-label="Next month">›</button></div>
+  <span class="grow"></span>
+  <button class="btn" id="mnHide" type="button" aria-pressed="false">Hide amounts</button>
+  <button class="btn" id="mnCsv" type="button">Export CSV</button></div>
+<div class="mnhero">
+  <div class="mndial" id="mnDial" role="img" aria-label="Budget used"><div class="mndin"><b id="mnPct">0%</b><span>used</span></div></div>
+  <div class="mnfree"><p class="mnk">Free to spend</p><p class="mnbig amt" id="mnFree">$0.00</p><p class="sub" id="mnFreeNote"></p></div>
+  <dl class="mnstats">
+    <div><dt>Budget</dt><dd><label class="mnbud"><span class="amt-pre">$</span><input class="in" id="mnBudget" inputmode="decimal" autocomplete="off" aria-label="Monthly budget in dollars" placeholder="0.00"></label></dd></div>
+    <div><dt>Spent</dt><dd class="amt" id="mnSpent">$0.00</dd></div>
+    <div><dt>Bills still due</dt><dd class="amt" id="mnDue">$0.00</dd></div>
+  </dl>
+</div>
+<div class="mncols">
+  <div class="panel"><h3>Add an expense</h3>
+    <form id="mnForm" class="mnform" novalidate>
+      <label class="f">Amount<input class="in" id="mnAmt" inputmode="decimal" autocomplete="off" placeholder="12.50"></label>
+      <label class="f">Category<select id="mnCat"></select></label>
+      <label class="f">Date<input class="in" id="mnDate" type="date"></label>
+      <label class="f wide">Note<input class="in" id="mnNote" maxlength="60" autocomplete="off" placeholder="Optional"></label>
+      <button class="btn primary" type="submit">Add expense</button>
+      <p class="err" id="mnErr" role="alert" hidden></p>
+    </form>
+    <h3 class="mnsub">This month <span class="sub" id="mnCount"></span></h3>
+    <div class="mnlist" id="mnList"></div>
+  </div>
+  <div class="mnside">
+    <div class="panel"><h3>Bills</h3>
+      <form id="mnBillForm" class="mnform bill" novalidate>
+        <label class="f">Name<input class="in" id="mnBName" maxlength="30" autocomplete="off" placeholder="Internet"></label>
+        <label class="f">Amount<input class="in" id="mnBAmt" inputmode="decimal" autocomplete="off" placeholder="75.00"></label>
+        <label class="f">Due day<input class="in" id="mnBDay" type="number" min="1" max="31" placeholder="15"></label>
+        <button class="btn" type="submit">Add bill</button>
+        <p class="err" id="mnBErr" role="alert" hidden></p>
+      </form>
+      <div class="mnbills" id="mnBills"></div>
+    </div>
+    <div class="panel"><h3>Where it went</h3><div id="mnCats" class="mncats"></div></div>
+  </div>
+</div>
+<p class="sub">Amounts are typed in by you. Lumora doesn’t connect to your bank. This is saved with your other Lumora data, so anyone who can sign in to this Lumora can see it.</p>
 </section>
 
 <section data-tab="Apps" hidden>
@@ -2006,12 +2145,15 @@ function fillOffSim(){
   state.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; offSel.appendChild(o); });
   if(v) offSel.value=v;
 }
-const TABS=['Devices','Automations','Activity','Clock','Apps','Settings'];
+const TABS=['Devices','Automations','Activity','Clock','Sky','Money','Apps','Settings'];
 let tabTok=0;
 function showTab(n){
   const cur=document.querySelector('[data-tab]:not([hidden])');
   document.querySelectorAll('#tabs .tab[data-go]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.go===n)));
   try{ localStorage.setItem('hub-tab',n); }catch(e){}
+  document.body.dataset.tabnow=n;
+  if(n==='Sky'&&window.__loadSky) window.__loadSky();
+  if(n==='Money'&&window.__drawMoney) window.__drawMoney();
   const swap=()=>{
     document.querySelectorAll('[data-tab]').forEach(sec=>{ sec.hidden=sec.dataset.tab!==n; sec.classList.remove('fadeout'); });
     $('scenes').hidden = n!=='Devices';
@@ -2028,6 +2170,8 @@ const TAB_ICONS={
   Automations:'<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
   Activity:'<path d="M4 6h16M4 12h16M4 18h10"/>',
   Clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  Sky:'<circle cx="8.5" cy="8.5" r="3"/><path d="M8.5 3v1M3 8.5h1M4.6 4.6l.7.7M12.4 4.6l-.7.7"/><path d="M9.5 20a3.8 3.8 0 0 1-.4-7.6 5 5 0 0 1 9.6 1.3A3.2 3.2 0 0 1 18 20z"/>',
+  Money:'<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><path d="M4 7.5V17a2 2 0 0 0 2 2h12a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5z"/><circle cx="15.5" cy="13.5" r="1.1"/>',
   Apps:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
   Settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>'
 };
@@ -2705,7 +2849,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.0.0';
+const APP_VERSION='2.2.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -2995,10 +3139,101 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
         if(!c||typeof c.temperature_2m!=='number') throw new Error('wx');
         d={place:PLACE,temp:c.temperature_2m,feels:typeof c.apparent_temperature==='number'?c.apparent_temperature:c.temperature_2m,code:c.weather_code,day:c.is_day!==0,wind:c.wind_speed_10m,humidity:c.relative_humidity_2m,at:Date.now()};
       }
-      wx=d; failed=false; window.__wxNow={code:d.code,day:d.day}; if(window.__bgRefresh) window.__bgRefresh();
+      wx=d; failed=false; if(window.__redrawSky) window.__redrawSky(); window.__wxNow={code:d.code,day:d.day}; if(window.__bgRefresh) window.__bgRefresh();
     }catch(e){ failed=!wx; }
     drawWx();
   }
+  const SKYDIRECT='https://api.open-meteo.com/v1/forecast?latitude=45.8167&longitude=-64.2167&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=7&temperature_unit=celsius&timezone=America%2FHalifax';
+
+  /* ---- Sky tab: hourly curve, week, sun arc ---- */
+  const hal=()=>{
+    const f=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Halifax',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    const o={}; for(const x of f.formatToParts(new Date())) o[x.type]=x.value;
+    return {date:o.year+'-'+o.month+'-'+o.day,hour:+o.hour,min:+o.minute,key:o.year+'-'+o.month+'-'+o.day+'T'+o.hour+':00',mins:(+o.hour)*60+(+o.minute)};
+  };
+  const mins=t=>{ const m=/T(\d\d):(\d\d)/.exec(t||''); return m?(+m[1])*60+(+m[2]):null; };
+  const clockTxt=m=>{ const h=Math.floor(m/60)%24, mm=String(m%60).padStart(2,'0'); if(settings.timeFormat==='24') return String(h).padStart(2,'0')+':'+mm; return ((h+11)%12+1)+':'+mm+' '+(h<12?'AM':'PM'); };
+  const hrTxt=h=>{ if(settings.timeFormat==='24') return String(h).padStart(2,'0')+':00'; return ((h+11)%12+1)+(h<12?' AM':' PM'); };
+  const dur=m=>{ const h=Math.floor(m/60), mm=m%60; return (h?h+' h ':'')+(mm||!h?mm+' min':'').trim(); };
+  const svgIcon=(k,cls)=>'<svg class="'+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[k]||ICONS.cloud)+'</svg>';
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let sky=null, skyFailed=false, skyAt=0;
+  function drawSky(){
+    const note=$('skyNote'), now=$('skyNow');
+    if(!sky){
+      now.innerHTML='<p class="sub">'+(skyFailed?'The forecast isn’t available right now. Check that this device or your Lumora server can reach the internet.':'Loading the forecast…')+'</p>';
+      $('sunArc').innerHTML=''; $('sunTxt').textContent=''; $('hrChart').innerHTML=''; $('skyWeek').innerHTML=''; note.textContent=''; return;
+    }
+    const H=hal(), d0=sky.days[0];
+    $('skyPlace').textContent=sky.place||PLACE;
+    /* hero */
+    const w=wx, code=w?w.code:d0.code, day=w?w.day:true, i=wxInfo(code,day);
+    const sr=mins(d0.sunrise), ss=mins(d0.sunset);
+    now.innerHTML=svgIcon(i.k,'skybig')+'<div class="skytemp">'+(w?fmtC(w.temp):fmtC((d0.hi+d0.lo)/2))+'</div><div class="skycond">'+esc(i.t)+'</div>'
+      +'<div class="skymeta">'+(w?'<span>Feels like '+fmtC(w.feels)+'</span>':'')+'<span>High '+fmtC(d0.hi)+'</span><span>Low '+fmtC(d0.lo)+'</span>'+(d0.pop>=10?'<span>'+d0.pop+'% chance of precipitation</span>':'')+(w&&w.wind>=1?'<span>Wind '+Math.round(w.wind)+' km/h</span>':'')+'</div>';
+    /* sun arc */
+    const A=$('sunArc'); const cx=170, cy=128, rx=140, ry=100;
+    let frac=null, txt='';
+    if(sr!==null&&ss!==null&&ss>sr){
+      frac=(H.mins-sr)/(ss-sr);
+      if(H.mins<sr) txt='The sun rises at '+clockTxt(sr)+', in '+dur(sr-H.mins)+'.';
+      else if(H.mins>=ss) txt='The sun set at '+clockTxt(ss)+'. Sunrise tomorrow is '+(sky.days[1]&&mins(sky.days[1].sunrise)!==null?'at '+clockTxt(mins(sky.days[1].sunrise)):'in the morning')+'.';
+      else txt='Sunset is at '+clockTxt(ss)+', in '+dur(ss-H.mins)+'. '+(ss-H.mins<=150?'Good time to bring in the Evening scene.':'Daylight left: '+dur(ss-H.mins)+'.');
+    }
+    const pt=f=>{ const a=Math.PI*(1-f); return [cx+rx*Math.cos(a), cy-ry*Math.sin(a)]; };
+    let svg='<line x1="14" y1="'+cy+'" x2="326" y2="'+cy+'" class="sunhz"/><path class="sunpath" d="M'+(cx-rx)+' '+cy+' A'+rx+' '+ry+' 0 0 1 '+(cx+rx)+' '+cy+'"/>';
+    if(frac!==null){
+      const f=Math.max(0,Math.min(1,frac)), up=frac>=0&&frac<=1, [x,y]=pt(f);
+      if(up){ const pts=[]; for(let k=0;k<=24;k++){ const [px,py]=pt(f*k/24); pts.push(px.toFixed(1)+' '+py.toFixed(1)); } svg+='<path class="sunlit" d="M'+pts.join(' L')+'"/>'; }
+      svg+='<circle class="sunglow" cx="'+x.toFixed(1)+'" cy="'+(up?y:cy).toFixed(1)+'" r="'+(up?18:0)+'"/><circle class="sundot'+(up?'':' down')+'" cx="'+x.toFixed(1)+'" cy="'+(up?y:cy).toFixed(1)+'" r="9"/>';
+      svg+='<text x="'+(cx-rx)+'" y="'+(cy+17)+'" text-anchor="middle" class="suntxt">'+esc(clockTxt(sr))+'</text><text x="'+(cx+rx)+'" y="'+(cy+17)+'" text-anchor="middle" class="suntxt">'+esc(clockTxt(ss))+'</text>';
+    }
+    A.innerHTML=svg; A.setAttribute('aria-label',txt||'Sun position today'); $('sunTxt').textContent=txt;
+    /* hourly */
+    let hrs=sky.hours, start=hrs.findIndex(x=>x.t.slice(0,13)===H.key.slice(0,13)); if(start<0) start=0; hrs=hrs.slice(start,start+24);
+    const C=$('hrChart'); const L=34, R=14, T=34, B=44, W=760, Hh=210, n=hrs.length;
+    if(n>1){
+      const ts=hrs.map(x=>x.temp), lo=Math.floor(Math.min(...ts))-1, hi=Math.ceil(Math.max(...ts))+1, X=k=>L+(W-L-R)*k/(n-1), Y=v=>T+(Hh-T-B)*(1-(v-lo)/(hi-lo));
+      let path='', area='';
+      hrs.forEach((x,k)=>{ const px=X(k),py=Y(x.temp); path+=(k?'L':'M')+px.toFixed(1)+' '+py.toFixed(1); });
+      area=path+' L'+X(n-1).toFixed(1)+' '+(Hh-B)+' L'+X(0).toFixed(1)+' '+(Hh-B)+'Z';
+      let g='<path class="hrarea" d="'+area+'"/>';
+      hrs.forEach((x,k)=>{ const bh=(Hh-T-B)*0.38*(x.pop/100); if(x.pop>=10) g+='<rect class="hrpop" x="'+(X(k)-6).toFixed(1)+'" y="'+(Hh-B-bh).toFixed(1)+'" width="12" height="'+bh.toFixed(1)+'" rx="3"/>'; });
+      g+='<line class="hraxis" x1="'+L+'" y1="'+(Hh-B)+'" x2="'+(W-R)+'" y2="'+(Hh-B)+'"/><path class="hrline" d="'+path+'"/>';
+      let iMax=ts.indexOf(Math.max(...ts)), iMin=ts.indexOf(Math.min(...ts));
+      g+='<circle class="hrnow" cx="'+X(0).toFixed(1)+'" cy="'+Y(ts[0]).toFixed(1)+'" r="6"/>';
+      const lab=(k,dy)=>'<text class="hrval" x="'+X(k).toFixed(1)+'" y="'+(Y(ts[k])+dy).toFixed(1)+'" text-anchor="middle">'+esc(fmtC(ts[k]))+'</text>';
+      g+=lab(0,-12); if(iMax!==0) g+=lab(iMax,-10); if(iMin!==0&&iMin!==iMax) g+=lab(iMin,22);
+      hrs.forEach((x,k)=>{ const hh=+x.t.slice(11,13); if(k%3===0) g+='<text class="hrx" x="'+X(k).toFixed(1)+'" y="'+(Hh-B+20)+'" text-anchor="middle">'+(k===0?'Now':esc(hrTxt(hh)))+'</text>'+(k%3===0&&k>0?'<g class="hric" transform="translate('+(X(k)-9).toFixed(1)+' '+(Hh-B+26)+') scale(.75)">'+svgIcon(wxInfo(x.code,hh>=7&&hh<19).k).replace('<svg ','<svg x="0" y="0" width="24" height="24" ')+'</g>':''); });
+      C.innerHTML=g;
+      const rainy=hrs.filter(x=>x.pop>=40).length; C.setAttribute('aria-label','Temperature for the next 24 hours, from '+fmtC(Math.min(...ts))+' to '+fmtC(Math.max(...ts))+(rainy?'. Precipitation likely in '+rainy+' of the next '+n+' hours.':'.'));
+    } else C.innerHTML='';
+    /* week */
+    const all=sky.days, mn=Math.min(...all.map(x=>x.lo)), mx=Math.max(...all.map(x=>x.hi)), span=Math.max(1,mx-mn);
+    const nm=(x,k)=>{ if(x.date===H.date) return 'Today'; const [y,m,dd]=x.date.split('-').map(Number); const dt=new Date(y,m-1,dd); if(k===1) return 'Tomorrow'; return dt.toLocaleDateString([], {weekday:'long'}); };
+    $('skyWeek').innerHTML=all.map((x,k)=>{ const inf=wxInfo(x.code,true); const l=((x.lo-mn)/span*100).toFixed(1), wd=Math.max(4,((x.hi-x.lo)/span*100)).toFixed(1);
+      return '<div class="wkrow"><span class="wkd">'+esc(nm(x,k))+'</span>'+svgIcon(inf.k,'wkic')+'<span class="wkc">'+esc(inf.t)+'</span><span class="wkp">'+(x.pop>=10?x.pop+'%':'')+'</span><span class="wkl">'+esc(fmtC(x.lo))+'</span><span class="wkbar" aria-hidden="true"><i style="left:'+l+'%;width:'+wd+'%"></i></span><span class="wkh">'+esc(fmtC(x.hi))+'</span></div>'; }).join('');
+    note.textContent=(sky.stale?'Showing an older forecast. ':'')+'Forecast from Open-Meteo for '+(sky.place||PLACE)+'. Updated '+new Date(sky.at||Date.now()).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',hour12:settings.timeFormat!=='24'})+'.';
+  }
+  async function loadSky(force){
+    if(!force&&sky&&Date.now()-skyAt<20*60*1000){ drawSky(); return; }
+    if(!wx) loadWx();
+    try{
+      let d;
+      if(SRV){ if(!SRV.user) return; const r=await srvApi('GET','/api/forecast'); if(!r.ok) throw new Error('fc'); d=r.json; }
+      else{
+        const r=await fetch(SKYDIRECT,{cache:'no-store'}); if(!r.ok) throw new Error('fc'); const j=await r.json();
+        d={place:PLACE,at:Date.now(),hours:(j.hourly.time||[]).map((t,k)=>({t,temp:j.hourly.temperature_2m[k],pop:j.hourly.precipitation_probability[k]||0,code:j.hourly.weather_code[k]||0})).filter(x=>typeof x.temp==='number').slice(0,48),
+          days:(j.daily.time||[]).slice(0,7).map((t,k)=>({date:t,code:j.daily.weather_code[k]||0,hi:j.daily.temperature_2m_max[k],lo:j.daily.temperature_2m_min[k],pop:j.daily.precipitation_probability_max[k]||0,sunrise:j.daily.sunrise[k]||'',sunset:j.daily.sunset[k]||''}))};
+        if(!d.hours.length||!d.days.length) throw new Error('fc');
+      }
+      sky=d; skyAt=Date.now(); skyFailed=false;
+    }catch(e){ if(!sky) skyFailed=true; }
+    drawSky();
+  }
+  window.__loadSky=loadSky; window.__redrawSky=()=>{ if(sky) drawSky(); };
+  setInterval(()=>{ const sec=document.querySelector('[data-tab="Sky"]'); if(sec&&!sec.hidden&&!document.hidden) loadSky(); },60*1000);
+  document.addEventListener('visibilitychange',()=>{ const sec=document.querySelector('[data-tab="Sky"]'); if(!document.hidden&&sec&&!sec.hidden) loadSky(); });
   window.__loadWx=loadWx;
   drawWx(); syncTop(); loadWx(); if(SRV) setTimeout(()=>{ loadAl(); loadSc(); },300);
   setInterval(()=>{ if(!document.hidden) loadWx(); },10*60*1000);
@@ -3125,6 +3360,99 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   if(RM.addEventListener) RM.addEventListener('change',()=>paint(false));
   setInterval(()=>{ if(mode==='auto'&&!document.hidden) paint(false); },10*60*1000);
   paint(true);
+})();
+/* ---- Money tab ---- */
+(function(){
+  const CATS=['Groceries','Home','Utilities','Transport','Health','Fun','Other'];
+  const DEF={budget:0,hide:false,expenses:[],bills:[]};
+  let M={...DEF,...store.get('hub-money',{})}; if(!Array.isArray(M.expenses)) M.expenses=[]; if(!Array.isArray(M.bills)) M.bills=[];
+  const save=()=>store.set('hub-money',M);
+  const fmt=new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'});
+  const $$=id=>document.getElementById(id);
+  const money=c=>fmt.format(c/100);
+  const pad=n=>String(n).padStart(2,'0');
+  const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const parseAmt=t=>{ const v=String(t).replace(/[$,\s]/g,''); if(!/^\d+(\.\d{1,2})?$/.test(v)) return null; const c=Math.round(parseFloat(v)*100); return c>0&&c<=100000000?c:null; };
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let view=new Date(); view=new Date(view.getFullYear(),view.getMonth(),1);
+  const key=()=>view.getFullYear()+'-'+pad(view.getMonth()+1);
+  const dim=(y,m)=>new Date(y,m+1,0).getDate();
+  const today=()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; };
+  function monthData(){
+    const k=key(), ex=M.expenses.filter(e=>e.date.slice(0,7)===k).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+    const days=dim(view.getFullYear(),view.getMonth());
+    const bills=M.bills.map(b=>{ const dd=Math.min(b.day,days), due=new Date(view.getFullYear(),view.getMonth(),dd); return {...b,due,paid:!!(b.paid&&b.paid[k])}; }).sort((a,b)=>a.due-b.due);
+    const spentEx=ex.reduce((s,e)=>s+e.amt,0), paid=bills.filter(b=>b.paid).reduce((s,b)=>s+b.amt,0), owed=bills.filter(b=>!b.paid).reduce((s,b)=>s+b.amt,0);
+    return {ex,bills,spent:spentEx+paid,owed,days};
+  }
+  function billStatus(b){
+    const t=today(), cur=t.getFullYear()===view.getFullYear()&&t.getMonth()===view.getMonth();
+    if(b.paid) return {t:'Paid',c:'ok'};
+    const diff=Math.round((b.due-t)/86400000), when=b.due.toLocaleDateString([], {month:'short',day:'numeric'});
+    if(cur){ if(diff<0) return {t:'Overdue by '+(-diff)+(diff===-1?' day':' days'),c:'bad'}; if(diff===0) return {t:'Due today',c:'warn'}; if(diff<=3) return {t:'Due in '+diff+(diff===1?' day':' days'),c:'warn'}; return {t:'Due '+when,c:''}; }
+    return view<new Date(t.getFullYear(),t.getMonth(),1)?{t:'Not marked paid',c:'bad'}:{t:'Due '+when,c:''};
+  }
+  function draw(){
+    const d=monthData(), root=document.querySelector('[data-tab="Money"]');
+    root.classList.toggle('hidemoney',!!M.hide); $$('mnHide').setAttribute('aria-pressed',String(!!M.hide)); $$('mnHide').textContent=M.hide?'Show amounts':'Hide amounts';
+    $$('mnTitle').textContent=view.toLocaleDateString([], {month:'long',year:'numeric'});
+    const budget=Math.round((M.budget||0)), free=budget-d.spent-d.owed, used=budget>0?Math.max(0,Math.min(100,Math.round((d.spent+d.owed)/budget*100))):0;
+    const dial=$$('mnDial'); dial.style.setProperty('--p',used); dial.setAttribute('aria-label',budget>0?used+' percent of the budget is spent or committed':'No budget set');
+    $$('mnPct').textContent=budget>0?used+'%':'—'; dial.classList.toggle('over',budget>0&&free<0);
+    $$('mnFree').textContent=budget>0?money(free):'Set a budget'; $$('mnFree').classList.toggle('neg',budget>0&&free<0);
+    const t=today(), cur=t.getFullYear()===view.getFullYear()&&t.getMonth()===view.getMonth(), left=cur?d.days-t.getDate()+1:0;
+    $$('mnFreeNote').textContent=budget<=0?'Type your monthly budget on the right.':free<0?'Over budget by '+money(-free)+'.':cur&&left>0?'About '+money(Math.floor(free/left))+' a day for the next '+left+(left===1?' day.':' days.'):'';
+    if(document.activeElement!==$$('mnBudget')) $$('mnBudget').value=budget>0?(budget/100).toFixed(2):'';
+    $$('mnSpent').textContent=money(d.spent); $$('mnDue').textContent=money(d.owed);
+    $$('mnCount').textContent=d.ex.length?d.ex.length+(d.ex.length===1?' expense':' expenses'):'';
+    $$('mnList').innerHTML=d.ex.length?d.ex.map(e=>'<div class="mnrow"><span class="mnd">'+esc(new Date(e.date+'T00:00').toLocaleDateString([], {month:'short',day:'numeric'}))+'</span><span class="mnn"><b>'+esc(e.cat)+'</b>'+(e.note?'<small>'+esc(e.note)+'</small>':'')+'</span><span class="amt mna">'+money(e.amt)+'</span><button class="btn sm mndel" type="button" data-del="'+esc(e.id)+'" aria-label="Delete '+esc(e.cat)+' expense of '+esc(money(e.amt))+'">Delete</button></div>').join(''):'<p class="note">No expenses in this month. Add the first one above.</p>';
+    $$('mnBills').innerHTML=d.bills.length?d.bills.map(b=>{ const st=billStatus(b); return '<div class="mnbill"><span class="mnn"><b>'+esc(b.name)+'</b><small class="st '+st.c+'">'+esc(st.t)+'</small></span><span class="amt mna">'+money(b.amt)+'</span><button class="btn sm" type="button" data-paid="'+esc(b.id)+'" aria-pressed="'+b.paid+'" aria-label="'+(b.paid?'Mark '+esc(b.name)+' unpaid':'Mark '+esc(b.name)+' paid')+'">'+(b.paid?'Undo':'Paid')+'</button><button class="btn sm mndel" type="button" data-delbill="'+esc(b.id)+'" aria-label="Remove bill '+esc(b.name)+'">Remove</button></div>'; }).join(''):'<p class="note">No bills yet. Add rent, power or internet and Lumora will remind you when they’re due.</p>';
+    const by={}; for(const e of d.ex) by[e.cat]=(by[e.cat]||0)+e.amt; for(const b of d.bills) if(b.paid) by.Bills=(by.Bills||0)+b.amt;
+    const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]), top=rows.length?rows[0][1]:1;
+    $$('mnCats').innerHTML=rows.length?rows.map(([c,v])=>'<div class="mncat"><span>'+esc(c)+'</span><span class="mnbar" aria-hidden="true"><i style="width:'+Math.max(3,Math.round(v/top*100))+'%"></i></span><b class="amt">'+money(v)+'</b></div>').join(''):'<p class="note">Nothing to show yet.</p>';
+  }
+  window.__drawMoney=draw;
+  $$('mnCat').innerHTML=CATS.map(c=>'<option>'+c+'</option>').join('');
+  $$('mnDate').value=ymd(new Date());
+  $$('mnPrev').onclick=()=>{ view=new Date(view.getFullYear(),view.getMonth()-1,1); draw(); };
+  $$('mnNext').onclick=()=>{ view=new Date(view.getFullYear(),view.getMonth()+1,1); draw(); };
+  $$('mnHide').onclick=()=>{ M.hide=!M.hide; save(); draw(); };
+  $$('mnBudget').onchange=e=>{ const v=e.target.value.trim(); if(v===''){ M.budget=0; } else { const c=parseAmt(v); if(c===null){ e.target.setAttribute('aria-invalid','true'); return; } M.budget=c; } e.target.removeAttribute('aria-invalid'); save(); draw(); };
+  const err=(id,msg)=>{ const e=$$(id); e.textContent=msg||''; e.hidden=!msg; };
+  $$('mnForm').onsubmit=e=>{ e.preventDefault();
+    const c=parseAmt($$('mnAmt').value); if(c===null){ err('mnErr','Enter an amount like 12.50.'); $$('mnAmt').focus(); return; }
+    const date=$$('mnDate').value; if(!/^\d{4}-\d\d-\d\d$/.test(date)){ err('mnErr','Pick a date.'); return; }
+    err('mnErr',''); M.expenses.push({id:uid(),date,amt:c,cat:CATS.includes($$('mnCat').value)?$$('mnCat').value:'Other',note:$$('mnNote').value.trim().slice(0,60)}); save();
+    $$('mnAmt').value=''; $$('mnNote').value=''; const dd=new Date(date+'T00:00'); if(dd.getFullYear()!==view.getFullYear()||dd.getMonth()!==view.getMonth()) view=new Date(dd.getFullYear(),dd.getMonth(),1); draw(); $$('mnAmt').focus(); };
+  $$('mnBillForm').onsubmit=e=>{ e.preventDefault();
+    const name=$$('mnBName').value.trim(), c=parseAmt($$('mnBAmt').value), day=Math.round(+$$('mnBDay').value);
+    if(!name){ err('mnBErr','Give the bill a name.'); $$('mnBName').focus(); return; } if(c===null){ err('mnBErr','Enter an amount like 75.00.'); $$('mnBAmt').focus(); return; } if(!(day>=1&&day<=31)){ err('mnBErr','Due day must be 1 to 31.'); $$('mnBDay').focus(); return; }
+    err('mnBErr',''); M.bills.push({id:uid(),name:name.slice(0,30),amt:c,day,paid:{}}); save(); $$('mnBName').value=''; $$('mnBAmt').value=''; $$('mnBDay').value=''; draw(); };
+  let armed=null, armT=0;
+  document.querySelector('[data-tab="Money"]').addEventListener('click',e=>{
+    const t=e.target.closest('button'); if(!t) return;
+    if(t.dataset.del||t.dataset.delbill){ const id=t.dataset.del||t.dataset.delbill; if(armed!==id){ armed=id; t.textContent='Sure?'; clearTimeout(armT); armT=setTimeout(()=>{ armed=null; draw(); },3000); return; }
+      armed=null; if(t.dataset.del) M.expenses=M.expenses.filter(x=>x.id!==id); else M.bills=M.bills.filter(x=>x.id!==id); save(); draw(); return; }
+    if(t.dataset.paid){ const b=M.bills.find(x=>x.id===t.dataset.paid); if(b){ b.paid=b.paid||{}; if(b.paid[key()]) delete b.paid[key()]; else b.paid[key()]=true; save(); draw(); } }
+  });
+  $$('mnCsv').onclick=()=>{
+    const cell=v=>{ let t=String(v); if(/^[=+\-@\t\r]/.test(t)) t="'"+t; return '"'+t.replace(/"/g,'""')+'"'; };
+    const rows=[['Date','Type','Category or bill','Amount (CAD)','Note']];
+    for(const e of M.expenses.slice().sort((a,b)=>a.date.localeCompare(b.date))) rows.push([e.date,'Expense',e.cat,(e.amt/100).toFixed(2),e.note||'']);
+    for(const b of M.bills) for(const k of Object.keys(b.paid||{}).sort()) rows.push([k+'-'+pad(Math.min(b.day,dim(+k.slice(0,4),+k.slice(5,7)-1))),'Bill paid',b.name,(b.amt/100).toFixed(2),'']);
+    const blob=new Blob([rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv'}), a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lumora-money.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  };
+  /* reminder once a day for bills due within 3 days or overdue (this month) */
+  window.__billNote=()=>{ try{
+    const t=today(), k=t.getFullYear()+'-'+pad(t.getMonth()+1), dm=dim(t.getFullYear(),t.getMonth()); let last=''; try{ last=localStorage.getItem('hub-billnote')||''; }catch(e){}
+    if(last===ymd(t)||!M.bills.length||document.body.dataset.auth==='out') return;
+    const soon=M.bills.filter(b=>!(b.paid&&b.paid[k])).map(b=>({b,diff:Math.round((new Date(t.getFullYear(),t.getMonth(),Math.min(b.day,dm))-t)/86400000)})).filter(x=>x.diff<=3).sort((a,b)=>a.diff-b.diff);
+    if(!soon.length) return;
+    try{ localStorage.setItem('hub-billnote',ymd(t)); }catch(e){}
+    const x=soon[0]; toast(x.b.name+(x.diff<0?' is overdue.':x.diff===0?' is due today.':' is due in '+x.diff+(x.diff===1?' day.':' days.'))+(soon.length>1?' ('+(soon.length-1)+' more bill'+(soon.length>2?'s':'')+')':''));
+  }catch(e){} };
+  setTimeout(()=>window.__billNote(),6000);
 })();
 ['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
 $('splash').onclick=endSplash; setTimeout(endSplash,1800);

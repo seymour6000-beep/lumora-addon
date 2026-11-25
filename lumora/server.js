@@ -30,6 +30,8 @@ function loadConfig(env = process.env) {
     quiet: truthy(env.QUIET),
     updateUrl: env.UPDATE_URL || '',
     weatherName: env.WEATHER_NAME || 'Amherst, NS',
+    forecastUrl: env.FORECAST_URL || ('https://api.open-meteo.com/v1/forecast?latitude=' + (Number(env.WEATHER_LAT) || 45.8167) + '&longitude=' + (Number(env.WEATHER_LON) || -64.2167)
+      + '&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=7&temperature_unit=celsius&timezone=America%2FHalifax'),
     alertsUrl: env.ALERTS_URL || 'https://weather.gc.ca/rss/battleboard/ns14_e.xml',
     schoolUrls: (env.SCHOOL_URLS || 'https://www.ccrce.ca/,https://www.ccrce.ca/school_information/cancellations').split(',').map((x) => x.trim()).filter(Boolean),
     timeZone: env.TZ_NAME || 'America/Halifax',
@@ -41,7 +43,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -178,6 +180,39 @@ function createApp(userConfig = {}) {
       } finally { wxBusy = null; }
     })();
     return wxBusy;
+  }
+  /* forecast for the Sky tab: next 24 hours and 7 days, kept for 20 minutes */
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  function parseForecast(j) {
+    const h = j && j.hourly, d = j && j.daily;
+    if (!h || !d || !Array.isArray(h.time) || !Array.isArray(d.time)) throw new Error('unexpected forecast reply');
+    /* times are local to the forecast place (no offset), so they are passed through and the page picks the hours from now on */
+    const hours = [];
+    for (let i = 0; i < h.time.length && hours.length < 48; i++) {
+      if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(String(h.time[i])) || num(h.temperature_2m[i]) === null) continue;
+      hours.push({ t: String(h.time[i]), temp: h.temperature_2m[i], pop: num(h.precipitation_probability && h.precipitation_probability[i]) || 0, code: Number(h.weather_code && h.weather_code[i]) || 0 });
+    }
+    const days = d.time.slice(0, 7).map((date, i) => ({ date: String(date), code: Number(d.weather_code[i]) || 0, hi: num(d.temperature_2m_max[i]), lo: num(d.temperature_2m_min[i]),
+      pop: num(d.precipitation_probability_max && d.precipitation_probability_max[i]) || 0, sunrise: String((d.sunrise || [])[i] || ''), sunset: String((d.sunset || [])[i] || '') })).filter((x) => x.hi !== null && x.lo !== null);
+    if (!hours.length || !days.length) throw new Error('empty forecast');
+    return { place: cfg.weatherName, hours, days, at: Date.now() };
+  }
+  let fc = null, fcAt = 0, fcBusy = null;
+  function getForecast() {
+    if (fc && Date.now() - fcAt < 1200000) return Promise.resolve(fc);
+    if (fcBusy) return fcBusy;
+    fcBusy = (async () => {
+      try {
+        const r = await fetch(cfg.forecastUrl, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) throw new Error('forecast status ' + r.status);
+        fc = parseForecast(await r.json()); fcAt = Date.now();
+        return fc;
+      } catch (e) {
+        if (fc && Date.now() - fcAt < 6 * 3600000) return { ...fc, stale: true };
+        throw e;
+      } finally { fcBusy = null; }
+    })();
+    return fcBusy;
   }
   /* official weather alerts: Environment Canada's Atom feed for Cumberland County North and Cobequid Pass (Amherst) */
   const decode = (t) => String(t).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, '&');
@@ -437,6 +472,13 @@ function createApp(userConfig = {}) {
       catch (e) { return fail(req, res, 502, 'unavailable', 'That information isn’t available right now.'); }
     }
 
+    if (p === '/api/forecast' && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      const wait = bump(hits, 'fc|' + ip, 20, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      try { return json(req, res, 200, await getForecast()); } catch (e) { return fail(req, res, 502, 'unavailable', 'The forecast isn’t available right now.'); }
+    }
+
     if (p === '/api/check-update' && method === 'POST') {
       if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
       const wait = bump(hits, 'upd|' + ip, 6, 60000);
@@ -650,7 +692,7 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
-    parseAlerts, scanSchool,
+    parseAlerts, scanSchool, parseForecast,
     close() { clearInterval(tidy); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
