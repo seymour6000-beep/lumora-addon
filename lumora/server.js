@@ -408,6 +408,11 @@ function createApp(userConfig = {}) {
     if (!user) return null;
     return { key: sha(tok), s, user };
   }
+  /* TV pairing: a TV shows a short code, a signed-in phone approves it, then only that TV (which holds a secret) gets a session */
+  const tvPending = new Map(); // sha(secret) -> { code, exp, uid, ip }
+  const tvSweep = () => { const n = Date.now(); for (const [k, v] of tvPending) if (v.exp < n) tvPending.delete(k); };
+  const tvFind = (code) => { tvSweep(); for (const v of tvPending.values()) if (v.code === code) return v; return null; };
+  const isLanIp = (ip) => /^(::1$|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|fe80:|f[cd][0-9a-f]{2}:|::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.))/i.test(String(ip));
   function startSession(req, res, user, keep) {
     const tok = crypto.randomBytes(32).toString('base64url');
     const maxAge = keep ? cfg.sessionDays * 86400 : 12 * 3600;
@@ -472,6 +477,19 @@ function createApp(userConfig = {}) {
       catch (e) { return fail(req, res, 502, 'unavailable', 'That information isn’t available right now.'); }
     }
 
+    if ((p === '/api/tv/check' || p === '/api/tv/approve') && method === 'POST') {
+      const cs = currentSession(req);
+      if (!cs) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      const wait = bump(hits, 'tva|' + cs.user.id, 10, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      const b = await readJson(req);
+      const e = tvFind(String(b.code || '').replace(/\D/g, '').slice(0, 6));
+      if (!e || e.uid) return fail(req, res, 404, 'bad_code', 'That code isn’t valid or has expired. Check the number on the TV.');
+      if (p === '/api/tv/check') return json(req, res, 200, { ok: true, home: isLanIp(e.ip), seconds: Math.round((Date.now() - e.at) / 1000) });
+      e.uid = cs.user.id; log('TV approved');
+      return json(req, res, 200, { ok: true });
+    }
+
     if (p === '/api/forecast' && method === 'GET') {
       if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
       const wait = bump(hits, 'fc|' + ip, 20, 60000);
@@ -528,6 +546,29 @@ function createApp(userConfig = {}) {
       fails.delete(key);
       const old = currentSession(req); if (old) { delete store.sessions[old.key]; }
       return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, b.keep !== false) });
+    }
+
+    if (p === '/api/tv/start' && method === 'POST') {
+      const wait = bump(hits, 'tvs|' + ip, 10, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      if (!userCount()) return fail(req, res, 409, 'no_accounts', 'Create an account on a phone or computer first.');
+      tvSweep(); if (tvPending.size >= 50) return fail(req, res, 429, 'busy', 'Too many pairing requests. Try again in a few minutes.');
+      let code; do { code = String(crypto.randomInt(0, 1000000)).padStart(6, '0'); } while (tvFind(code));
+      const secret = crypto.randomBytes(24).toString('base64url');
+      tvPending.set(sha(secret), { code, exp: Date.now() + 300000, uid: null, ip, at: Date.now() });
+      return json(req, res, 200, { code, secret, expiresIn: 300 });
+    }
+    if (p === '/api/tv/poll' && method === 'POST') {
+      const wait = bump(hits, 'tvp|' + ip, 120, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests.', { retryAfter: wait });
+      const b = await readJson(req);
+      const k = sha(String(b.secret || '').slice(0, 100)), e = tvPending.get(k);
+      if (!e || e.exp < Date.now() || e.ip !== ip) { if (e) tvPending.delete(k); return fail(req, res, 410, 'expired', 'That code has expired. Get a new one.'); }
+      if (!e.uid) return json(req, res, 200, { pending: true });
+      const user = store.db.users[e.uid]; tvPending.delete(k);
+      if (!user) return fail(req, res, 410, 'expired', 'That code has expired. Get a new one.');
+      log('TV paired');
+      return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, true) });
     }
 
     /* everything below needs a signed-in user */
@@ -692,7 +733,7 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
-    parseAlerts, scanSchool, parseForecast,
+    parseAlerts, scanSchool, parseForecast, isLanIp,
     close() { clearInterval(tidy); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }

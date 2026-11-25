@@ -8,3 +8,13 @@ The top bar shows Environment Canada warnings for Cumberland County North and Co
 
 ## Sky and Money tabs (2.2.0)
 Sky shows the Amherst forecast (Open-Meteo, fetched by the add-on) with a sunrise and sunset arc. Money is a budget, expense and bill tracker with amounts you type in; it is saved with your other Lumora data and is visible to anyone who can sign in. It does not connect to any bank.
+
+## Lumora on your TV (2.3)
+
+**Sign in with a code.** On the TV choose *Sign in with a code from my phone*. A six-digit code appears. On your phone, signed in to Lumora, open Settings → *Approve a TV* and enter it. The code lasts five minutes and works once.
+
+**Google TV / Android TV.** Download `Lumora-TV.apk` from this repository's Releases page (tag `tv-latest`, built automatically from `tv-android/`). Install it with the Downloader app (enter the release link) or `adb install Lumora-TV.apk`. Open Lumora, type your server address (for example `192.168.1.50:8080`) or choose *Find my server automatically*. Back goes back inside Lumora; press Menu to change the address.
+
+**Samsung (Tizen).** Open `tv-samsung/` in Tizen Studio, create a Samsung certificate, turn on Developer mode on the TV (Apps, press 12345) with your PC's IP, then *Run as Tizen Web Application*. Samsung does not allow installing unsigned apps any other way.
+
+Chrome's *Cast* only mirrors a screen; the TV remote can't control it. Use the apps above.

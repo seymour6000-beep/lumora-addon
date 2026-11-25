@@ -315,32 +315,16 @@ h2 .sub{font:400 .875rem "Instrument Sans",system-ui,sans-serif;margin-left:8px}
 .legend[hidden]{display:none}
 .legend span{padding:6px 12px;border-radius:999px;font-size:.8rem;font-weight:600;background:color-mix(in srgb,var(--bg) 72%,transparent);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .legend .rd{border-color:#e5534b}.legend .gr{border-color:#3fb950}.legend .ye{border-color:#e0a030}.legend .bl{border-color:#4a8dff}
-:root[data-tv="1"]{scroll-padding:48px 0 150px}
-:root[data-tv="1"] body{padding-left:300px}
-:root[data-tv="1"] main{max-width:none;padding:32px 40px 150px}
-:root[data-tv="1"] .dock{left:32px;top:28px;bottom:28px;width:240px}
-:root[data-tv="1"] .list{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
-:root[data-tv="1"] .toasts{left:308px}
 :root[data-tv="1"] :focus{outline:4px solid var(--accent);outline-offset:3px;box-shadow:0 0 0 9px color-mix(in srgb,var(--accent) 28%,transparent)}
-:root[data-tv="1"] .fader.adjusting,:root[data-tv="1"] input[type=range].adjusting{outline-color:#e0a030;box-shadow:0 0 0 9px color-mix(in srgb,#e0a030 32%,transparent)}
-@media (max-width:1300px){:root[data-tv="1"] .split{grid-template-columns:1fr}:root[data-tv="1"] .side{position:static;order:-1;flex-direction:row;flex-wrap:wrap;align-items:flex-start}:root[data-tv="1"] .side>*{width:auto;flex:1 1 200px}}
 @media (min-width:1400px){
 :root[data-tv="1"]{font-size:20px}
-:root[data-tv="1"] body{font-size:1rem}
 :root[data-tv="1"] .btn,:root[data-tv="1"] .alloff,:root[data-tv="1"] .tab,:root[data-tv="1"] .chip,:root[data-tv="1"] select,:root[data-tv="1"] .in{min-height:56px;font-size:1rem}
-:root[data-tv="1"] .bulb{width:72px;height:72px}
 :root[data-tv="1"] .dot{width:46px;height:46px}
 :root[data-tv="1"] .col{width:44px;height:44px}
 :root[data-tv="1"] .star{font-size:1.7rem;padding:10px}
-:root[data-tv="1"] .fader{height:40px}
-:root[data-tv="1"] .fader::-webkit-slider-runnable-track{height:40px;border-radius:20px}
-:root[data-tv="1"] .fader::-webkit-slider-thumb{height:30px;margin-top:5px}
 :root[data-tv="1"] .sw{width:72px;height:40px}
 :root[data-tv="1"] .sw i{width:32px;height:32px}
 :root[data-tv="1"] .sw.on i,:root[data-tv="1"] .rule.on .sw i{transform:translateX(32px)}
-:root[data-tv="1"] .dock{width:268px}
-:root[data-tv="1"] body{padding-left:328px}
-:root[data-tv="1"] .toasts{left:336px}
 }
 .waves{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
 .waves svg{position:absolute;left:0;width:200%;height:130vh;animation:wave 30s linear infinite,bob 9s ease-in-out infinite}
@@ -464,7 +448,6 @@ details.tools[open] summary::after{content:"–"}
   .toolbar .in{max-width:none;flex-basis:100%}.scard{padding:36px 32px 30px}
   .toasts{bottom:calc(200px + env(safe-area-inset-bottom,0px))}
 }
-:root[data-tv="1"] .lt{padding:18px}
 
 .srow select{max-width:min(250px,58%);min-width:0}
 .srow>label,.srow>span:first-child{min-width:0}
@@ -916,6 +899,45 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header>div{display:none}
 body[data-tabnow]:not([data-tabnow="Devices"]) header{margin:0;min-height:0;justify-content:flex-end}
 body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden]))){display:none}
 @media (max-width:999px){.topbar{padding-right:52px}}
+
+/* TV mode on the 2.0 shell */
+:root[data-tv="1"]{--rail:236px;--today:300px;font-size:clamp(20px,1.25vw + 4px,30px);scroll-padding:60px 0 160px}
+:root[data-tv="1"] body{padding-left:var(--rail);padding-right:0}
+:root[data-tv="1"] main{margin:0;max-width:none;padding:40px 56px 170px 56px}
+:root[data-tv="1"] .dock{left:0;right:auto;top:0;bottom:0;width:var(--rail);height:auto;transform:none;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:26px 14px;border-right:1px solid var(--line);border-top:0;border-radius:0;gap:6px}
+:root[data-tv="1"] .dock .brand{display:flex;justify-content:flex-start;padding:0 8px 18px}
+:root[data-tv="1"] .dock .acct{display:none}
+:root[data-tv="1"] .tabs{flex-direction:column;max-width:none;gap:6px;width:100%}
+:root[data-tv="1"] .dock .tab,:root[data-tv="1"] .tab{flex:none;flex-direction:row;justify-content:flex-start;align-items:center;gap:16px;width:100%;min-height:68px;padding:12px 18px;font-size:1.05rem;letter-spacing:0;border-radius:18px}
+:root[data-tv="1"] .dock .tab .ti,:root[data-tv="1"] .tab .ti{width:30px;height:30px}
+:root[data-tv="1"] .today{display:none}
+@media (min-width:1700px){:root[data-tv="1"] main{margin-right:var(--today)}:root[data-tv="1"] .today{display:flex}}
+:root[data-tv="1"] header .vtag{display:none}
+:root[data-tv="1"] .topbar{padding-right:0}
+:root[data-tv="1"] .list{grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:20px}
+:root[data-tv="1"] .lt{padding:22px 22px 24px;border-radius:26px}
+:root[data-tv="1"] .lt .bulb{width:112px;height:112px}
+:root[data-tv="1"] .lt .bulb::before{inset:10px}
+:root[data-tv="1"] .lt .bulb svg{width:38px;height:38px}
+:root[data-tv="1"] .fader{height:44px}
+:root[data-tv="1"] .fader::-webkit-slider-runnable-track{height:14px;border-radius:7px}
+:root[data-tv="1"] .fader::-moz-range-track{height:14px;border-radius:7px}
+:root[data-tv="1"] .fader::-webkit-slider-thumb{width:34px;height:34px;margin-top:-10px}
+:root[data-tv="1"] .fader::-moz-range-thumb{width:34px;height:34px}
+:root[data-tv="1"] .bellbtn{top:20px;bottom:auto;right:28px}
+:root[data-tv="1"] .toasts{left:calc(var(--rail) + 24px);right:auto;bottom:130px}
+:root[data-tv="1"] .legend{left:calc(var(--rail) + 20px);right:20px;bottom:0;justify-content:center;gap:12px;padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);max-width:none}
+:root[data-tv="1"] .legend span{font-size:.85rem;padding:8px 16px;background:var(--bg)}
+:root[data-tv="1"] #scenes.strip{flex-wrap:wrap;overflow:visible}
+:root[data-tv="1"] .skyhero,:root[data-tv="1"] .mnhero{grid-template-columns:minmax(0,1.1fr) minmax(280px,1fr)}
+:root[data-tv="1"] .mncols{grid-template-columns:1fr}
+:root[data-tv="1"] .mnrow .btn,:root[data-tv="1"] .mnbill .btn{min-height:52px}
+.tvpair{display:grid;gap:14px;text-align:center;justify-items:center;padding:6px 0}
+.tvpair[hidden]{display:none}
+.tvcode{font:900 clamp(3rem,10vw,5rem)/1 var(--fd);letter-spacing:.14em;margin:6px 0;padding-left:.14em}
+.tvaddr{font:700 1.15rem var(--fd);padding:10px 14px;border-radius:12px;background:var(--off);overflow-wrap:anywhere;user-select:all}
+.tvsteps{margin:6px 0 0;padding-left:1.2em}.tvsteps li{margin:4px 0}
+:root[data-tv="1"] :focus,:root[data-tv="1"] :focus-visible{outline:4px solid var(--accent)!important;outline-offset:3px!important}
 </style>
 </head>
 <body data-auth="out">
@@ -1203,6 +1225,24 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
   <p class="sub">While you are set to “I’m away”, lights switch on and off at random in that window so the house looks lived in. It only runs while this page is open. Your location stays in this browser.</p>
 </div>
 <div class="panel"><h3>Your scenes</h3><div id="sceneList"></div><p class="sub">Save a scene from the Devices tab.</p></div>
+<div class="panel wide" id="tvUse"><h3>Use Lumora on a TV</h3>
+  <p>Install the Lumora TV app, then give it this server address:</p>
+  <p class="tvaddr" id="tvAddr"></p>
+  <p class="sub" id="tvAddrNote"></p>
+  <ol class="tvsteps">
+    <li><b>Google TV or Android TV:</b> install the Lumora TV app (Lumora-TV.apk from the add-on’s GitHub page, Releases) with the Downloader app or adb, open it, and enter the address above.</li>
+    <li><b>Samsung TV:</b> build the Lumora app from the tv-samsung folder in Tizen Studio and install it on the TV in developer mode. The add-on’s documentation has the steps.</li>
+    <li>On the TV choose <b>Sign in with a code from my phone</b>, then enter the code under <b>Approve a TV</b> below.</li>
+  </ol>
+  <p class="sub">No app yet? The address also works in a TV browser, and Chrome’s Cast shows Lumora on the TV, but the TV remote can’t control a cast screen. In the apps the remote’s arrows, OK and Back all work.</p>
+  <div class="srow"><button class="btn" id="tvOn" type="button">Use TV layout on this device</button><button class="btn" id="tvOff" type="button">Back to the normal layout</button></div>
+</div>
+<div class="panel" id="tvApprove" hidden><h3>Approve a TV</h3>
+  <p class="sub">Enter the code shown on the TV. Only approve a code you can see on your own TV right now.</p>
+  <div class="srow"><label for="tvIn">Code</label><input class="in" id="tvIn" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="123 456"></div>
+  <div class="srow"><button class="btn primary" id="tvGo" type="button">Check code</button><span class="sub" id="tvMsg" role="status"></span></div>
+  <div class="srow" id="tvAsk" hidden><button class="btn primary" id="tvYes" type="button">Approve this TV</button><button class="btn" id="tvNo" type="button">Cancel</button></div>
+</div>
 <div class="panel"><h3>TV and remote</h3>
   <div class="srow"><label for="sTV">TV mode</label><select id="sTV" data-set="tvMode"><option value="auto">Automatic</option><option value="on">On</option><option value="off">Off</option></select></div>
   <div class="srow"><span>Colored remote buttons</span><button class="sw" role="switch" data-set="remoteKeys" aria-label="Colored remote buttons"><i></i></button></div>
@@ -1263,6 +1303,13 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
     <label class="chk"><input type="checkbox" id="lKeep" checked>Keep me signed in on this device</label>
     <p class="err" id="lErr" role="alert" hidden></p>
     <button class="btn primary" id="lGo">Sign in</button>
+    <button class="btn" id="lTv" type="button" hidden>Sign in with a code from my phone</button>
+    <div class="tvpair" id="tvPair" hidden role="status" aria-live="polite">
+      <p>On your phone or computer, open Lumora, go to <b>Settings</b>, then <b>Approve a TV</b>, and enter this code:</p>
+      <div class="tvcode" id="tvCode" aria-label="Code"></div>
+      <p class="sub" id="tvPairMsg">Waiting for approval…</p>
+      <button class="btn" id="tvPairNo" type="button">Cancel</button>
+    </div>
     <p class="sub" id="gateNote">This preview keeps accounts only in this browser. Real sign-in needs the home server.</p>
   </div>
 </div>
@@ -2598,10 +2645,19 @@ addEventListener('keydown',e=>{ if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test(do
 
 /* ---- TV and remote control ---- */
 const TV_UA=/Android TV|GoogleTV|SMART-TV|SmartTV|AFT[A-Z]|BRAVIA|Tizen|Web0S|NetCast|HbbTV|CrKey|LumoraTV/i;
-const isTV=()=>settings.tvMode==='on'||(settings.tvMode!=='off'&&(TV_UA.test(navigator.userAgent)||/[?&]tv=1/.test(location.search)));
+try{ if(/[?&]tv=1/.test(location.search)) localStorage.setItem('hub-tv','1'); else if(/[?&]tv=0/.test(location.search)) localStorage.removeItem('hub-tv'); }catch(e){}
+const localTV=()=>{ try{ return localStorage.getItem('hub-tv')==='1'; }catch(e){ return false; } };
+const isTV=()=>settings.tvMode==='on'||(settings.tvMode!=='off'&&(TV_UA.test(navigator.userAgent)||localTV()));
 let adjusting=null, backTrap=false;
+function tvInfo(){
+  const a=$('tvAddr'); if(!a) return; a.textContent=location.origin+'/?tv=1';
+  const h=location.hostname, ip=/^\d+\.\d+\.\d+\.\d+$/.test(h);
+  $('tvAddrNote').textContent=ip?'This is your server’s address on your home network. Most routers can keep it the same every day; if the TV stops finding it, check the address again here.':'Some TVs can’t find names like “'+h+'”. If the page won’t open, use your server’s IP address instead, for example http://192.168.1.50:'+(location.port||'8080')+'/?tv=1. You can find it in Home Assistant under Settings, System, Network.';
+}
+if($('tvOn')){ $('tvOn').onclick=()=>{ try{ localStorage.setItem('hub-tv','1'); }catch(e){} applyTV(); }; $('tvOff').onclick=()=>{ try{ localStorage.removeItem('hub-tv'); }catch(e){} settings.tvMode='off'; saveSettings(); applyTV(); }; }
+try{ if(window.tizen&&tizen.tvinputdevice){ ['ColorF0Red','ColorF1Green','ColorF2Yellow','ColorF3Blue'].forEach(k=>{ try{ tizen.tvinputdevice.registerKey(k); }catch(e){} }); } }catch(e){}
 function applyTV(){
-  const tv=isTV();
+  const tv=isTV(); tvInfo();
   document.documentElement.dataset.tv=tv?'1':'';
   $('legend').hidden=!(tv&&settings.tvLegend);
   if(tv&&!backTrap){ backTrap=true; try{ history.pushState({tv:1},'',location.href); addEventListener('popstate',()=>{ if(!isTV()) return; if(window.tvBack()) history.pushState({tv:1},'',location.href); else history.back(); }); }catch(e){} }
@@ -2618,16 +2674,20 @@ function focusables(){
 function move(dir){
   const list=focusables(), cur=document.activeElement, from=list.includes(cur)?cur:null;
   if(!from){ const first=list.find(e=>e.getAttribute('aria-current')==='true')||list[0]; if(first) first.focus(); return; }
-  const a=from.getBoundingClientRect(), ax=a.left+a.width/2, ay=a.top+a.height/2;
+  const a=from.getBoundingClientRect(), acx=a.left+a.width/2, acy=a.top+a.height/2;
+  const horiz=dir==='left'||dir==='right';
   let best=null, bs=Infinity;
   for(const el of list){
     if(el===from) continue;
-    const b=el.getBoundingClientRect(), bx=b.left+b.width/2, by=b.top+b.height/2;
-    let d, perp;
-    if(dir==='left'||dir==='right'){ d=dir==='right'?bx-ax:ax-bx; perp=Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top); }
-    else{ d=dir==='down'?by-ay:ay-by; perp=Math.min(a.right,b.right)-Math.max(a.left,b.left); }
-    if(d<=1) continue;
-    const score=d+(perp>0?0:-perp)*3;
+    const b=el.getBoundingClientRect(), bcx=b.left+b.width/2, bcy=b.top+b.height/2;
+    let gap;
+    if(dir==='right'){ if(bcx<=acx+1) continue; gap=Math.max(0,b.left-a.right); }
+    else if(dir==='left'){ if(bcx>=acx-1) continue; gap=Math.max(0,a.left-b.right); }
+    else if(dir==='down'){ if(bcy<=acy+1) continue; gap=Math.max(0,b.top-a.bottom); }
+    else{ if(bcy>=acy-1) continue; gap=Math.max(0,a.top-b.bottom); }
+    const ov=horiz?Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top):Math.min(a.right,b.right)-Math.max(a.left,b.left);
+    const off=horiz?Math.abs(bcy-acy):Math.abs(bcx-acx);
+    const score=(ov>0?0:100000)+gap+off*(ov>0?0.25:2);
     if(score<bs){ bs=score; best=el; }
   }
   if(best){ best.focus(); best.scrollIntoView({block:'nearest',inline:'nearest'}); }
@@ -2657,9 +2717,15 @@ addEventListener('keydown',e=>{
     const col={ColorF0Red:'red',ColorF1Green:'green',ColorF2Yellow:'yellow',ColorF3Blue:'blue'}[k]||{183:'red',403:'red',184:'green',404:'green',185:'yellow',405:'yellow',186:'blue',406:'blue'}[kc];
     if(col){ e.preventDefault(); colorKey(col); return; }
   }
-  if(k==='Escape'||k==='GoBack'||k==='BrowserBack'||kc===4){ e.preventDefault(); window.tvBack(); return; }
+  if(k==='Escape'||k==='GoBack'||k==='BrowserBack'||k==='XF86Back'||kc===4||kc===10009||kc===461){ e.preventDefault(); window.tvBack(); return; }
   const dir={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[k];
-  if(cur&&cur.tagName==='INPUT'&&!['range','checkbox','color','button'].includes(cur.type)){ if(dir==='up'||dir==='down'){ e.preventDefault(); move(dir); } return; }
+  if(cur&&cur.tagName==='INPUT'&&!['range','checkbox','color','button'].includes(cur.type)){
+    const ss=cur.selectionStart, se=cur.selectionEnd, noCaret=(ss==null||se==null);
+    if(dir==='up'||dir==='down'){ e.preventDefault(); move(dir); }
+    else if(dir==='left'&&(noCaret||(ss===0&&se===0))){ e.preventDefault(); move(dir); }
+    else if(dir==='right'&&(noCaret||(ss===cur.value.length&&se===cur.value.length))){ e.preventDefault(); move(dir); }
+    return;
+  }
   if(adjusting){
     if(dir==='left'||dir==='right'){ e.preventDefault(); nudge(adjusting,dir==='right'?1:-1); return; }
     if(dir||k==='Enter'||kc===23){ e.preventDefault(); stopAdjust(); return; }
@@ -2778,6 +2844,43 @@ if(SRV){
     if(!r.ok) return err(say(r));
     $('lPw').value=''; $('lPw2').value=''; location.reload();
   };
+
+  /* sign in on a TV with a code approved from a phone */
+  let pairT=0, pairOn=false;
+  function stopPair(){ pairOn=false; clearTimeout(pairT); $('tvPair').hidden=true; document.querySelectorAll('#login .f,#login .seg,#login .chk,#lGo,#login .err').forEach(e=>e.style.display=''); $('lTv').hidden=false; if(!document.body.dataset.noFocus) $('lTv').focus(); }
+  async function startPair(){
+    const r=await srvApi('POST','/api/tv/start',{});
+    if(!r.ok){ err(say(r)); return; }
+    err(''); pairOn=true; const {code,secret}=r.json; let left=r.json.expiresIn||300;
+    document.querySelectorAll('#login .f,#login .seg,#login .chk,#lGo,#login .err').forEach(e=>e.style.display='none'); $('lTv').hidden=true;
+    $('tvCode').textContent=code.slice(0,3)+' '+code.slice(3); $('tvPair').hidden=false; $('tvPairMsg').textContent='Waiting for approval…'; $('tvPairNo').focus();
+    const poll=async()=>{
+      if(!pairOn) return; left-=2;
+      const q=await srvApi('POST','/api/tv/poll',{secret});
+      if(q.ok&&q.json&&q.json.user){ pairOn=false; location.reload(); return; }
+      if(!q.ok||left<=0){ $('tvPairMsg').textContent='That code expired. Choose Cancel and try again.'; pairOn=false; return; }
+      pairT=setTimeout(poll,2000);
+    };
+    pairT=setTimeout(poll,2000);
+  }
+  $('lTv').onclick=startPair; $('tvPairNo').onclick=stopPair;
+
+  /* approve a TV from a signed-in device */
+  if($('tvApprove')) $('tvApprove').hidden=false;
+  $('tvGo').onclick=async()=>{
+    $('tvAsk').hidden=true; $('tvMsg').textContent='';
+    const code=$('tvIn').value.replace(/\D/g,'');
+    if(code.length!==6){ $('tvMsg').textContent='Enter the 6 digits shown on the TV.'; return; }
+    const r=await srvApi('POST','/api/tv/check',{code});
+    if(!r.ok){ $('tvMsg').textContent=say(r); return; }
+    $('tvMsg').textContent=(r.json.home?'This request came from your home network':'WARNING: this request came from outside your home network. Only approve it if you are sure')+', started '+r.json.seconds+' seconds ago.';
+    $('tvAsk').hidden=false; $('tvYes').focus();
+  };
+  $('tvNo').onclick=()=>{ $('tvAsk').hidden=true; $('tvMsg').textContent=''; $('tvIn').value=''; };
+  $('tvYes').onclick=async()=>{
+    const r=await srvApi('POST','/api/tv/approve',{code:$('tvIn').value.replace(/\D/g,'')});
+    $('tvAsk').hidden=true; $('tvMsg').textContent=r.ok?'Done. The TV is signing in.':say(r); if(r.ok) $('tvIn').value='';
+  };
   signOut=async function(msg){
     clearTimeout(idleT);
     try{ if(window.__srvFlush) await window.__srvFlush(); }catch(e){}
@@ -2787,6 +2890,7 @@ if(SRV){
   };
   boot=function(){
     const cfg=SRV.config||{};
+    $('lTv').hidden=!!cfg.firstRun;
     let m=null; try{ m=sessionStorage.getItem('lumora-msg'); sessionStorage.removeItem('lumora-msg'); }catch(e){}
     if(SRV.user){ enter(SRV.user.email); return; }
     showLogin(); setMode(cfg.firstRun?'up':'in');
@@ -2794,6 +2898,7 @@ if(SRV){
     $('mUp').hidden=!canUp; $('mIn').hidden=!!cfg.firstRun;
     $('gateNote').textContent=cfg.firstRun?'First time here: create the admin account for this Lumora server. It can add everyone else later.':canUp?'Accounts are saved on your Lumora server.':'Ask the household admin to add you.';
     if(m) err(m);
+    if(isTV()&&!cfg.firstRun) setTimeout(()=>{ try{ $('lTv').focus(); }catch(e){} },100);
   };
   $('pwSave').onclick=async()=>{
     const r=await srvApi('POST','/api/password',{old:$('pwOld').value,new:$('pwNew').value});
@@ -2849,7 +2954,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.2.0';
+const APP_VERSION='2.3.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';

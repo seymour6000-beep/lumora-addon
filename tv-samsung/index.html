@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lumora</title>
+<style>
+html,body{margin:0;height:100%;background:#0c171d;color:#e6eef0;font:24px sans-serif}
+main{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+h1{margin:0;font-size:52px}p{margin:0;color:#8ea5ac;max-width:760px}
+input{font:inherit;width:560px;padding:14px;border-radius:12px;border:3px solid #8ea5ac;background:#10232b;color:#e6eef0;text-align:center}
+button{font:inherit;font-weight:700;padding:14px 34px;border:0;border-radius:12px;background:#ffc233;color:#000}
+input:focus,button:focus{outline:4px solid #fff;outline-offset:3px}
+</style></head><body><main>
+<h1>Lumora</h1>
+<p id="msg">Type the address of your Lumora server, for example 192.168.1.50:8080</p>
+<input id="addr" placeholder="192.168.1.50:8080" inputmode="url" autocomplete="off">
+<button id="go">Connect</button>
+</main>
+<script>
+(function(){
+  var KEY='lumora-url', a=document.getElementById('addr'), m=document.getElementById('msg');
+  function norm(t){t=(t||'').trim();if(!t)return '';if(!/^https?:\/\//i.test(t))t='http://'+t;return t.replace(/\/+$/,'')}
+  function open(u){try{localStorage.setItem(KEY,u)}catch(e){}location.href=u+'/?tv=1'}
+  function go(){var u=norm(a.value);if(!/^https?:\/\/[^\/\s]+/i.test(u)){m.textContent='That doesn’t look like an address. Try 192.168.1.50:8080';return}open(u)}
+  document.getElementById('go').onclick=go;
+  a.addEventListener('keydown',function(e){if(e.keyCode===13)go()});
+  try{if(window.tizen&&tizen.tvinputdevice){['ColorF0Red','ColorF1Green','ColorF2Yellow','ColorF3Blue','MediaPlayPause'].forEach(function(k){try{tizen.tvinputdevice.registerKey(k)}catch(e){}})}}catch(e){}
+  document.addEventListener('keydown',function(e){if(e.keyCode===10009){try{tizen.application.getCurrentApplication().exit()}catch(x){}}});
+  var saved='';try{saved=localStorage.getItem(KEY)||''}catch(e){}
+  var change=/[?&]change=1/.test(location.search);
+  a.value=saved.replace(/^https?:\/\//,'');
+  if(saved&&!change){m.textContent='Opening Lumora…';setTimeout(function(){open(saved)},400)}
+  else a.focus();
+})();
+</script></body></html>
