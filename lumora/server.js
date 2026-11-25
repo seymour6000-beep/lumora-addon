@@ -29,6 +29,9 @@ function loadConfig(env = process.env) {
     haToken: env.HA_TOKEN || '',
     quiet: truthy(env.QUIET),
     updateUrl: env.UPDATE_URL || '',
+    weatherName: env.WEATHER_NAME || 'Amherst, NS',
+    weatherUrl: env.WEATHER_URL || ('https://api.open-meteo.com/v1/forecast?latitude=' + (Number(env.WEATHER_LAT) || 45.8167) + '&longitude=' + (Number(env.WEATHER_LON) || -64.2167)
+      + '&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh&temperature_unit=celsius&timezone=America%2FHalifax'),
   };
 }
 
@@ -150,6 +153,28 @@ function createApp(userConfig = {}) {
       latest = m && isNewer(m[1], VERSION) ? m[1] : null;
     } catch (e) { /* offline: keep what we knew */ }
     return latest;
+  }
+  /* weather for the top bar: fetched here (the page may only talk to this server) and kept for 10 minutes */
+  let wx = null, wxAt = 0, wxBusy = null;
+  function getWeather() {
+    if (wx && Date.now() - wxAt < 600000) return Promise.resolve(wx);
+    if (wxBusy) return wxBusy;
+    wxBusy = (async () => {
+      try {
+        const r = await fetch(cfg.weatherUrl, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) throw new Error('weather status ' + r.status);
+        const c = (await r.json()).current;
+        if (!c || typeof c.temperature_2m !== 'number') throw new Error('unexpected weather reply');
+        wx = { place: cfg.weatherName, temp: c.temperature_2m, feels: typeof c.apparent_temperature === 'number' ? c.apparent_temperature : c.temperature_2m,
+          code: Number(c.weather_code), day: c.is_day !== 0, wind: Number(c.wind_speed_10m) || 0, humidity: Number(c.relative_humidity_2m) || 0, at: Date.now() };
+        wxAt = Date.now();
+        return wx;
+      } catch (e) {
+        if (wx && Date.now() - wxAt < 3 * 3600000) return { ...wx, stale: true };
+        throw e;
+      } finally { wxBusy = null; }
+    })();
+    return wxBusy;
   }
   const updTimer = cfg.updateUrl ? setInterval(checkUpdate, 6 * 3600 * 1000) : null;
   if (updTimer) updTimer.unref();
@@ -305,6 +330,14 @@ function createApp(userConfig = {}) {
         data: sess ? bootData() : null,
         rev: store.db.rev,
       });
+    }
+
+    if (p === '/api/weather' && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      const wait = bump(hits, 'wx|' + ip, 30, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      try { return json(req, res, 200, await getWeather()); }
+      catch (e) { return fail(req, res, 502, 'weather_unavailable', 'Weather isn’t available right now.'); }
     }
 
     if (p === '/api/check-update' && method === 'POST') {

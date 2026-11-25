@@ -280,7 +280,7 @@ h3+.srow,#lightNames .srow:first-child{border-top:0}
 .sgrid .panel.wide{grid-column:1/-1}
 body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;background:radial-gradient(38vmax 38vmax at 12% 18%,var(--o1),transparent 70%),radial-gradient(34vmax 34vmax at 88% 12%,var(--o2),transparent 70%),radial-gradient(40vmax 40vmax at 70% 92%,var(--o3),transparent 70%);animation:drift 26s ease-in-out infinite alternate}
 @keyframes drift{to{transform:translate3d(3%,-3%,0) scale(1.08)}}
-.lt,.rule,.auto,.cam,.panel,.card,.alloff,.dock,.toast,.calbump{background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.lt,.rule,.auto,.cam,.panel,.card,.alloff,.dock,.toast{background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
 .cam{border-style:dashed}
 .toast{border-left:4px solid #e0a030;background:color-mix(in srgb,var(--bg) 94%,transparent)}
 .lt.on{box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow),0 0 36px -8px color-mix(in srgb,var(--c) 65%,transparent)}
@@ -521,12 +521,6 @@ main{max-width:1200px}
 html[data-server] .demoonly{display:none}
 html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,html[data-remote] h3.gap:has(+#sim){display:none}
 .srow.stackrow{flex-wrap:wrap}
-.calbump{position:fixed;z-index:21;pointer-events:none;border-radius:0 34px 34px 0 / 0 80px 80px 0;border:1px solid var(--glass-line,var(--line));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px #0003}
-.calbump{border-left:0!important;background:color-mix(in srgb,var(--glass-a,rgba(255,255,255,.5)) 55%,var(--glass-b,rgba(255,255,255,.26)))!important}
-.calflange{position:fixed;z-index:22;box-sizing:border-box;padding:0 4px 0 0}
-.calbump[hidden],.calflange[hidden]{display:none}
-@media (max-width:760px){.calbump,.calflange{display:none}}
-body[data-auth="out"] :is(.calbump,.calflange){display:none}
 .sidewidget{order:2;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
 .sidewidget[hidden]{display:none}
 .sidetop{order:-1;margin:-12px -12px 4px;padding:20px 14px 30px;text-align:center;color:var(--onaccent,#fff);background:linear-gradient(165deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#000));border-radius:calc(var(--r,20px) + 4px) calc(var(--r,20px) + 4px) 50% 50% / calc(var(--r,20px) + 4px) calc(var(--r,20px) + 4px) 38px 38px;box-shadow:inset 0 1px 0 #fff4,0 6px 18px #0003}
@@ -539,10 +533,10 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
 .calnav{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:.82rem;font-weight:700;margin-top:4px}
 .calnav button{background:transparent;border:0;color:inherit;min-width:30px;min-height:30px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1}
 .calnav button:hover,.calnav button:focus-visible{background:var(--glass-in,var(--line))}
-.mcal{width:100%;border-collapse:collapse;font-size:.78rem;text-align:center;table-layout:fixed}
+.mcal{width:100%;border-collapse:collapse;font-size:.74rem;text-align:center;table-layout:fixed}
 .mcal th{color:var(--muted);font-weight:600;padding:2px 0}
 .mcal td{padding:1px 0}
-.mcal td span{display:grid;place-items:center;width:100%;max-width:28px;aspect-ratio:1;border-radius:50%;margin:0 auto}
+.mcal td span{display:grid;place-items:center;width:100%;max-width:26px;aspect-ratio:1;border-radius:50%;margin:0 auto}
 .mcal td.out span{color:var(--muted);opacity:.45}
 .mcal td.today span{background:var(--accent);color:var(--onaccent,#fff);font-weight:700}
 @media (max-width:760px){.sidewidget,.sidetop{display:none}}
@@ -567,6 +561,21 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
 .laps{list-style:none;margin:10px 0 0;padding:0;max-height:240px;overflow:auto;font-variant-numeric:tabular-nums}
 .laps li{display:flex;justify-content:space-between;gap:8px;padding:6px 2px;border-top:1px solid var(--line);font-size:.9rem}
 .dock{gap:10px}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 18px;margin:0 0 16px;border-radius:calc(var(--r,20px) + 4px);background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.topbar[hidden],.tbwx[hidden],.tbup[hidden],.tbbar[hidden],#tbStay[hidden]{display:none}
+.tbwx{display:flex;align-items:center;gap:14px;min-width:0}
+.wxic{width:46px;height:46px;border-radius:calc(var(--r,20px) - 4px);display:grid;place-items:center;flex:none;color:var(--onaccent,#fff);background:linear-gradient(165deg,color-mix(in srgb,var(--accent) 92%,#fff),color-mix(in srgb,var(--accent) 55%,#000));box-shadow:inset 0 1px 0 #fff5,0 6px 16px color-mix(in srgb,var(--accent) 35%,transparent)}
+.wxic svg{width:27px;height:27px}
+.wxmain{display:flex;flex-direction:column;line-height:1.1}
+.wxtemp{font:700 1.9rem "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wxfeel{font-size:.82rem;color:var(--muted);white-space:nowrap}
+.wxmeta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wxmeta b{font-weight:700}
+.tbup{flex:1 1 340px;display:grid;grid-template-columns:1fr auto auto;gap:6px 8px;align-items:center;margin-left:auto;padding:9px 12px;border-radius:calc(var(--r,20px) - 2px);background:color-mix(in srgb,var(--accent) 14%,var(--glass-in,transparent));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--glass-line))}
+.tbmsg{font-weight:600;min-width:0}
+.tbbar{grid-column:1/-1;height:4px;border-radius:99px;background:var(--line);overflow:hidden}
+.tbbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#fff));transition:width 1s linear}
+:root[data-motion="reduced"] .tbbar i{transition:none}
 /* notifications: same glass, accent and corner shape as the sidebar */
 .toast{position:relative;overflow:hidden;align-items:flex-start;gap:12px;padding:14px 12px 16px 14px;border-radius:calc(var(--r,20px) + 4px);
   background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--glass-a)),var(--glass-b)),color-mix(in srgb,var(--bg) 95%,transparent);
@@ -587,7 +596,6 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
 :root[data-motion="reduced"] .toast .tbar{animation:none;display:none}
 .bellbtn{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 38%,var(--glass-line));box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 26px color-mix(in srgb,var(--accent) 20%,var(--glass-shadow))}
 .bellbtn svg{color:var(--accent)}
-@media (min-width:761px){.toasts{left:262px;width:min(400px,calc(100% - 286px))}}
 .sidetop{padding:18px 14px 30px;margin-bottom:0;background:linear-gradient(165deg,color-mix(in srgb,var(--accent) 92%,#fff),color-mix(in srgb,var(--accent) 52%,#000))}
 .sidetop .sclock{font-size:2.05rem;letter-spacing:-.01em;text-shadow:0 1px 8px #0003}
 .sidetop .sdate{font-size:.82rem;margin-top:5px}
@@ -625,6 +633,19 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
 <body data-auth="out">
 <div class="waves" aria-hidden="true"><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 160 Q180 40 360 160 T720 160 T1080 160 T1440 160 T1800 160 T2160 160 T2520 160 T2880 160 V1000 H0Z"/></svg><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 140 Q120 230 240 140 T480 140 T720 140 T960 140 T1200 140 T1440 140 T1680 140 T1920 140 T2160 140 T2400 140 T2640 140 T2880 140 V1000 H0Z"/></svg><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 170 Q360 60 720 170 T1440 170 T2160 170 T2880 170 V1000 H0Z"/></svg></div>
 <main>
+<div class="topbar" id="topBar" hidden>
+  <div class="tbwx" id="tbWx" hidden>
+    <span class="wxic" id="wxIc" aria-hidden="true"></span>
+    <div class="wxmain"><span class="wxtemp" id="wxTemp"></span><span class="wxfeel" id="wxFeel"></span></div>
+    <div class="wxmeta"><b id="wxCond"></b><span class="sub" id="wxPlace"></span></div>
+  </div>
+  <div class="tbup" id="tbUp" hidden role="status">
+    <span class="tbmsg" id="tbMsg"></span>
+    <button class="btn sm primary" id="tbNow" type="button">Reload now</button>
+    <button class="btn sm" id="tbStay" type="button">Not now</button>
+    <div class="tbbar" id="tbBar" aria-hidden="true"><i></i></div>
+  </div>
+</div>
 <header>
   <div>
     <h1 id="homeTitle">Home</h1>
@@ -766,7 +787,8 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
 </div>
 <div class="panel"><h3>Home</h3>
   <div class="srow"><label for="sHome">Home name</label><input class="in" id="sHome" data-set="homeName" maxlength="24"></div>
-        <div class="srow"><span>Show clock and calendar in the sidebar</span><button class="sw" role="switch" data-set="sideClock" aria-label="Show clock and calendar in the sidebar"><i></i></button></div>
+        <div class="srow"><span>Show weather at the top</span><button class="sw" role="switch" data-set="showWeather" aria-label="Show weather at the top"><i></i></button></div>
+  <div class="srow"><span>Show clock and calendar in the sidebar</span><button class="sw" role="switch" data-set="sideClock" aria-label="Show clock and calendar in the sidebar"><i></i></button></div>
   <div class="srow"><label for="sTime">Time format</label><select id="sTime" data-set="timeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
   <div class="srow"><span>Reduce motion</span><button class="sw" role="switch" data-set="reduceMotion" aria-label="Reduce motion"><i></i></button></div>
 </div>
@@ -776,6 +798,8 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
 <div class="panel"><h3>Connections</h3>
   <div class="srow demoonly"><label for="sHub">Hub server address</label><input class="in" id="sHub" data-set="hubUrl" placeholder="http://homehub.local:8080" autocomplete="off"></div>
   <div class="srow demoonly"><label for="sLepro">Lepro account email</label><input class="in" id="sLepro" data-set="lepro" type="email" autocomplete="off"></div>
+  <div class="srow"><label for="sHaUrl">Home Assistant address</label><input class="in" id="sHaUrl" data-set="haUrl" placeholder="http://homeassistant.local:8123" inputmode="url" autocomplete="off"></div>
+  <p class="sub">Used for the link in update notices. Leave it empty to use this server’s address on port 8123.</p>
   <p class="sub" id="conn"></p>
   <p class="sub">Aosu cameras: live video isn’t available, because Aosu battery cameras don’t share a video stream.</p>
 </div>
@@ -866,13 +890,11 @@ body[data-auth="out"] :is(.calbump,.calflange){display:none}
   <div class="brand" data-brand></div>
   <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
   <div class="tabs" id="tabs"></div>
-  <div class="sidewidget" id="sideClock" aria-label="Calendar"><div id="calSlot"></div></div>
+  <div class="sidewidget" id="sideClock" aria-label="Calendar">
+    <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
+    <table class="mcal" id="mcal" aria-label="Calendar"></table>
+  </div>
   <div class="acct" id="acct"></div>
-</div>
-<div class="calbump" id="calBump" aria-hidden="true" hidden></div>
-<div class="calflange" id="calFlange" hidden>
-  <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
-  <table class="mcal" id="mcal" aria-label="Calendar"></table>
 </div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <button class="bellbtn" id="notifBtn" type="button"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M8.7 3A6 6 0 0 1 18 8c0 2.7.4 4.6.9 6M6.3 6.3C6.1 6.9 6 7.4 6 8c0 7-3 9-3 9h14M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20"/></svg><span class="lbl">Hide notifications</span></button>
@@ -1695,7 +1717,7 @@ const FIX_TIPS=[
   'If several lights are offline, restart your router.',
   'Still offline? Open the Lepro app. If it shows offline there too, re-add the light using the app’s reset steps.'
 ];
-function toast(msg,tips){
+function toast(msg,tips,opts){
   if(!settings.popups) return;
   const warn=!!(tips&&tips.length);
   const el=document.createElement('div'); el.className='toast '+(warn?'warn':'info');
@@ -1717,7 +1739,11 @@ function toast(msg,tips){
   const box=$('toasts');
   while(box.children.length>=3) box.firstChild.remove();
   box.appendChild(el);
-  const secs=(tips&&tips.length?Math.max(settings.popupSecs,20):settings.popupSecs);
+  if(opts&&opts.link&&/^https?:\/\//.test(opts.link.url)){
+    const a=document.createElement('a'); a.className='chip tlink'; a.href=opts.link.url; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent=opts.link.text+' ↗';
+    el.querySelector('.tbody').appendChild(a);
+  }
+  const secs=(tips&&tips.length?Math.max(settings.popupSecs,20):(opts&&opts.link?Math.max(settings.popupSecs,15):settings.popupSecs));
   const bar=document.createElement('i'); bar.className='tbar'; bar.setAttribute('aria-hidden','true'); bar.style.animationDuration=secs+'s'; el.appendChild(bar);
   tm=setTimeout(close,secs*1000);
 }
@@ -1804,7 +1830,7 @@ let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splas
 const MARK='<span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -1824,7 +1850,8 @@ function apply(){
   syncNotif(); renderSunInfo(); renderPresence();
   document.documentElement.dataset.motion=settings.reduceMotion?'reduced':'';
   applyTV();
-  $('sideClock').hidden=!settings.sideClock; $('sideTop').hidden=!settings.sideClock; if(window.__placeCal) window.__placeCal();
+  if(window.__syncTop) window.__syncTop();
+  $('sideClock').hidden=!settings.sideClock; $('sideTop').hidden=!settings.sideClock;
   $('homeTitle').textContent=settings.homeName||'Home';
   if(SRV) $('conn').textContent=REMOTE?'Connected to your Lumora server and Home Assistant. Lights are real.':'Connected to your Lumora server. Lights are simulated until the server is given a Home Assistant address.'; else
   $('conn').textContent=settings.hubUrl?'Server address saved. Connecting to it isn’t built yet, so lights stay simulated.':'Demo mode: lights are simulated.';
@@ -2458,19 +2485,26 @@ $('updBtn').onclick=async()=>{
     const r=await srvApi('POST','/api/check-update',{});
     if(!r.ok){ toast((r.json&&r.json.message)||'Couldn’t check for updates right now.'); return; }
     const l=r.json.latest;
-    if(l&&vcmp(l,cur)>0){ if(window.__verPaint) window.__verPaint(l); toast('Version '+l+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+    if(l&&vcmp(l,cur)>0){ if(window.__verPaint) window.__verPaint(l); updToast(l); }
     else if(!r.json.checked) toast('This server isn’t set up to look for updates. In Home Assistant, open Apps to see if there is one.');
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='1.4.0';
+const APP_VERSION='1.5.0';
+const haUpdatesUrl=()=>{
+  const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
+  if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
+  if(location.protocol==='http:'&&location.hostname) return 'http://'+location.hostname+':8123/config/updates';
+  return '';
+};
+const updToast=v=>{ const u=haUpdatesUrl(); toast('Version '+v+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.',null,u?{link:{text:'Open Home Assistant updates',url:u}}:undefined); };
 const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=String(b).split('.').map(n=>parseInt(n,10)||0); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)?1:-1; } return 0; };
 {
   const tags=[$('verTag'),$('verTagM')], cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
   const paintOne=(tag,latest)=>{
     tag.classList.remove('new'); tag.onclick=null;
     if(stale){ tag.classList.add('new'); tag.textContent='Updated · Reload'; tag.setAttribute('aria-label','Lumora was updated. Reload to use the new version.'); tag.onclick=()=>location.reload(); }
-    else if(latest){ tag.classList.add('new'); tag.textContent='v'+cur+' · update available'; tag.setAttribute('aria-label','Version '+latest+' is available'); tag.onclick=()=>toast('Version '+latest+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+    else if(latest){ tag.classList.add('new'); tag.textContent='v'+cur+' · update available'; tag.setAttribute('aria-label','Version '+latest+' is available'); tag.onclick=()=>updToast(latest); }
     else { tag.textContent='v'+cur+(SRV?'':' preview'); tag.setAttribute('aria-label','Lumora version '+cur); }
   };
   const paint=latest=>tags.forEach(t=>paintOne(t,latest));
@@ -2480,18 +2514,23 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
     setTimeout(()=>{
       if(seen&&seen!==cur&&vcmp(cur,seen)>0) toast('Lumora was updated to version '+cur+'.');
       try{ localStorage.setItem(seenKey,cur); }catch(e){}
-      if(SRV.latest&&vcmp(SRV.latest,cur)>0){ shownLatest=SRV.latest; toast('Version '+SRV.latest+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
+      if(SRV.latest&&vcmp(SRV.latest,cur)>0){ shownLatest=SRV.latest; updToast(SRV.latest); }
     },3000);
-    /* the server may be updated while this page stays open */
-    setInterval(async()=>{
-      if(document.hidden) return;
+    /* the server may be updated while this page stays open: when it comes back on a new version, count down and reload */
+    const checkHealth=async()=>{
+      let ok=true;
       try{
-        const r=await fetch('/api/health',{credentials:'same-origin'}); if(!r.ok) return; const h=await r.json();
-        if(h.version&&h.version!==cur&&!stale){ stale=true; paint(null); toast('Lumora was updated to version '+h.version+'. Reload this page to use it.'); return; }
+        const r=await fetch('/api/health',{credentials:'same-origin',cache:'no-store'}); if(!r.ok) throw new Error('down'); const h=await r.json();
+        if(h.version&&h.version!==cur&&!stale){ stale=true; paint(null); if(window.__startCountdown) window.__startCountdown(h.version); return 20000; }
         const l=h.latest&&vcmp(h.latest,cur)>0?h.latest:null; paint(l);
-        if(l&&l!==shownLatest){ shownLatest=l; toast('Version '+l+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
-      }catch(e){}
-    },60000);
+        if(l&&l!==shownLatest){ shownLatest=l; updToast(l); }
+      }catch(e){ ok=false; }
+      return ok?20000:3000;
+    };
+    const loop=async()=>{ let next=20000; if(!document.hidden&&!stale) next=await checkHealth(); setTimeout(loop,next); };
+    setTimeout(loop,20000);
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&!stale) checkHealth(); });
+    window.__checkHealth=checkHealth;
   }
 }
 
@@ -2624,33 +2663,102 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
     if(visible('Clock')){ $('bClock').innerHTML=clockHTML(d); $('bDate').textContent=dateStr(d); $('swRead').textContent=swFmt(swMs()); }
     tickTimers();
   }
-  /* the calendar sits in a flange that curves out past the sidebar's edge */
-  const OVER=26; let lastPos='';
-  function placeCal(){
-    const slot=$('calSlot'), fl=$('calFlange'), bp=$('calBump'), dock=document.querySelector('.dock');
-    const off=!slot||!dock||$('sideClock').hidden||getComputedStyle($('sideClock')).display==='none';
-    const unmask=()=>{ ['-webkit-mask-image','mask-image','-webkit-mask-composite','mask-composite','-webkit-mask-size','mask-size','-webkit-mask-position','mask-position','-webkit-mask-repeat','mask-repeat'].forEach(k=>dock&&dock.style.removeProperty(k)); };
-    if(off||(window.matchMedia&&matchMedia('(max-width:760px)').matches)){ fl.hidden=true; bp.hidden=true; unmask(); return; }
-    const d=dock.getBoundingClientRect(), s=slot.getBoundingClientRect(), padL=12;
-    const w=Math.round(d.right-d.left-padL*2+OVER-2);
-    fl.hidden=false; fl.style.width=w+'px'; fl.style.left=Math.round(d.left+padL)+'px';
-    const h=fl.offsetHeight; if(Math.abs(slot.offsetHeight-h)>1) slot.style.height=h+'px';
-    const top=Math.round(s.top), inside=top>=d.top+4&&top+h<=d.bottom-4;
-    fl.style.top=top+'px'; fl.style.visibility=inside?'visible':'hidden';
-    bp.hidden=!inside;
-    const GAP=6;
-    bp.style.left=Math.round(d.right-GAP)+'px'; bp.style.width=(OVER+GAP)+'px'; bp.style.top=(top-8)+'px'; bp.style.height=(h+16)+'px';
-    /* cut the sidebar's own edge where the bulge joins it, so the two shapes read as one */
-    if(inside){
-      const hy=Math.round(top-8-d.top), hh=h+16, m={'mask-image':'linear-gradient(#000,#000),linear-gradient(#000,#000)','mask-repeat':'no-repeat','mask-size':'100% 100%,'+GAP+'px '+hh+'px','mask-position':'0 0,100% '+hy+'px','mask-composite':'exclude'};
-      for(const k in m){ dock.style.setProperty(k,m[k]); dock.style.setProperty('-webkit-'+k,k==='mask-composite'?'xor':m[k]); }
-    } else unmask();
+  drawTimers(); drawSw(); drawCal(true); tick(); setInterval(tick,200);
+})();
+
+/* ---- top bar: weather for Amherst and the update countdown ---- */
+(function(){
+  const bar=$('topBar'), wxBox=$('tbWx'), upBox=$('tbUp');
+  const ICONS={
+    clear:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    night:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    partly:'<circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/><path d="M9 20a3.8 3.8 0 0 1-.4-7.6 5 5 0 0 1 9.6 1.3A3.2 3.2 0 0 1 17.5 20z"/>',
+    partlynight:'<path d="M10.5 3.5a4 4 0 1 0 4.5 5.5"/><path d="M9 20a3.8 3.8 0 0 1-.4-7.6 5 5 0 0 1 9.6 1.3A3.2 3.2 0 0 1 17.5 20z"/>',
+    cloud:'<path d="M7 18a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.6 1.5A3.8 3.8 0 0 1 17.5 18z"/>',
+    fog:'<path d="M4 9h16M3 13h18M6 17h12"/>',
+    rain:'<path d="M7 14a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.6 1.5A3.8 3.8 0 0 1 17.5 14z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
+    snow:'<path d="M7 14a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.6 1.5A3.8 3.8 0 0 1 17.5 14z"/><path d="M8 17.5h.01M12 19.5h.01M16 17.5h.01M10 21h.01M14 21h.01"/>',
+    storm:'<path d="M7 14a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.6 1.5A3.8 3.8 0 0 1 17.5 14z"/><path d="M12.5 14l-2.5 4h3l-1.5 4"/>'
+  };
+  const wxInfo=(code,day)=>{
+    const c=+code;
+    if(c===0) return {k:day?'clear':'night',t:day?'Clear sky':'Clear'};
+    if(c===1) return {k:day?'clear':'night',t:'Mainly clear'};
+    if(c===2) return {k:day?'partly':'partlynight',t:'Partly cloudy'};
+    if(c===3) return {k:'cloud',t:'Overcast'};
+    if(c===45||c===48) return {k:'fog',t:'Fog'};
+    if(c>=51&&c<=55) return {k:'rain',t:'Drizzle'};
+    if(c===56||c===57) return {k:'rain',t:'Freezing drizzle'};
+    if(c===61) return {k:'rain',t:'Light rain'};
+    if(c===63) return {k:'rain',t:'Rain'};
+    if(c===65) return {k:'rain',t:'Heavy rain'};
+    if(c===66||c===67) return {k:'rain',t:'Freezing rain'};
+    if(c===71) return {k:'snow',t:'Light snow'};
+    if(c===73) return {k:'snow',t:'Snow'};
+    if(c===75) return {k:'snow',t:'Heavy snow'};
+    if(c===77) return {k:'snow',t:'Snow grains'};
+    if(c===80) return {k:'rain',t:'Light showers'};
+    if(c===81) return {k:'rain',t:'Showers'};
+    if(c===82) return {k:'rain',t:'Heavy showers'};
+    if(c===85||c===86) return {k:'snow',t:'Snow showers'};
+    if(c>=95) return {k:'storm',t:c>=96?'Thunderstorm with hail':'Thunderstorm'};
+    return {k:'cloud',t:'Cloudy'};
+  };
+  const fmtC=n=>{ const r=Math.round(n); return (r<0?'−':'')+Math.abs(r)+'°C'; };
+  const PLACE='Amherst, NS';
+  const DIRECT='https://api.open-meteo.com/v1/forecast?latitude=45.8167&longitude=-64.2167&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh&temperature_unit=celsius&timezone=America%2FHalifax';
+  let wx=null, failed=false;
+  function syncTop(){
+    const showWx=settings.showWeather!==false, cd=!upBox.hidden;
+    wxBox.hidden=!showWx; bar.hidden=!(showWx||cd);
   }
-  window.__placeCal=placeCal;
-  addEventListener('resize',placeCal);
-  document.querySelector('.dock').addEventListener('scroll',placeCal,{passive:true});
-  const posTimer=setInterval(placeCal,300);
-  drawTimers(); drawSw(); drawCal(true); tick(); placeCal(); setInterval(tick,200);
+  window.__syncTop=syncTop;
+  function drawWx(){
+    $('wxPlace').textContent=(wx&&wx.place)||PLACE;
+    if(!wx){
+      $('wxIc').innerHTML=''; $('wxTemp').textContent=failed?'—':'…'; $('wxFeel').textContent='';
+      $('wxCond').textContent=failed?'Weather unavailable':'Loading weather…'; return;
+    }
+    const i=wxInfo(wx.code,wx.day);
+    $('wxIc').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[i.k]||ICONS.cloud)+'</svg>';
+    $('wxTemp').textContent=fmtC(wx.temp);
+    $('wxFeel').textContent='Feels like '+fmtC(wx.feels);
+    $('wxCond').textContent=i.t+(wx.wind>=1?' · wind '+Math.round(wx.wind)+' km/h':'');
+    const d=new Date(wx.at||Date.now()); wxBox.title='Updated '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',hour12:settings.timeFormat!=='24'})+(wx.stale?' (older reading)':'');
+  }
+  async function loadWx(){
+    if(settings.showWeather===false) return;
+    try{
+      let d;
+      if(SRV){ if(!SRV.user) return; const r=await srvApi('GET','/api/weather'); if(!r.ok) throw new Error('wx'); d=r.json; }
+      else{
+        const r=await fetch(DIRECT,{cache:'no-store'}); if(!r.ok) throw new Error('wx'); const c=(await r.json()).current;
+        if(!c||typeof c.temperature_2m!=='number') throw new Error('wx');
+        d={place:PLACE,temp:c.temperature_2m,feels:typeof c.apparent_temperature==='number'?c.apparent_temperature:c.temperature_2m,code:c.weather_code,day:c.is_day!==0,wind:c.wind_speed_10m,humidity:c.relative_humidity_2m,at:Date.now()};
+      }
+      wx=d; failed=false;
+    }catch(e){ failed=!wx; }
+    drawWx();
+  }
+  window.__loadWx=loadWx;
+  drawWx(); syncTop(); loadWx();
+  setInterval(()=>{ if(!document.hidden) loadWx(); },10*60*1000);
+  setInterval(()=>{ if(failed&&!document.hidden) loadWx(); },60*1000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(!wx||Date.now()-((wx&&wx.at)||0)>10*60*1000)) loadWx(); });
+
+  /* update installed: count down from 10, then reload (saving anything pending first) */
+  let cd=null;
+  window.__startCountdown=function(version){
+    clearInterval(cd); let n=10; const msg=$('tbMsg'), fill=$('tbBar').querySelector('i');
+    upBox.hidden=false; $('tbBar').hidden=false; $('tbNow').hidden=false; $('tbStay').hidden=false; syncTop();
+    const draw=()=>{ msg.textContent='Lumora updated to version '+version+'. Reloading in '+n+'s'; fill.style.width=(n*10)+'%'; };
+    const go=async()=>{ clearInterval(cd); msg.textContent='Reloading…'; try{ if(window.__srvFlush) await window.__srvFlush(); }catch(e){} location.reload(); };
+    draw();
+    try{ toast('Lumora was updated to version '+version+'. Reloading in 10 seconds.'); }catch(e){}
+    cd=setInterval(()=>{ n--; if(n<=0){ clearInterval(cd); go(); } else draw(); },1000);
+    $('tbNow').onclick=go;
+    $('tbStay').onclick=()=>{ clearInterval(cd); msg.textContent='Lumora was updated to version '+version+'. Reload to use it.'; $('tbBar').hidden=true; $('tbStay').hidden=true; };
+  };
 })();
 ['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
 $('splash').onclick=endSplash; setTimeout(endSplash,1800);
