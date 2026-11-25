@@ -9,7 +9,7 @@ android {
         minSdk 21
         targetSdk 34
         versionCode (System.getenv('GITHUB_RUN_NUMBER') ? 1000 + System.getenv('GITHUB_RUN_NUMBER').toInteger() : 230)
-        versionName '2.4.3'
+        versionName '2.5.0'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

@@ -962,6 +962,26 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
 #newBox h3{margin:0 0 8px}#newBox h4{margin:14px 0 4px}#newBox ul{margin:0;padding-left:20px}#newBox li{margin:4px 0}
 body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-tab="Sky"],body.shotblur #svW,body.shotblur #svH,body.shotblur #wxPlace{filter:blur(14px)!important;transition:none!important}
 .sfilt{display:none!important}
+
+/* notification centre: things that need attention stay here until they are fixed */
+.notes{order:1}
+.today .notes{padding:0;border:0}
+.nh{margin:0 0 8px;font:700 .95rem/1.2 var(--fd);color:var(--ink)}
+.nitem{display:flex;gap:10px;align-items:flex-start;background:var(--off);border-radius:14px;padding:10px 12px;margin:0 0 8px;border-left:4px solid var(--muted)}
+.nitem.warn{border-left-color:var(--warn)}.nitem.bad{border-left-color:var(--bad)}.nitem.info{border-left-color:var(--info)}
+.nitem .nt{font-weight:700;font-size:.9rem;color:var(--ink)}.nitem .nd{font-size:.8rem;color:var(--muted);margin-top:2px}
+.nitem ol{margin:6px 0 0;padding-left:18px;font-size:.8rem;color:var(--ink)}.nitem ol[hidden]{display:none}
+.nitem .chip{margin-top:6px;font-size:.75rem}
+.nbulb{flex:none;width:26px;height:26px;display:grid;place-items:center;color:var(--warn);animation:nflash .25s ease-in-out infinite alternate}
+.nbulb svg{width:22px;height:22px}
+@keyframes nflash{from{opacity:1;filter:drop-shadow(0 0 5px var(--warn))}to{opacity:.2;filter:none}}
+:root[data-motion="reduced"] .nbulb{animation:none}
+@media (prefers-reduced-motion:reduce){.nbulb{animation:none}}
+.nclear{font-size:.85rem;color:var(--muted);margin:0}
+.notem{margin:0 0 12px}.notem .nitem{background:var(--surface)}
+@media (min-width:1000px){.notem{display:none}}
+:root[data-tv="1"] .notem{display:block}
+@media (min-width:1700px){:root[data-tv="1"] .notem{display:none}}
 </style>
 </head>
 <body data-auth="out">
@@ -996,6 +1016,7 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
 <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
 <div class="devsplit">
 <div class="devmain">
+<div class="notes notem" id="noteBoxM" aria-label="Notifications"><h3 class="nh">Notifications</h3><div id="noteListM" aria-live="polite"></div></div>
 <div class="stats" id="stats"></div>
 <div class="actbar" role="group" aria-label="Quick actions">
   <button class="alloff" id="alloff">All lights off</button>
@@ -1323,6 +1344,7 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
     <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
     <table class="mcal" id="mcal" aria-label="Calendar"></table>
   </div>
+  <div class="notes" id="noteBox" aria-label="Notifications"><h3 class="nh">Notifications</h3><div id="noteList" aria-live="polite"></div></div>
   <div class="acct" id="acct"></div>
 </aside>
 <div class="dock">
@@ -1407,20 +1429,21 @@ async function srvApi(method,path,body){
   }catch(e){ return {ok:false,status:0,json:{message:'Can’t reach the Lumora server.'}}; }
 }
 let deviceWarned=0;
-function deviceProblem(r){ const n=Date.now(); if(n-deviceWarned<60000) return; deviceWarned=n; try{ toast((r.json&&r.json.message)||'Can’t reach your lights right now.'); }catch(e){} }
+function deviceProblem(r){ if(!window.__devDown){ window.__devDown=true; if(window.__renderNotes) window.__renderNotes(); } const n=Date.now(); if(n-deviceWarned<60000) return; deviceWarned=n; try{ toast((r.json&&r.json.message)||'Can’t reach your lights right now.'); }catch(e){} }
 if(REMOTE){
   document.documentElement.setAttribute('data-remote','1');
   mockAdapter.devices=[]; mockAdapter.pool=[]; mockAdapter.camPool=[];
   const DEVICE_FIELDS=['on','bri','color','temp'];
   mockAdapter.list=async function(){
     const ids=this.devices.map(d=>d.id); let st=null;
-    if(ids.length){ const r=await srvApi('POST','/api/devices/state',{ids}); if(r.ok) st=r.json.states||{}; else deviceProblem(r); }
+    if(ids.length){ const r=await srvApi('POST','/api/devices/state',{ids}); if(r.ok){ st=r.json.states||{}; if(window.__devDown){ window.__devDown=false; if(window.__renderNotes) window.__renderNotes(); } } else deviceProblem(r); }
     return this.devices.map(d=>{
       const s=st&&st[d.id];
       if(s){ d.on=s.on; d.bri=s.bri; d.color=s.color; if(s.temp) d.temp=s.temp; }
       const o={online:true,room:'Home',...d};
       if(st) o.online=!!s&&s.online!==false;
       if(!o.name||o.name===o.id) o.name=(s&&s.name)||o.id;
+      o.name=String(o.name).replace(/\s+bulb\s*$/i,'')||o.name;
       return o;
     });
   };
@@ -1445,7 +1468,7 @@ if(REMOTE){
     const a=document.activeElement; if(a&&a.type==='range') return;
     const n=await adapter.list();
     if(JSON.stringify(n)!==JSON.stringify(state)){ state=n; save(); render(); }
-  },10000);
+  },5000);
 }
 /* scenes written as {'*':...} apply to every light that is online */
 const expandScene=sc=>{ if(sc&&sc['*']) return Object.fromEntries(state.filter(d=>d.online!==false).map(d=>[d.id,sc['*']])); return sc||{}; };
@@ -2541,6 +2564,7 @@ function renderCams(){
 }
 function renderStats(){
   try{ renderRoomChips(); }catch(e){}
+  try{ window.__renderNotes&&window.__renderNotes(); }catch(e){}
   const live=state.filter(d=>d.online!==false), on=live.filter(d=>d.on);
   const t=[['Lights on',on.length+' / '+state.length],['Offline',String(state.length-live.length)],['Cameras',cams.filter(c=>c.online!==false).length+' / '+cams.length]];
   $('stats').innerHTML=t.map(([l,v])=>'<div class="stat"><span class="sub">'+l+'</span><b>'+v+'</b></div>').join('');
@@ -3051,7 +3075,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.4.3';
+const APP_VERSION='2.5.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3088,8 +3112,49 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   };
   q.addEventListener('input',run); q.addEventListener('keydown',e=>{ if(e.key==='Escape'&&q.value){ q.value=''; run(); e.stopPropagation(); } });
 })();
+
+/* ---- notification centre (Today column; top of Devices on narrow screens) ---- */
+(function(){
+  const open=new Set(); let last='';
+  function items(){
+    const out=[];
+    if(window.__devDown) out.push({k:'dev',lv:'bad',t:'Can’t reach your lights',d:'Lumora can’t talk to Home Assistant. Check that Home Assistant is running and on the same network.'});
+    if(typeof power!=='undefined'&&power.outage) out.push({k:'pow',lv:'bad',t:'Power outage',d:'Every light is offline. Lumora will put them back when the power returns.'});
+    else state.filter(d=>d.online===false).forEach(d=>out.push({k:'off:'+d.id,lv:'warn',t:d.name+' is offline',d:'It will clear when the light comes back.',tips:FIX_TIPS}));
+    cams.filter(c=>c.online===false).forEach(c=>out.push({k:'cam:'+c.id,lv:'warn',t:c.name+' camera is offline',d:'It will clear when the camera is back.'}));
+    (window.__noteAl||[]).forEach(a=>out.push({k:'al:'+(a.title||'')+(a.updated||''),lv:a.level==='red'?'bad':'warn',t:String(a.title||'Weather alert').slice(0,120),d:'Environment Canada. Clears when the warning ends.',url:/^https:\/\/(www\.)?weather\.gc\.ca\//.test(a.url||'')?a.url:null}));
+    if(window.__noteSc) out.push({k:'sc',lv:'warn',t:window.__noteSc.text,d:'CCRCE. Clears when the notice is gone.',url:/^https:\/\/(www\.)?ccrce\.ca\//.test(window.__noteSc.url||'')?window.__noteSc.url:null});
+    if(window.__noteStale) out.push({k:'stale',lv:'info',t:'Lumora was updated',d:'Reload this page to use the new version.',act:['Reload',()=>location.reload()]});
+    else if(window.__noteUp) out.push({k:'up',lv:'info',t:'Update available: '+window.__noteUp,d:'Home Assistant installs it automatically, or open Apps, then Lumora, then Update.',act:['Show how',()=>updToast(window.__noteUp)]});
+    return out;
+  }
+  function paint(box,list){
+    box.replaceChildren();
+    if(!list.length){ const p=document.createElement('p'); p.className='nclear'; p.textContent='All clear. Nothing needs attention.'; box.appendChild(p); return; }
+    list.forEach(i=>{
+      const el=document.createElement('div'); el.className='nitem '+i.lv; const b=document.createElement('div');
+      if(/^off:/.test(i.k)){ const bl=document.createElement('span'); bl.className='nbulb'; bl.setAttribute('aria-hidden','true'); bl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.9.8 1.5 1.7 1.5 3.1h4c0-1.4.6-2.3 1.5-3.1A6 6 0 0 0 12 3z"/></svg>'; el.appendChild(bl); }
+      const t=document.createElement('div'); t.className='nt'; t.textContent=i.t; const d=document.createElement('div'); d.className='nd'; d.textContent=i.d; b.append(t,d);
+      if(i.tips){ const ol=document.createElement('ol'); i.tips.forEach(x=>{ const li=document.createElement('li'); li.textContent=x; ol.appendChild(li); }); ol.hidden=!open.has(i.k);
+        const bt=document.createElement('button'); bt.type='button'; bt.className='chip'; bt.textContent=ol.hidden?'How to fix':'Hide tips'; bt.setAttribute('aria-expanded',String(!ol.hidden));
+        bt.onclick=()=>{ if(open.has(i.k)) open.delete(i.k); else open.add(i.k); last=''; render(); }; b.append(bt,ol); }
+      if(i.url){ const a=document.createElement('a'); a.className='chip'; a.href=i.url; a.target='_blank'; a.rel='noopener noreferrer'; a.textContent='Details ↗'; b.appendChild(a); }
+      if(i.act){ const bt=document.createElement('button'); bt.type='button'; bt.className='chip'; bt.textContent=i.act[0]; bt.onclick=i.act[1]; b.appendChild(bt); }
+      el.appendChild(b); box.appendChild(el);
+    });
+  }
+  function render(){
+    if(!$('noteList')) return;
+    const list=items(); const sig=JSON.stringify(list.map(i=>[i.k,i.t,open.has(i.k)]));
+    if(sig===last) return; last=sig;
+    paint($('noteList'),list); paint($('noteListM'),list);
+  }
+  window.__renderNotes=render; window.__noteItems=items;
+  setInterval(render,3000);
+})();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '2.5.0':{t:'Lumora 2.5',items:['Offline lights flash on the panel, and Lumora checks for them every 5 seconds. Notifications now live beside the calendar (or at the top of Devices on small screens). Offline lights, cameras, weather warnings, school closures, a lost Home Assistant connection and available updates stay listed until they are fixed.']},
   '2.4.3':{t:'Lumora 2.4.3',items:['Fixes: the version line in Settings, camera pictures are size-limited, phone alert checks can no longer overlap, and the TV apps are now signed the same way every time so they can update in place.']},
   '2.4.2':{t:'Lumora 2.4.2',items:['When a phone alert test fails, Lumora now says which phone failed and what to check.']},
   '2.4.1':{t:'Lumora 2.4.1',items:['Search box at the top of Settings. Type a word like “camera” or “weather” to show only the matching sections.','Text messages: add a phone number under Phone alerts and pick a text service from Home Assistant (such as Twilio SMS) to get alerts by text as well.']},
@@ -3187,7 +3252,7 @@ if(REMOTE){
     else if(latest){ tag.classList.add('new'); tag.textContent='v'+cur+' · update available'; tag.setAttribute('aria-label','Version '+latest+' is available'); tag.onclick=()=>updToast(latest); }
     else { tag.textContent='v'+cur+(SRV?'':' preview'); tag.setAttribute('aria-label','Lumora version '+cur); }
   };
-  const paint=latest=>tags.forEach(t=>paintOne(t,latest));
+  const paint=latest=>{ window.__noteUp=latest&&!stale?latest:null; window.__noteStale=stale; tags.forEach(t=>paintOne(t,latest)); if(window.__renderNotes) window.__renderNotes(); };
   paint(SRV&&SRV.latest&&vcmp(SRV.latest,cur)>0?SRV.latest:null); window.__verPaint=paint; window.__verCur=cur;
   if(SRV&&SRV.user){
     const seenKey='hub-seenver'; let seen=null; try{ seen=localStorage.getItem(seenKey); }catch(e){}
@@ -3201,7 +3266,7 @@ if(REMOTE){
       let ok=true;
       try{
         const r=await fetch('/api/health',{credentials:'same-origin',cache:'no-store'}); if(!r.ok) throw new Error('down'); const h=await r.json();
-        if(h.version&&h.version!==cur&&!stale){ stale=true; paint(null); if(window.__startCountdown) window.__startCountdown(h.version); return 20000; }
+        if(h.version&&h.version!==cur&&!stale){ stale=true; window.__noteStale=true; paint(null); if(window.__startCountdown) window.__startCountdown(h.version); return 20000; }
         const l=h.latest&&vcmp(h.latest,cur)>0?h.latest:null; paint(l);
         if(l&&l!==shownLatest){ shownLatest=l; updToast(l); }
       }catch(e){ ok=false; }
@@ -3410,13 +3475,13 @@ if(REMOTE){
     if(!SRV||!SRV.user||settings.showAlerts===false) return; alLoaded=true;
     try{
       const r=await srvApi('GET','/api/alerts'); if(!r.ok) throw new Error('al');
-      const list=(r.json&&r.json.alerts)||[]; alBox.replaceChildren();
+      const list=(r.json&&r.json.alerts)||[]; window.__noteAl=list.slice(0,6); if(window.__renderNotes) window.__renderNotes(); alBox.replaceChildren();
       for(const a of list.slice(0,4)){
         const lvl=['yellow','orange','red','watch'].includes(a.level)?a.level:'info';
         alBox.appendChild(chip('a',lvl,lvl==='info'?'info':'warn',String(a.title||'Weather alert').slice(0,120),okUrl(a.url)?a.url:'https://weather.gc.ca/warnings/index_e.html?prov=ns','Environment Canada · Cumberland County North and Cobequid Pass'+(r.json.stale?' (older reading)':'')));
       }
     }catch(e){
-      alBox.replaceChildren(chip('span','ok','info','Warnings unavailable',null,'Could not reach Environment Canada. Check weather.gc.ca for official warnings.'));
+      window.__noteAl=window.__noteAl||[]; alBox.replaceChildren(chip('span','ok','info','Warnings unavailable',null,'Could not reach Environment Canada. Check weather.gc.ca for official warnings.'));
     }
     syncTop();
   }
@@ -3426,7 +3491,7 @@ if(REMOTE){
       const r=await srvApi('GET','/api/school'); if(!r.ok) throw new Error('sc');
       const d=r.json||{}; const url=okUrl(d.url)?d.url:'https://www.ccrce.ca/school_information/cancellations';
       const M={closed:['bad','Schools closed today'],buses:['warn','School buses cancelled'],delayed:['warn','School delayed opening'],weekend:['ok','No school · weekend'],none:['ok','No school closure posted'],unknown:['ok','School status unavailable']};
-      const m=M[d.status]||M.unknown;
+      const m=M[d.status]||M.unknown; window.__noteSc=['closed','buses','delayed'].includes(d.status)?{text:m[1],url:url}:null; if(window.__renderNotes) window.__renderNotes();
       const note=d.status==='none'?'No closure notice was found on the CCRCE site for today. That is not a guarantee, so confirm with CCRCE.':d.status==='unknown'?'Could not read the CCRCE site. Check it directly.':d.status==='weekend'?'Weekend.':(d.detail||'');
       scBox.replaceChildren(chip('a',m[0],'school',m[1],url,'Cumberland County (CCRCE) · '+note));
     }catch(e){
