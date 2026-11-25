@@ -280,7 +280,7 @@ h3+.srow,#lightNames .srow:first-child{border-top:0}
 .sgrid .panel.wide{grid-column:1/-1}
 body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;background:radial-gradient(38vmax 38vmax at 12% 18%,var(--o1),transparent 70%),radial-gradient(34vmax 34vmax at 88% 12%,var(--o2),transparent 70%),radial-gradient(40vmax 40vmax at 70% 92%,var(--o3),transparent 70%);animation:drift 26s ease-in-out infinite alternate}
 @keyframes drift{to{transform:translate3d(3%,-3%,0) scale(1.08)}}
-.lt,.rule,.auto,.cam,.panel,.card,.alloff,.dock,.toast{background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+.lt,.rule,.auto,.cam,.panel,.card,.alloff,.dock,.toast,.calbump{background:linear-gradient(135deg,var(--glass-a),var(--glass-b));border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
 .cam{border-style:dashed}
 .toast{border-left:4px solid #e0a030;background:color-mix(in srgb,var(--bg) 94%,transparent)}
 .lt.on{box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px var(--glass-shadow),0 0 36px -8px color-mix(in srgb,var(--c) 65%,transparent)}
@@ -521,23 +521,31 @@ main{max-width:1200px}
 html[data-server] .demoonly{display:none}
 html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,html[data-remote] h3.gap:has(+#sim){display:none}
 .srow.stackrow{flex-wrap:wrap}
+.calbump{position:fixed;z-index:21;pointer-events:none;border-radius:0 34px 34px 0 / 0 80px 80px 0;border:1px solid var(--glass-line,var(--line));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px #0003}
+.calbump{border-left:0!important;background:color-mix(in srgb,var(--glass-a,rgba(255,255,255,.5)) 55%,var(--glass-b,rgba(255,255,255,.26)))!important}
+.calflange{position:fixed;z-index:22;box-sizing:border-box;padding:0 4px 0 0}
+.calbump[hidden],.calflange[hidden]{display:none}
+@media (max-width:760px){.calbump,.calflange{display:none}}
+body[data-auth="out"] :is(.calbump,.calflange){display:none}
 .sidewidget{order:2;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
 .sidewidget[hidden]{display:none}
-.updbtn{order:3;align-self:flex-start;margin-top:8px}
-@media (max-width:760px){.updbtn{display:none}}
-.sclock{font:700 1.75rem "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+.sidetop{order:-1;margin:-12px -12px 4px;padding:20px 14px 30px;text-align:center;color:var(--onaccent,#fff);background:linear-gradient(165deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#000));border-radius:calc(var(--r,20px) + 4px) calc(var(--r,20px) + 4px) 50% 50% / calc(var(--r,20px) + 4px) calc(var(--r,20px) + 4px) 38px 38px;box-shadow:inset 0 1px 0 #fff4,0 6px 18px #0003}
+.sidetop[hidden]{display:none}
+.sidetop .sdate{color:inherit;opacity:.88;margin-top:4px}
+.sidetop .sclock small{color:inherit;opacity:.85}
+.sclock{font:700 1.9rem "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
 .sclock small{font-size:.72rem;margin-left:4px;color:var(--muted);font-weight:600}
 .sdate{font-size:.8rem;color:var(--muted)}
 .calnav{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:.82rem;font-weight:700;margin-top:4px}
 .calnav button{background:transparent;border:0;color:inherit;min-width:30px;min-height:30px;border-radius:8px;cursor:pointer;font-size:1rem;line-height:1}
 .calnav button:hover,.calnav button:focus-visible{background:var(--glass-in,var(--line))}
-.mcal{width:100%;border-collapse:collapse;font-size:.72rem;text-align:center;table-layout:fixed}
+.mcal{width:100%;border-collapse:collapse;font-size:.78rem;text-align:center;table-layout:fixed}
 .mcal th{color:var(--muted);font-weight:600;padding:2px 0}
 .mcal td{padding:1px 0}
-.mcal td span{display:grid;place-items:center;width:100%;max-width:26px;aspect-ratio:1;border-radius:50%;margin:0 auto}
+.mcal td span{display:grid;place-items:center;width:100%;max-width:28px;aspect-ratio:1;border-radius:50%;margin:0 auto}
 .mcal td.out span{color:var(--muted);opacity:.45}
 .mcal td.today span{background:var(--accent);color:var(--onaccent,#fff);font-weight:700}
-@media (max-width:760px){.sidewidget{display:none}}
+@media (max-width:760px){.sidewidget,.sidetop{display:none}}
 .bigclock{font:700 clamp(2.6rem,12vw,5rem) "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;line-height:1.05;margin:4px 0 2px}
 .bigclock small{font-size:.35em;margin-left:8px;color:var(--muted);font-weight:600}
 .clockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:var(--gap,12px);align-items:start;margin-top:12px}
@@ -558,6 +566,58 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
 .swread{font-size:clamp(2.2rem,9vw,3.4rem);margin:6px 0 10px}
 .laps{list-style:none;margin:10px 0 0;padding:0;max-height:240px;overflow:auto;font-variant-numeric:tabular-nums}
 .laps li{display:flex;justify-content:space-between;gap:8px;padding:6px 2px;border-top:1px solid var(--line);font-size:.9rem}
+.dock{gap:10px}
+/* notifications: same glass, accent and corner shape as the sidebar */
+.toast{position:relative;overflow:hidden;align-items:flex-start;gap:12px;padding:14px 12px 16px 14px;border-radius:calc(var(--r,20px) + 4px);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--glass-a)),var(--glass-b)),color-mix(in srgb,var(--bg) 95%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 38%,var(--glass-line));border-left:1px solid color-mix(in srgb,var(--accent) 38%,var(--glass-line));
+  box-shadow:inset 0 1px 0 var(--glass-hi),0 16px 40px color-mix(in srgb,var(--accent) 22%,var(--glass-shadow))}
+.toast::before{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.75}
+.toast.warn{border-color:color-mix(in srgb,#ffb35c 55%,var(--glass-line));border-left-color:color-mix(in srgb,#ffb35c 55%,var(--glass-line));background:linear-gradient(135deg,color-mix(in srgb,#ffb35c 14%,var(--glass-a)),var(--glass-b)),color-mix(in srgb,var(--bg) 95%,transparent)}
+.toast.warn::before{background:linear-gradient(90deg,transparent,#ffb35c,transparent)}
+.toast .ticon{width:40px;height:40px;border-radius:calc(var(--r,20px) - 4px);background:linear-gradient(165deg,color-mix(in srgb,var(--accent) 92%,#fff),color-mix(in srgb,var(--accent) 55%,#000));color:var(--onaccent,#fff);box-shadow:inset 0 1px 0 #fff5,0 6px 16px color-mix(in srgb,var(--accent) 40%,transparent)}
+.toast.warn .ticon{background:linear-gradient(165deg,#ffd08f,#e8902f);color:#2a1a05;box-shadow:inset 0 1px 0 #fff7,0 6px 16px #ffb35c66}
+.toast .tmsg{font:700 1.02rem "Bricolage Grotesque",system-ui,sans-serif;color:var(--ink)}
+.toast .tfix{border-radius:calc(var(--r,20px) - 4px);background:color-mix(in srgb,var(--accent) 7%,var(--glass-in))}
+.toast .tlink{color:var(--accent);font-weight:700}
+.toast .x{background:color-mix(in srgb,var(--accent) 10%,var(--glass-a));border-color:color-mix(in srgb,var(--accent) 30%,var(--glass-line))}
+.toast .tbar{position:absolute;left:0;bottom:0;height:3px;width:100%;transform-origin:left;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#fff));opacity:.85;animation:tbarrun linear forwards}
+.toast.warn .tbar{background:linear-gradient(90deg,#e8902f,#ffd08f)}
+@keyframes tbarrun{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+:root[data-motion="reduced"] .toast .tbar{animation:none;display:none}
+.bellbtn{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 38%,var(--glass-line));box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 26px color-mix(in srgb,var(--accent) 20%,var(--glass-shadow))}
+.bellbtn svg{color:var(--accent)}
+@media (min-width:761px){.toasts{left:262px;width:min(400px,calc(100% - 286px))}}
+.sidetop{padding:18px 14px 30px;margin-bottom:0;background:linear-gradient(165deg,color-mix(in srgb,var(--accent) 92%,#fff),color-mix(in srgb,var(--accent) 52%,#000))}
+.sidetop .sclock{font-size:2.05rem;letter-spacing:-.01em;text-shadow:0 1px 8px #0003}
+.sidetop .sdate{font-size:.82rem;margin-top:5px}
+.sverrow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.sidetop .vtag{margin:0;align-self:auto;color:inherit;background:#ffffff26;border:1px solid #ffffff4d;font-size:.72rem;padding:4px 10px;min-height:28px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidetop .vtag.new{background:#fff;color:var(--accent);border-color:#fff}
+.updic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;color:inherit;background:#ffffff26;border:1px solid #ffffff4d;cursor:pointer;padding:0}
+.updic:hover:not(:disabled),.updic:focus-visible{background:#ffffff45}
+.updic.busy svg{animation:updspin .9s linear infinite}
+@keyframes updspin{to{transform:rotate(360deg)}}
+:root[data-motion="reduced"] .updic.busy svg{animation:none}
+@media (min-width:761px){header .vtag{display:none}}
+@media (min-width:761px){
+  .dock .brand{padding:2px 8px 0;font-size:1.05rem}
+  .dock .tabs{gap:3px}
+  .dock .tab{display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:16px;font-size:.95rem;position:relative;min-height:40px}
+  .dock .tab .ti{flex:none;opacity:.85}
+  .dock .tab:hover:not([aria-current=true]){background:var(--glass-in,#fff3);color:inherit}
+  .dock .tab[aria-current=true]{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 72%,#fff));box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 38%,transparent),inset 0 1px 0 #fff5}
+  .dock .tab[aria-current=true] .ti{opacity:1}
+}
+@media (max-width:760px){.tab .ti{display:none}}
+.sidewidget,.strip,.acct{border-top:0;padding-top:0}
+@media (min-width:761px){
+.dock .strip{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dock .strip .btn{border-radius:14px;min-height:36px;padding:6px 8px;font-size:.8rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+.dock .acct{flex-direction:row;align-items:center;flex-wrap:nowrap;gap:8px;padding:8px 8px 8px 10px;border-radius:18px;background:var(--glass-in,#fff3);border:1px solid var(--glass-line,var(--line))}
+.dock .acct .whorow{flex:1;min-width:0}
+.dock .acct #acctOut{min-height:32px;padding:5px 11px;font-size:.8rem;flex:none}
 .vtag{align-self:flex-start;margin-left:auto;font:600 .78rem system-ui,sans-serif;padding:5px 11px;border-radius:999px;border:1px solid var(--glass-line,var(--line));background:var(--glass-in,transparent);color:var(--muted);cursor:default;min-height:30px}
 .vtag.new{color:var(--accent);border-color:var(--accent);cursor:pointer}
 </style>
@@ -570,7 +630,7 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
     <h1 id="homeTitle">Home</h1>
     <p id="summary">Loading lights…</p>
   </div>
-  <button class="vtag" id="verTag" type="button" aria-live="polite"></button>
+  <button class="vtag" id="verTagM" type="button" aria-live="polite"></button>
 </header>
 
 <section data-tab="Devices">
@@ -795,17 +855,24 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
 </section>
 </main>
 <div class="dock">
+  <div class="sidetop" id="sideTop">
+    <div class="sclock" id="sClock" role="timer" aria-live="off"></div>
+    <div class="sdate" id="sDate"></div>
+    <div class="sverrow">
+      <button class="vtag" id="verTag" type="button" aria-live="polite"></button>
+      <button class="updic" id="updBtn" type="button" aria-label="Check for updates" title="Check for updates"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v3.5h3.5"/><path d="M4 13a8 8 0 0 0 14.9 3M20 19v-3.5h-3.5"/></svg></button>
+    </div>
+  </div>
   <div class="brand" data-brand></div>
   <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
   <div class="tabs" id="tabs"></div>
-  <div class="sidewidget" id="sideClock" aria-label="Clock and calendar">
-    <div class="sclock" id="sClock" role="timer" aria-live="off"></div>
-    <div class="sdate" id="sDate"></div>
-    <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
-    <table class="mcal" id="mcal" aria-label="Calendar"></table>
-  </div>
-  <button class="btn sm updbtn" id="updBtn" type="button">Check for updates</button>
+  <div class="sidewidget" id="sideClock" aria-label="Calendar"><div id="calSlot"></div></div>
   <div class="acct" id="acct"></div>
+</div>
+<div class="calbump" id="calBump" aria-hidden="true" hidden></div>
+<div class="calflange" id="calFlange" hidden>
+  <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
+  <table class="mcal" id="mcal" aria-label="Calendar"></table>
 </div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <button class="bellbtn" id="notifBtn" type="button"><svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M8.7 3A6 6 0 0 1 18 8c0 2.7.4 4.6.9 6M6.3 6.3C6.1 6.9 6 7.4 6 8c0 7-3 9-3 9h14M10.3 21a1.94 1.94 0 0 0 3.4 0M2 2l20 20"/></svg><span class="lbl">Hide notifications</span></button>
@@ -1622,11 +1689,11 @@ $('alloff').onclick=async()=>{
   state=await adapter.list(); save(); render(); chime(false); log('All lights off');
 };
 const FIX_TIPS=[
-  'Check the bulb has power: the wall switch is on and the bulb is screwed in firmly.',
+  'Check the light has power: the wall switch is on and the light is fitted in firmly.',
   'Switch it off at the wall for 10 seconds, then back on to restart it.',
-  'Check your Wi-Fi. Most smart bulbs only use 2.4 GHz Wi-Fi, and a restarted router can take a minute to reconnect them.',
+  'Check your Wi-Fi. Most smart lights only use 2.4 GHz Wi-Fi, and a restarted router can take a minute to reconnect them.',
   'If several lights are offline, restart your router.',
-  'Still offline? Open the Lepro app. If it shows offline there too, re-add the bulb using the app’s reset steps.'
+  'Still offline? Open the Lepro app. If it shows offline there too, re-add the light using the app’s reset steps.'
 ];
 function toast(msg,tips){
   if(!settings.popups) return;
@@ -1650,7 +1717,9 @@ function toast(msg,tips){
   const box=$('toasts');
   while(box.children.length>=3) box.firstChild.remove();
   box.appendChild(el);
-  tm=setTimeout(close,(tips&&tips.length?Math.max(settings.popupSecs,20):settings.popupSecs)*1000);
+  const secs=(tips&&tips.length?Math.max(settings.popupSecs,20):settings.popupSecs);
+  const bar=document.createElement('i'); bar.className='tbar'; bar.setAttribute('aria-hidden','true'); bar.style.animationDuration=secs+'s'; el.appendChild(bar);
+  tm=setTimeout(close,secs*1000);
 }
 function syncNotif(){
   const b=$('notifBtn'); if(!b) return;
@@ -1714,8 +1783,16 @@ function showTab(n){
   cur.classList.add('fadeout');
   setTimeout(()=>{ if(tok===tabTok) swap(); },200);
 }
+const TAB_ICONS={
+  Devices:'<path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/>',
+  Automations:'<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+  Activity:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+  Clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  Apps:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
+  Settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>'
+};
 for(const n of TABS){
-  const b=document.createElement('button'); b.className='tab'; b.textContent=n; b.dataset.go=n; b.onclick=()=>showTab(n); $('tabs').appendChild(b);
+  const b=document.createElement('button'); b.className='tab'; b.innerHTML='<svg class="ti" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(TAB_ICONS[n]||'')+'</svg><span></span>'; b.querySelector('span').textContent=n; b.dataset.go=n; b.onclick=()=>showTab(n); $('tabs').appendChild(b);
 }
 
 let startTab='Devices';
@@ -1747,7 +1824,7 @@ function apply(){
   syncNotif(); renderSunInfo(); renderPresence();
   document.documentElement.dataset.motion=settings.reduceMotion?'reduced':'';
   applyTV();
-  $('sideClock').hidden=!settings.sideClock;
+  $('sideClock').hidden=!settings.sideClock; $('sideTop').hidden=!settings.sideClock; if(window.__placeCal) window.__placeCal();
   $('homeTitle').textContent=settings.homeName||'Home';
   if(SRV) $('conn').textContent=REMOTE?'Connected to your Lumora server and Home Assistant. Lights are real.':'Connected to your Lumora server. Lights are simulated until the server is given a Home Assistant address.'; else
   $('conn').textContent=settings.hubUrl?'Server address saved. Connecting to it isn’t built yet, so lights stay simulated.':'Demo mode: lights are simulated.';
@@ -2375,7 +2452,7 @@ if(SRV){
 
 /* ---- version tag and update popups ---- */
 $('updBtn').onclick=async()=>{
-  const b=$('updBtn'), cur=window.__verCur||APP_VERSION; b.disabled=true; b.textContent='Checking…';
+  const b=$('updBtn'), cur=window.__verCur||APP_VERSION; b.disabled=true; b.classList.add('busy');
   try{
     if(!SRV){ toast('This is the preview, so there is nothing to update. Your Lumora server checks for updates.'); return; }
     const r=await srvApi('POST','/api/check-update',{});
@@ -2384,18 +2461,19 @@ $('updBtn').onclick=async()=>{
     if(l&&vcmp(l,cur)>0){ if(window.__verPaint) window.__verPaint(l); toast('Version '+l+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
     else if(!r.json.checked) toast('This server isn’t set up to look for updates. In Home Assistant, open Apps to see if there is one.');
     else toast('You’re up to date. Version '+cur+' is the latest.');
-  } finally{ b.disabled=false; b.textContent='Check for updates'; }
+  } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.4.0';
 const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=String(b).split('.').map(n=>parseInt(n,10)||0); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)?1:-1; } return 0; };
 {
-  const tag=$('verTag'), cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
-  const paint=latest=>{
-    tag.className='vtag'; tag.onclick=null;
+  const tags=[$('verTag'),$('verTagM')], cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
+  const paintOne=(tag,latest)=>{
+    tag.classList.remove('new'); tag.onclick=null;
     if(stale){ tag.classList.add('new'); tag.textContent='Updated · Reload'; tag.setAttribute('aria-label','Lumora was updated. Reload to use the new version.'); tag.onclick=()=>location.reload(); }
     else if(latest){ tag.classList.add('new'); tag.textContent='v'+cur+' · update available'; tag.setAttribute('aria-label','Version '+latest+' is available'); tag.onclick=()=>toast('Version '+latest+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.'); }
     else { tag.textContent='v'+cur+(SRV?'':' preview'); tag.setAttribute('aria-label','Lumora version '+cur); }
   };
+  const paint=latest=>tags.forEach(t=>paintOne(t,latest));
   paint(SRV&&SRV.latest&&vcmp(SRV.latest,cur)>0?SRV.latest:null); window.__verPaint=paint; window.__verCur=cur;
   if(SRV&&SRV.user){
     const seenKey='hub-seenver'; let seen=null; try{ seen=localStorage.getItem(seenKey); }catch(e){}
@@ -2542,11 +2620,37 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   const visible=n=>{ const s=document.querySelector('[data-tab="'+n+'"]'); return !!s&&!s.hidden; };
   function tick(){
     const d=new Date();
-    if(!$('sideClock').hidden){ $('sClock').innerHTML=clockHTML(d); $('sDate').textContent=d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'}); drawCal(false); }
+    if(!$('sideTop').hidden){ $('sClock').innerHTML=clockHTML(d); $('sDate').textContent=d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'}); drawCal(false); }
     if(visible('Clock')){ $('bClock').innerHTML=clockHTML(d); $('bDate').textContent=dateStr(d); $('swRead').textContent=swFmt(swMs()); }
     tickTimers();
   }
-  drawTimers(); drawSw(); drawCal(true); tick(); setInterval(tick,200);
+  /* the calendar sits in a flange that curves out past the sidebar's edge */
+  const OVER=26; let lastPos='';
+  function placeCal(){
+    const slot=$('calSlot'), fl=$('calFlange'), bp=$('calBump'), dock=document.querySelector('.dock');
+    const off=!slot||!dock||$('sideClock').hidden||getComputedStyle($('sideClock')).display==='none';
+    const unmask=()=>{ ['-webkit-mask-image','mask-image','-webkit-mask-composite','mask-composite','-webkit-mask-size','mask-size','-webkit-mask-position','mask-position','-webkit-mask-repeat','mask-repeat'].forEach(k=>dock&&dock.style.removeProperty(k)); };
+    if(off||(window.matchMedia&&matchMedia('(max-width:760px)').matches)){ fl.hidden=true; bp.hidden=true; unmask(); return; }
+    const d=dock.getBoundingClientRect(), s=slot.getBoundingClientRect(), padL=12;
+    const w=Math.round(d.right-d.left-padL*2+OVER-2);
+    fl.hidden=false; fl.style.width=w+'px'; fl.style.left=Math.round(d.left+padL)+'px';
+    const h=fl.offsetHeight; if(Math.abs(slot.offsetHeight-h)>1) slot.style.height=h+'px';
+    const top=Math.round(s.top), inside=top>=d.top+4&&top+h<=d.bottom-4;
+    fl.style.top=top+'px'; fl.style.visibility=inside?'visible':'hidden';
+    bp.hidden=!inside;
+    const GAP=6;
+    bp.style.left=Math.round(d.right-GAP)+'px'; bp.style.width=(OVER+GAP)+'px'; bp.style.top=(top-8)+'px'; bp.style.height=(h+16)+'px';
+    /* cut the sidebar's own edge where the bulge joins it, so the two shapes read as one */
+    if(inside){
+      const hy=Math.round(top-8-d.top), hh=h+16, m={'mask-image':'linear-gradient(#000,#000),linear-gradient(#000,#000)','mask-repeat':'no-repeat','mask-size':'100% 100%,'+GAP+'px '+hh+'px','mask-position':'0 0,100% '+hy+'px','mask-composite':'exclude'};
+      for(const k in m){ dock.style.setProperty(k,m[k]); dock.style.setProperty('-webkit-'+k,k==='mask-composite'?'xor':m[k]); }
+    } else unmask();
+  }
+  window.__placeCal=placeCal;
+  addEventListener('resize',placeCal);
+  document.querySelector('.dock').addEventListener('scroll',placeCal,{passive:true});
+  const posTimer=setInterval(placeCal,300);
+  drawTimers(); drawSw(); drawCal(true); tick(); placeCal(); setInterval(tick,200);
 })();
 ['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
 $('splash').onclick=endSplash; setTimeout(endSplash,1800);
