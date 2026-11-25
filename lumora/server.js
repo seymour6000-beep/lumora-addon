@@ -30,6 +30,9 @@ function loadConfig(env = process.env) {
     quiet: truthy(env.QUIET),
     updateUrl: env.UPDATE_URL || '',
     weatherName: env.WEATHER_NAME || 'Amherst, NS',
+    alertsUrl: env.ALERTS_URL || 'https://weather.gc.ca/rss/battleboard/ns14_e.xml',
+    schoolUrls: (env.SCHOOL_URLS || 'https://www.ccrce.ca/,https://www.ccrce.ca/school_information/cancellations').split(',').map((x) => x.trim()).filter(Boolean),
+    timeZone: env.TZ_NAME || 'America/Halifax',
     weatherUrl: env.WEATHER_URL || ('https://api.open-meteo.com/v1/forecast?latitude=' + (Number(env.WEATHER_LAT) || 45.8167) + '&longitude=' + (Number(env.WEATHER_LON) || -64.2167)
       + '&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,relative_humidity_2m&wind_speed_unit=kmh&temperature_unit=celsius&timezone=America%2FHalifax'),
   };
@@ -175,6 +178,92 @@ function createApp(userConfig = {}) {
       } finally { wxBusy = null; }
     })();
     return wxBusy;
+  }
+  /* official weather alerts: Environment Canada's Atom feed for Cumberland County North and Cobequid Pass (Amherst) */
+  const decode = (t) => String(t).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, '&');
+  const plain = (t) => decode(t).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  function parseAlerts(xml) {
+    const out = [];
+    for (const m of String(xml).matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+      const e = m[1];
+      const title = plain((e.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '');
+      if (!title || /^no (alerts|watches or warnings)/i.test(title) || /\bended\b/i.test(title)) continue;
+      const t = title.toLowerCase();
+      const level = /red warning/.test(t) ? 'red' : /orange warning/.test(t) ? 'orange' : /yellow warning/.test(t) ? 'yellow' : /warning/.test(t) ? 'orange' : /watch/.test(t) ? 'watch' : 'info';
+      const link = (e.match(/<link[^>]*href="([^"]+)"/) || [])[1] || '';
+      out.push({ title: title.replace(/,\s*Cumberland County.*$/i, '').slice(0, 120), level, url: /^https:\/\/(www\.)?weather\.gc\.ca\//.test(link) ? link : 'https://weather.gc.ca/warnings/index_e.html?prov=ns',
+        updated: (e.match(/<updated>([^<]+)<\/updated>/) || [])[1] || '' });
+    }
+    return out;
+  }
+  let al = null, alAt = 0, alBusy = null;
+  function getAlerts() {
+    if (al && Date.now() - alAt < 300000) return Promise.resolve(al);
+    if (alBusy) return alBusy;
+    alBusy = (async () => {
+      try {
+        const r = await fetch(cfg.alertsUrl, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) throw new Error('alerts status ' + r.status);
+        al = { region: 'Cumberland County North and Cobequid Pass', alerts: parseAlerts(await r.text()), at: Date.now() };
+        alAt = Date.now();
+        return al;
+      } catch (e) {
+        if (al && Date.now() - alAt < 30 * 60000) return { ...al, stale: true };
+        throw e;
+      } finally { alBusy = null; }
+    })();
+    return alBusy;
+  }
+
+  /* school notices: the board (CCRCE) publishes closures as plain notices, with no feed, so this only looks for a notice dated today.
+     "none" means no notice was found, which is not proof that schools are open. */
+  function localParts(d = new Date()) {
+    const f = (o) => new Intl.DateTimeFormat('en-US', { timeZone: cfg.timeZone, ...o }).format(d);
+    return { weekday: f({ weekday: 'long' }), month: f({ month: 'long' }), mon: f({ month: 'short' }), day: f({ day: 'numeric' }), year: f({ year: 'numeric' }) };
+  }
+  function scanSchool(text, lp) {
+    const dates = [`${lp.weekday}, ${lp.month} ${lp.day}, ${lp.year}`, `${lp.month} ${lp.day}, ${lp.year}`, `${lp.mon}. ${lp.day}, ${lp.year}`, `${lp.mon} ${lp.day}, ${lp.year}`];
+    let best = null; const rank = { closed: 3, buses: 2, delayed: 1 };
+    for (const d of dates) {
+      let i = -1;
+      while ((i = text.indexOf(d, i + 1)) !== -1) {
+        const w = text.slice(Math.max(0, i - 260), i + d.length + 260);
+        if (!/(Cumberland|all CCRCE|all schools|Amherst|Chignecto)/i.test(w)) continue;
+        let kind = null;
+        if (/clos(ed|ure)/i.test(w)) kind = 'closed'; else if (/bus(es)?[^.]{0,40}cancel|cancel[^.]{0,40}bus/i.test(w)) kind = 'buses'; else if (/delay/i.test(w)) kind = 'delayed'; else if (/cancel/i.test(w)) kind = 'closed';
+        if (kind && (!best || rank[kind] > rank[best.kind])) best = { kind, detail: w.replace(/\s+/g, ' ').trim().slice(0, 200) };
+      }
+    }
+    return best;
+  }
+  let sc = null, scAt = 0, scBusy = null;
+  function getSchool() {
+    if (sc && Date.now() - scAt < 300000) return Promise.resolve(sc);
+    if (scBusy) return scBusy;
+    scBusy = (async () => {
+      const lp = localParts();
+      let res;
+      if (lp.weekday === 'Saturday' || lp.weekday === 'Sunday') res = { status: 'weekend' };
+      else {
+        let loaded = 0, best = null;
+        for (const u of cfg.schoolUrls) {
+          try {
+            const r = await fetch(u, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'Lumora/' + VERSION } });
+            if (!r.ok) continue;
+            const html = (await r.text()).slice(0, 1500000);
+            loaded++;
+            const text = plain(html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' '));
+            const f = scanSchool(text, lp);
+            if (f && (!best || { closed: 3, buses: 2, delayed: 1 }[f.kind] > { closed: 3, buses: 2, delayed: 1 }[best.kind])) best = f;
+          } catch (e) { /* try the next page */ }
+        }
+        res = best ? { status: best.kind, detail: best.detail } : { status: loaded ? 'none' : 'unknown' };
+      }
+      res.at = Date.now(); res.url = cfg.schoolUrls[cfg.schoolUrls.length - 1] || '';
+      sc = res; scAt = Date.now();
+      return res;
+    })().finally(() => { scBusy = null; });
+    return scBusy;
   }
   const updTimer = cfg.updateUrl ? setInterval(checkUpdate, 6 * 3600 * 1000) : null;
   if (updTimer) updTimer.unref();
@@ -338,6 +427,14 @@ function createApp(userConfig = {}) {
       if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
       try { return json(req, res, 200, await getWeather()); }
       catch (e) { return fail(req, res, 502, 'weather_unavailable', 'Weather isn’t available right now.'); }
+    }
+
+    if ((p === '/api/alerts' || p === '/api/school') && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      const wait = bump(hits, 'info|' + ip, 40, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      try { return json(req, res, 200, p === '/api/alerts' ? await getAlerts() : await getSchool()); }
+      catch (e) { return fail(req, res, 502, 'unavailable', 'That information isn’t available right now.'); }
     }
 
     if (p === '/api/check-update' && method === 'POST') {
@@ -553,6 +650,7 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
+    parseAlerts, scanSchool,
     close() { clearInterval(tidy); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }

@@ -628,9 +628,69 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
 .dock .acct #acctOut{min-height:32px;padding:5px 11px;font-size:.8rem;flex:none}
 .vtag{align-self:flex-start;margin-left:auto;font:600 .78rem system-ui,sans-serif;padding:5px 11px;border-radius:999px;border:1px solid var(--glass-line,var(--line));background:var(--glass-in,transparent);color:var(--muted);cursor:default;min-height:30px}
 .vtag.new{color:var(--accent);border-color:var(--accent);cursor:pointer}
+
+/* alerts + school in the top bar */
+.tbal,.tbsc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.tbal[hidden],.tbsc[hidden]{display:none}
+.chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:6px 12px;border-radius:999px;font:600 13px/1.2 inherit;color:var(--ink);text-decoration:none;border:1px solid var(--glass-line);background:color-mix(in srgb,var(--surface) 70%,transparent);box-shadow:inset 0 1px 0 var(--glass-hi)}
+a.chip:hover{border-color:var(--accent)}
+a.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chip svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.yellow{background:color-mix(in srgb,#f5c518 30%,var(--surface));border-color:#d9a900}
+.chip.orange{background:color-mix(in srgb,#ff8a1f 34%,var(--surface));border-color:#e06f00}
+.chip.red{background:color-mix(in srgb,#e5303a 38%,var(--surface));border-color:#c4121c}
+.chip.watch{background:color-mix(in srgb,#4da3ff 26%,var(--surface));border-color:#2d82e0}
+.chip.ok{color:var(--muted);font-weight:500}
+.chip.bad{background:color-mix(in srgb,#e5303a 24%,var(--surface));border-color:#c4121c}
+.chip.good{background:color-mix(in srgb,#2fb36a 24%,var(--surface));border-color:#2a9a5c}
+.chip.warn{background:color-mix(in srgb,#f5c518 26%,var(--surface));border-color:#d9a900}
+@media (max-width:560px){.tbal,.tbsc{flex:1 1 100%}}
+
+/* backgrounds */
+#bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;display:none}
+html[data-bg]:not([data-bg="waves"]) #bgfx{display:block}
+html[data-bg]:not([data-bg="waves"]) .waves{display:none}
+#bgfx>*{position:absolute}
+#bgfx canvas{inset:0;width:100%;height:100%}
+.bgx-plain{inset:0;background:var(--bg)}
+.bgx-soft{inset:0;background:radial-gradient(70% 60% at 20% 10%,color-mix(in srgb,var(--accent) 22%,transparent),transparent),radial-gradient(60% 55% at 85% 90%,color-mix(in srgb,var(--accent) 14%,transparent),transparent),var(--bg)}
+.bgx-dots{inset:0;background-color:var(--bg);background-image:radial-gradient(color-mix(in srgb,var(--ink) 16%,transparent) 1.5px,transparent 1.6px);background-size:26px 26px}
+.bgx-topo{inset:0;background-color:var(--bg);color:color-mix(in srgb,var(--ink) 14%,transparent)}
+.bgx-topo svg{width:100%;height:100%}
+.bgx-tri{inset:0;background-color:var(--bg);color:color-mix(in srgb,var(--ink) 10%,transparent)}
+.bgx-tri svg{width:100%;height:100%}
+.bgx-aurora{inset:0;background:var(--bg)}
+.bgx-aurora i{display:block;position:absolute;left:-20%;width:140%;height:55%;filter:blur(60px);opacity:.5;animation:aur 22s ease-in-out infinite alternate}
+.bgx-aurora i:nth-child(1){top:-8%;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 70%,transparent),color-mix(in srgb,#7a5cff 60%,transparent),transparent)}
+.bgx-aurora i:nth-child(2){top:12%;background:linear-gradient(90deg,transparent,color-mix(in srgb,#2fe6b0 55%,transparent),color-mix(in srgb,var(--accent) 50%,transparent),transparent);animation-duration:30s;animation-direction:alternate-reverse}
+.bgx-aurora i:nth-child(3){top:30%;opacity:.35;background:linear-gradient(90deg,transparent,color-mix(in srgb,#ff6ad5 50%,transparent),transparent);animation-duration:38s}
+@keyframes aur{0%{transform:translateX(-8%) skewY(-4deg) scaleY(.9)}100%{transform:translateX(8%) skewY(5deg) scaleY(1.15)}}
+.bgx-flow{inset:-30%;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 30%,var(--bg)),var(--bg),color-mix(in srgb,#7a5cff 24%,var(--bg)),color-mix(in srgb,var(--accent) 22%,var(--bg)));background-size:300% 300%;animation:flow 28s ease-in-out infinite}
+@keyframes flow{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+.bgx-stars{inset:0;background:radial-gradient(80% 60% at 50% 110%,color-mix(in srgb,var(--accent) 22%,transparent),transparent),var(--bg)}
+.bgx-stars i{position:absolute;border-radius:50%;background:var(--ink);animation:tw 4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:.85}}
+.bgx-lights{inset:0;background:var(--bg)}
+.bgx-lights i{position:absolute;border-radius:50%;filter:blur(40px);opacity:.4;animation:flt 26s ease-in-out infinite alternate}
+@keyframes flt{0%{transform:translate(0,0) scale(1)}100%{transform:translate(var(--dx),var(--dy)) scale(1.3)}}
+.bgx-fog{inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--ink) 8%,var(--bg)),var(--bg))}
+.bgx-fog i{display:block;position:absolute;left:-30%;width:160%;height:40%;filter:blur(50px);background:color-mix(in srgb,var(--ink) 14%,transparent);animation:fogm 40s linear infinite alternate}
+@keyframes fogm{0%{transform:translateX(-10%)}100%{transform:translateX(10%)}}
+.bgx-sky{inset:0}
+.bgx-sky.day{background:linear-gradient(180deg,color-mix(in srgb,#5aa9ff 35%,var(--bg)),var(--bg) 75%)}
+.bgx-sky.night{background:linear-gradient(180deg,color-mix(in srgb,#10204a 70%,var(--bg)),var(--bg) 85%)}
+.bgx-sky.dim{filter:saturate(.6) brightness(.9)}
+.bgsel{display:flex;flex-wrap:wrap;gap:8px}
+.bgbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px/1.2 inherit;cursor:pointer}
+.bgbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+.bgbtn small{color:var(--muted);font-weight:500}
+.bggrp{flex:1 1 100%;margin:6px 0 0;font:600 12px/1 inherit;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+:root[data-motion="reduced"] #bgfx *{animation:none!important}
 </style>
 </head>
 <body data-auth="out">
+<div id="bgfx" aria-hidden="true"></div>
 <div class="waves" aria-hidden="true"><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 160 Q180 40 360 160 T720 160 T1080 160 T1440 160 T1800 160 T2160 160 T2520 160 T2880 160 V1000 H0Z"/></svg><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 140 Q120 230 240 140 T480 140 T720 140 T960 140 T1200 140 T1440 140 T1680 140 T1920 140 T2160 140 T2400 140 T2640 140 T2880 140 V1000 H0Z"/></svg><svg viewBox="0 0 2880 1000" preserveAspectRatio="none"><path d="M0 170 Q360 60 720 170 T1440 170 T2160 170 T2880 170 V1000 H0Z"/></svg></div>
 <main>
 <div class="topbar" id="topBar" hidden>
@@ -639,6 +699,8 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
     <div class="wxmain"><span class="wxtemp" id="wxTemp"></span><span class="wxfeel" id="wxFeel"></span></div>
     <div class="wxmeta"><b id="wxCond"></b><span class="sub" id="wxPlace"></span></div>
   </div>
+  <div class="tbal" id="tbAl" hidden aria-label="Weather warnings"></div>
+  <div class="tbsc" id="tbSc" hidden aria-label="School status"></div>
   <div class="tbup" id="tbUp" hidden role="status">
     <span class="tbmsg" id="tbMsg"></span>
     <button class="btn sm primary" id="tbNow" type="button">Reload now</button>
@@ -788,10 +850,13 @@ html[data-remote] #offsim,html[data-remote] #powersim,html[data-remote] #sim,htm
 <div class="panel"><h3>Home</h3>
   <div class="srow"><label for="sHome">Home name</label><input class="in" id="sHome" data-set="homeName" maxlength="24"></div>
         <div class="srow"><span>Show weather at the top</span><button class="sw" role="switch" data-set="showWeather" aria-label="Show weather at the top"><i></i></button></div>
+  <div class="srow"><span>Show weather warnings (Cumberland County)</span><button class="sw" role="switch" data-set="showAlerts" aria-label="Show weather warnings"><i></i></button></div>
+  <div class="srow"><span>Show school status (Cumberland County)</span><button class="sw" role="switch" data-set="showSchool" aria-label="Show school status"><i></i></button></div>
   <div class="srow"><span>Show clock and calendar in the sidebar</span><button class="sw" role="switch" data-set="sideClock" aria-label="Show clock and calendar in the sidebar"><i></i></button></div>
   <div class="srow"><label for="sTime">Time format</label><select id="sTime" data-set="timeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
   <div class="srow"><span>Reduce motion</span><button class="sw" role="switch" data-set="reduceMotion" aria-label="Reduce motion"><i></i></button></div>
 </div>
+<div class="panel wide"><h3>Background</h3><p class="sub" id="bgNote">Pick the backdrop behind everything. Moving ones pause when this tab is hidden and stop when “Reduce motion” is on.</p><div class="bgsel" id="bgs" role="group" aria-label="Background"></div></div>
 <div class="panel wide"><h3>Design</h3><div class="dgrid" id="designs" role="group" aria-label="Design"></div></div>
 <div class="panel"><h3>Lights</h3><div id="lightNames"></div><p class="sub">Names show on the Devices tab and in automations. Removing a light also takes it out of automations, and an automation with nothing left to do is deleted. A scan can find it again.</p></div>
 <div class="panel"><h3>Cameras</h3><div id="camNames"></div><p class="sub">Removing a camera also removes automations that use its motion alerts.</p></div>
@@ -1830,7 +1895,7 @@ let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splas
 const MARK='<span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -1851,6 +1916,7 @@ function apply(){
   document.documentElement.dataset.motion=settings.reduceMotion?'reduced':'';
   applyTV();
   if(window.__syncTop) window.__syncTop();
+  if(window.__bgRefresh) window.__bgRefresh();
   $('sideClock').hidden=!settings.sideClock; $('sideTop').hidden=!settings.sideClock;
   $('homeTitle').textContent=settings.homeName||'Home';
   if(SRV) $('conn').textContent=REMOTE?'Connected to your Lumora server and Home Assistant. Lights are real.':'Connected to your Lumora server. Lights are simulated until the server is given a Home Assistant address.'; else
@@ -2490,7 +2556,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='1.5.0';
+const APP_VERSION='1.6.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -2668,7 +2734,8 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
 
 /* ---- top bar: weather for Amherst and the update countdown ---- */
 (function(){
-  const bar=$('topBar'), wxBox=$('tbWx'), upBox=$('tbUp');
+  const bar=$('topBar'), wxBox=$('tbWx'), upBox=$('tbUp'), alBox=$('tbAl'), scBox=$('tbSc');
+  let alLoaded=false, scLoaded=false;
   const ICONS={
     clear:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     night:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
@@ -2710,9 +2777,52 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   let wx=null, failed=false;
   function syncTop(){
     const showWx=settings.showWeather!==false, cd=!upBox.hidden;
-    wxBox.hidden=!showWx; bar.hidden=!(showWx||cd);
+    const showAl=!!SRV&&settings.showAlerts!==false, showSc=!!SRV&&settings.showSchool!==false;
+    wxBox.hidden=!showWx; alBox.hidden=!(showAl&&alBox.childNodes.length); scBox.hidden=!(showSc&&scBox.childNodes.length);
+    bar.hidden=!(showWx||cd||!alBox.hidden||!scBox.hidden);
+    if(showAl&&!alLoaded) loadAl(); if(showSc&&!scLoaded) loadSc();
   }
   window.__syncTop=syncTop;
+  const SVGI={warn:'<path d="M12 3 2.5 20h19z"/><path d="M12 10v5M12 17.5h.01"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',school:'<path d="M3 9.5 12 5l9 4.5-9 4.5z"/><path d="M7 12v4.5c0 1 2.2 2 5 2s5-1 5-2V12"/>'};
+  const ico=k=>{ const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24'); s.setAttribute('aria-hidden','true'); s.innerHTML=SVGI[k]; return s; };
+  function chip(tag,cls,icon,text,href,title){
+    const e=document.createElement(tag); e.className='chip '+cls; e.appendChild(ico(icon));
+    const t=document.createElement('span'); t.textContent=text; e.appendChild(t);
+    if(href){ e.href=href; e.target='_blank'; e.rel='noopener noreferrer'; }
+    if(title) e.title=title; return e;
+  }
+  const okUrl=u=>typeof u==='string'&&/^https:\/\/(www\.)?(weather\.gc\.ca|ccrce\.ca)\//.test(u);
+  async function loadAl(){
+    if(!SRV||!SRV.user||settings.showAlerts===false) return; alLoaded=true;
+    try{
+      const r=await srvApi('GET','/api/alerts'); if(!r.ok) throw new Error('al');
+      const list=(r.json&&r.json.alerts)||[]; alBox.replaceChildren();
+      for(const a of list.slice(0,4)){
+        const lvl=['yellow','orange','red','watch'].includes(a.level)?a.level:'info';
+        alBox.appendChild(chip('a',lvl,lvl==='info'?'info':'warn',String(a.title||'Weather alert').slice(0,120),okUrl(a.url)?a.url:'https://weather.gc.ca/warnings/index_e.html?prov=ns','Environment Canada · Cumberland County North and Cobequid Pass'+(r.json.stale?' (older reading)':'')));
+      }
+    }catch(e){
+      alBox.replaceChildren(chip('span','ok','info','Warnings unavailable',null,'Could not reach Environment Canada. Check weather.gc.ca for official warnings.'));
+    }
+    syncTop();
+  }
+  async function loadSc(){
+    if(!SRV||!SRV.user||settings.showSchool===false) return; scLoaded=true;
+    try{
+      const r=await srvApi('GET','/api/school'); if(!r.ok) throw new Error('sc');
+      const d=r.json||{}; const url=okUrl(d.url)?d.url:'https://www.ccrce.ca/school_information/cancellations';
+      const M={closed:['bad','Schools closed today'],buses:['warn','School buses cancelled'],delayed:['warn','School delayed opening'],weekend:['ok','No school · weekend'],none:['ok','No school closure posted'],unknown:['ok','School status unavailable']};
+      const m=M[d.status]||M.unknown;
+      const note=d.status==='none'?'No closure notice was found on the CCRCE site for today. That is not a guarantee, so confirm with CCRCE.':d.status==='unknown'?'Could not read the CCRCE site. Check it directly.':d.status==='weekend'?'Weekend.':(d.detail||'');
+      scBox.replaceChildren(chip('a',m[0],'school',m[1],url,'Cumberland County (CCRCE) · '+note));
+    }catch(e){
+      scBox.replaceChildren(chip('span','ok','school','School status unavailable',null,'Check ccrce.ca'));
+    }
+    syncTop();
+  }
+  window.__loadAl=loadAl; window.__loadSc=loadSc;
+  setInterval(()=>{ if(!document.hidden){ loadAl(); } },5*60*1000);
+  setInterval(()=>{ if(!document.hidden){ loadSc(); } },10*60*1000);
   function drawWx(){
     $('wxPlace').textContent=(wx&&wx.place)||PLACE;
     if(!wx){
@@ -2736,12 +2846,12 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
         if(!c||typeof c.temperature_2m!=='number') throw new Error('wx');
         d={place:PLACE,temp:c.temperature_2m,feels:typeof c.apparent_temperature==='number'?c.apparent_temperature:c.temperature_2m,code:c.weather_code,day:c.is_day!==0,wind:c.wind_speed_10m,humidity:c.relative_humidity_2m,at:Date.now()};
       }
-      wx=d; failed=false;
+      wx=d; failed=false; window.__wxNow={code:d.code,day:d.day}; if(window.__bgRefresh) window.__bgRefresh();
     }catch(e){ failed=!wx; }
     drawWx();
   }
   window.__loadWx=loadWx;
-  drawWx(); syncTop(); loadWx();
+  drawWx(); syncTop(); loadWx(); if(SRV) setTimeout(()=>{ loadAl(); loadSc(); },300);
   setInterval(()=>{ if(!document.hidden) loadWx(); },10*60*1000);
   setInterval(()=>{ if(failed&&!document.hidden) loadWx(); },60*1000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(!wx||Date.now()-((wx&&wx.at)||0)>10*60*1000)) loadWx(); });
@@ -2759,6 +2869,113 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
     $('tbNow').onclick=go;
     $('tbStay').onclick=()=>{ clearInterval(cd); msg.textContent='Lumora was updated to version '+version+'. Reload to use it.'; $('tbBar').hidden=true; $('tbStay').hidden=true; };
   };
+})();
+
+/* ---- backgrounds ---- */
+(function(){
+  const root=document.documentElement, fx=$('bgfx'), RM=window.matchMedia?matchMedia('(prefers-reduced-motion:reduce)'):{matches:false};
+  const MODES=[
+    ['waves','Waves','animated'],['auto','Automatic','auto'],
+    ['plain','Plain','static'],['soft','Soft glow','static'],['dots','Dots','static'],['topo','Contours','static'],['tri','Triangles','static'],
+    ['aurora','Aurora','animated'],['flow','Gradient flow','animated'],['stars','Night sky','animated'],['lights','Floating lights','animated'],['fog','Drifting fog','animated'],['snow','Snowfall','animated'],['rain','Rain','animated']
+  ];
+  let mode='waves'; try{ mode=localStorage.getItem('hub-bg')||'waves'; }catch(e){}
+  if(!MODES.some(m=>m[0]===mode)) mode='waves';
+  let cur='', raf=0, cv=null, ctx=null, parts=[], kind='', lastT=0, still=false;
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const still_=()=>{ let r=false; try{ r=!!settings.reduceMotion; }catch(e){} return !!(RM.matches||r||root.dataset.motion==='reduced'); };
+  function resolve(){
+    if(mode!=='auto') return mode;
+    const w=window.__wxNow, h=new Date().getHours(), day=w?w.day:(h>=7&&h<19);
+    if(w){
+      const c=+w.code;
+      if(c>=71&&c<=77||c===85||c===86) return 'snow';
+      if(c>=95||(c>=51&&c<=67)||(c>=80&&c<=82)) return 'rain';
+      if(c===45||c===48) return 'fog';
+      if(!day) return 'stars';
+      if(c===0||c===1) return 'lights';
+      return 'flow';
+    }
+    return day?'flow':'stars';
+  }
+  function svgPattern(k){
+    if(k==='topo'){
+      let p=''; for(let i=0;i<9;i++){ const y=60+i*95, a=30+i*6; p+='<path d="M-50 '+y+' C 200 '+(y-a)+', 400 '+(y+a)+', 650 '+y+' S 1100 '+(y-a)+', 1450 '+y+'" />'; }
+      return '<svg viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width="2">'+p+'</svg>';
+    }
+    let t=''; for(let r=0;r<8;r++) for(let c=0;c<12;c++){ const x=c*130+(r%2?65:0)-40, y=r*115; t+='<path d="M'+x+' '+(y+115)+' l65 -115 l65 115z" opacity="'+(((r*7+c*3)%5)/5*.7+.15).toFixed(2)+'"/>'; }
+    return '<svg viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice" fill="currentColor">'+t+'</svg>';
+  }
+  function stop(){ cancelAnimationFrame(raf); raf=0; }
+  function fit(){ if(!cv) return; const d=Math.min(window.devicePixelRatio||1,2); cv.width=Math.round(innerWidth*d); cv.height=Math.round(innerHeight*d); ctx.setTransform(d,0,0,d,0,0); }
+  function inkColor(){ const v=getComputedStyle(root).getPropertyValue('--ink').trim(); return /^#[0-9a-f]{3,8}$/i.test(v)?v:'#888'; }
+  function build(k){
+    stop(); fx.replaceChildren(); cv=null; ctx=null; parts=[]; kind='';
+    const el=document.createElement('div');
+    if(k==='plain'){ el.className='bgx-plain'; }
+    else if(k==='soft'){ el.className='bgx-soft'; }
+    else if(k==='dots'){ el.className='bgx-dots'; }
+    else if(k==='topo'||k==='tri'){ el.className='bgx-'+k; el.innerHTML=svgPattern(k); }
+    else if(k==='aurora'){ el.className='bgx-aurora'; el.innerHTML='<i></i><i></i><i></i>'; }
+    else if(k==='flow'){ el.className='bgx-flow'; }
+    else if(k==='fog'){ el.className='bgx-fog'; el.innerHTML='<i style="top:8%"></i><i style="top:42%;animation-duration:55s"></i><i style="top:70%;animation-duration:47s"></i>'; }
+    else if(k==='stars'){
+      el.className='bgx-stars'; const n=innerWidth<700?60:110;
+      for(let i=0;i<n;i++){ const s=document.createElement('i'), z=rnd(1,2.6); s.style.cssText='left:'+rnd(0,100).toFixed(1)+'%;top:'+rnd(0,92).toFixed(1)+'%;width:'+z.toFixed(1)+'px;height:'+z.toFixed(1)+'px;animation-delay:-'+rnd(0,4).toFixed(1)+'s;animation-duration:'+rnd(2.5,6).toFixed(1)+'s'; el.appendChild(s); }
+    }
+    else if(k==='lights'){
+      el.className='bgx-lights'; const cols=['var(--accent)','#ffd36a','#ff8fd0','#7ab8ff','#7affc9'];
+      for(let i=0;i<7;i++){ const s=document.createElement('i'), z=rnd(160,340); s.style.cssText='left:'+rnd(-5,90).toFixed(0)+'%;top:'+rnd(-5,85).toFixed(0)+'%;width:'+z.toFixed(0)+'px;height:'+z.toFixed(0)+'px;background:'+cols[i%cols.length]+';--dx:'+rnd(-120,120).toFixed(0)+'px;--dy:'+rnd(-100,100).toFixed(0)+'px;animation-duration:'+rnd(18,34).toFixed(0)+'s;animation-delay:-'+rnd(0,20).toFixed(0)+'s'; el.appendChild(s); }
+    }
+    else if(k==='snow'||k==='rain'){
+      el.className='bgx-sky '+(new Date().getHours()>=7&&new Date().getHours()<19?'day':'night')+(k==='rain'?' dim':''); fx.appendChild(el);
+      cv=document.createElement('canvas'); fx.appendChild(cv); ctx=cv.getContext('2d'); fit(); kind=k;
+      const n=k==='snow'?(innerWidth<700?70:140):(innerWidth<700?90:170);
+      for(let i=0;i<n;i++) parts.push(k==='snow'?{x:rnd(0,innerWidth),y:rnd(0,innerHeight),r:rnd(1.2,3.6),v:rnd(25,70),dr:rnd(-12,12),ph:rnd(0,6.28)}:{x:rnd(0,innerWidth),y:rnd(0,innerHeight),l:rnd(10,22),v:rnd(520,900)});
+      lastT=0; draw(performance.now()); if(!still_()&&!document.hidden) raf=requestAnimationFrame(loop);
+      return;
+    }
+    fx.appendChild(el);
+  }
+  function draw(t){
+    if(!ctx) return; const dt=lastT?Math.min((t-lastT)/1000,.05):0; lastT=t; const W=innerWidth,H=innerHeight;
+    ctx.clearRect(0,0,W,H); ctx.fillStyle=ctx.strokeStyle=inkColor();
+    if(kind==='snow'){
+      ctx.globalAlpha=.7;
+      for(const p of parts){ p.y+=p.v*dt; p.x+=(p.dr+Math.sin(t/1000+p.ph)*10)*dt; if(p.y>H+5){p.y=-5;p.x=rnd(0,W);} if(p.x>W+5)p.x=-5; if(p.x<-5)p.x=W+5; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); }
+    } else {
+      ctx.globalAlpha=.35; ctx.lineWidth=1.2; ctx.beginPath();
+      for(const p of parts){ p.y+=p.v*dt; p.x-=p.v*dt*.12; if(p.y>H+20){p.y=-20;p.x=rnd(0,W+60);} ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-p.l*.12,p.y-p.l); }
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+  }
+  function loop(t){ if(document.hidden||still_()){ raf=0; return; } draw(t); raf=requestAnimationFrame(loop); }
+  function paint(force){
+    const k=resolve(); root.dataset.bg=mode==='waves'?'waves':'fx';
+    if(mode==='waves'){ if(cur!=='waves'){ stop(); fx.replaceChildren(); cur='waves'; } syncBtns(); return; }
+    if(k!==cur||force){ cur=k; build(k); }
+    else if(ctx){ if(!raf&&!still_()&&!document.hidden){ lastT=0; raf=requestAnimationFrame(loop); } else if(still_()){ stop(); draw(performance.now()); } }
+    syncBtns();
+  }
+  function syncBtns(){
+    document.querySelectorAll('#bgs .bgbtn').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===mode)));
+    const n=$('bgNote'); if(n&&mode==='auto') n.textContent='Automatic follows the weather and time of day in Amherst: snow, rain, fog, clear skies by day, stars at night. Currently showing: '+(MODES.find(m=>m[0]===cur)||['','Waves'])[1].toLowerCase()+'.'; else if(n) n.textContent='Pick the backdrop behind everything. Moving ones pause when this tab is hidden and stop when “Reduce motion” is on.';
+  }
+  function setBg(m){ mode=m; try{ localStorage.setItem('hub-bg',m); }catch(e){} paint(true); }
+  const wrap=$('bgs'); let grp='';
+  for(const [id,label,type] of MODES){
+    const g=type==='auto'?'Automatic':type==='static'?'Still':'Moving'; 
+    if(g!==grp&&id!=='waves'){ grp=g; const h=document.createElement('div'); h.className='bggrp'; h.textContent=g; wrap.appendChild(h); }
+    else if(id==='waves'&&!grp){ const h=document.createElement('div'); h.className='bggrp'; h.textContent='Default'; wrap.appendChild(h); grp='Default'; }
+    const b=document.createElement('button'); b.type='button'; b.className='bgbtn'; b.dataset.m=id; b.textContent=label; b.onclick=()=>setBg(id); wrap.appendChild(b);
+  }
+  window.__bgRefresh=()=>paint(false);
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) stop(); else paint(false); });
+  addEventListener('resize',()=>{ if(ctx){ fit(); if(still_()) draw(performance.now()); } },{passive:true});
+  if(RM.addEventListener) RM.addEventListener('change',()=>paint(false));
+  setInterval(()=>{ if(mode==='auto'&&!document.hidden) paint(false); },10*60*1000);
+  paint(true);
 })();
 ['splash','login'].forEach(id=>{ const w=document.querySelector('body>.waves'), t=$(id); if(w&&t) t.insertBefore(w.cloneNode(true),t.firstChild); });
 $('splash').onclick=endSplash; setTimeout(endSplash,1800);
