@@ -6,7 +6,7 @@ const LIGHT_ID = /^light\.[a-z0-9_]{1,100}$/;
 const CAMERA_ID = /^camera\.[a-z0-9_]{1,100}$/;
 const NOTIFY_ID = /^notify\.[a-z0-9_]{1,100}$/;
 
-function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
+function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, probes = () => ({}) }) {
   if (!url || !token) throw new Error('HA_URL and HA_TOKEN are both required');
   const base = String(url).replace(/\/+$/, '');
 
@@ -49,7 +49,15 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
   async function allLights() {
     const states = await req('/api/states');
     if (!Array.isArray(states)) throw Object.assign(new Error('Unexpected reply from Home Assistant'), { status: 502 });
-    return states.filter((s) => s && LIGHT_ID.test(String(s.entity_id))).map(mapLight);
+    const by = new Map(states.filter((s) => s && s.entity_id).map((s) => [s.entity_id, s]));
+    let pm = {}; try { pm = probes() || {}; } catch (e) { pm = {}; }
+    return states.filter((s) => s && LIGHT_ID.test(String(s.entity_id))).map((s) => {
+      const l = mapLight(s);
+      /* some bulbs never report "unavailable" when unplugged: a connectivity sensor (such as Home Assistant's Ping) can say it for them */
+      const sensor = pm[l.id] && by.get(pm[l.id]);
+      if (sensor && l.online && (sensor.state === 'off' || sensor.state === 'unavailable' || sensor.state === 'unknown')) l.online = false;
+      return l;
+    });
   }
 
   return {
@@ -84,6 +92,17 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
       return { type: type.split(';')[0], body };
     },
     /* ask the integrations to re-read these lights now (so a bulb that dropped off is noticed sooner) */
+    /* what Home Assistant itself says about each light, and which sensors could vouch for one being online */
+    async diagnose() {
+      const states = await req('/api/states');
+      if (!Array.isArray(states)) return { lights: [], sensors: [] };
+      const now = Date.now(); const age = (t) => { const v = Date.parse(t); return Number.isFinite(v) ? Math.max(0, Math.round((now - v) / 1000)) : null; };
+      return {
+        lights: states.filter((s) => s && LIGHT_ID.test(String(s.entity_id))).map((s) => ({ id: s.entity_id, name: String((s.attributes || {}).friendly_name || s.entity_id).replace(/[<>&"']/g, '').slice(0, 40), state: String(s.state), changedAgo: age(s.last_changed), updatedAgo: age(s.last_updated) })),
+        sensors: states.filter((s) => s && /^binary_sensor\.[a-z0-9_]{1,100}$/.test(String(s.entity_id)) && ((s.attributes || {}).device_class === 'connectivity' || /ping|connect|online|wifi|reach/i.test(String(s.entity_id) + ' ' + String((s.attributes || {}).friendly_name || ''))))
+          .map((s) => ({ id: s.entity_id, name: String((s.attributes || {}).friendly_name || s.entity_id).replace(/[<>&"']/g, '').slice(0, 50), state: String(s.state) })).slice(0, 100),
+      };
+    },
     async refresh(ids) {
       const list = (Array.isArray(ids) ? ids : []).filter((x) => LIGHT_ID.test(String(x))).slice(0, 60);
       if (list.length) await req('/api/services/homeassistant/update_entity', { method: 'POST', body: JSON.stringify({ entity_id: list }) });

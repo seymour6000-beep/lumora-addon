@@ -131,7 +131,7 @@ const validEmail = (s) => s.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s
 function createApp(userConfig = {}) {
   const cfg = { ...loadConfig({}), ...userConfig };
   const store = new Store(cfg.dataDir);
-  const ha = cfg.haUrl && cfg.haToken ? haAdapter.create({ url: cfg.haUrl, token: cfg.haToken, fetchImpl: cfg.fetchImpl }) : null;
+  const ha = cfg.haUrl && cfg.haToken ? haAdapter.create({ url: cfg.haUrl, token: cfg.haToken, fetchImpl: cfg.fetchImpl, probes: () => { try { const v = JSON.parse(store.db.data['hub-settings'] || '{}').probes; return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } } }) : null;
   const log = (...a) => { if (!cfg.quiet) console.log(new Date().toISOString(), ...a); };
 
   /* simple rate limiting, kept in memory */
@@ -816,6 +816,7 @@ function createApp(userConfig = {}) {
       const wait = p.startsWith('/api/cameras/') ? bump(hits, 'cam|' + me.id, 1800, 60000) : bump(hits, 'dev|' + me.id, 600, 60000);
       if (wait) return fail(req, res, 429, 'rate_limited', 'Slow down a little.', { retryAfter: wait });
       try {
+      if (p === '/api/devices/diagnose' && method === 'GET') return json(req, res, 200, await ha.diagnose());
       if (p === '/api/notify/services' && method === 'GET') {
         return json(req, res, 200, { services: await ha.notifyServices() });
       }

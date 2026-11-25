@@ -1227,6 +1227,11 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
 <div class="panel wide"><h3>Background</h3><p class="sub" id="bgNote">Pick the backdrop behind everything. Moving ones pause when this tab is hidden and stop when “Reduce motion” is on.</p><div class="bgsel" id="bgs" role="group" aria-label="Background"></div></div>
 <div class="panel wide"><h3>Design</h3><div class="dgrid" id="designs" role="group" aria-label="Design"></div></div>
 <div class="panel"><h3>Lights</h3><div id="lightNames"></div><p class="sub">Names show on the Devices tab and in automations. Removing a light also takes it out of automations, and an automation with nothing left to do is deleted. A scan can find it again.</p></div>
+<div class="panel wide" id="probePanel" hidden><h3>Offline detection</h3>
+  <p class="sub">Lumora knows a light is offline only if Home Assistant says so. Some bulbs keep showing “on” in Home Assistant even when they are unplugged. For those, add Home Assistant’s <b>Ping</b> integration with the bulb’s address (give the bulb a fixed address in your router first), then choose its sensor below.</p>
+  <div id="probeList"></div>
+  <div class="nrow"><button class="btn" id="probeGo" type="button">Check what Home Assistant says</button><span class="sub" id="probeMsg" role="status"></span></div>
+</div>
 <div class="panel wide" id="notifyPanel" hidden><h3>Phone alerts</h3>
   <p class="sub">Lumora asks Home Assistant to send these to your phone, so they arrive even when this page is closed. You need the Home Assistant app on your phone, signed in.</p>
   <div class="srow"><label for="nSvc">Send to</label><select id="nSvc"><option value="">Nobody yet</option></select></div>
@@ -2318,7 +2323,7 @@ let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splas
 const MARK='<span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="#0f2f33"/><circle cx="32" cy="32" r="17" fill="none" stroke="#ffc233" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="80 27" transform="rotate(135 32 32)"/><circle cx="32" cy="32" r="6" fill="#ffc233"/><circle cx="32" cy="32" r="10" fill="#ffc233" opacity=".18"/></svg></span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',keepOffReturn:true,saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',probes:{},keepOffReturn:true,saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -3090,7 +3095,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.5.1';
+const APP_VERSION='2.5.2';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3201,8 +3206,39 @@ if(REMOTE&&window.EventSource){
   };
   mark(false); go();
 }
+
+/* offline detection: show what Home Assistant says about each light and let a connectivity sensor vouch for it */
+if(REMOTE){
+  const panel=$('probePanel'); panel.hidden=false;
+  const ago=sec=>{ if(sec==null) return 'unknown'; if(sec<90) return sec+' s ago'; if(sec<5400) return Math.round(sec/60)+' min ago'; if(sec<172800) return Math.round(sec/3600)+' h ago'; return Math.round(sec/86400)+' days ago'; };
+  async function run(){
+    const m=$('probeMsg'); m.textContent='Asking Home Assistant…';
+    const r=await srvApi('GET','/api/devices/diagnose'); const box=$('probeList');
+    if(!r.ok){ m.textContent='Couldn’t ask Home Assistant. Try again in a moment.'; return; }
+    const lights=r.json.lights||[], sensors=r.json.sensors||[]; box.replaceChildren();
+    if(!lights.length){ m.textContent='Home Assistant has no lights yet.'; return; }
+    settings.probes=settings.probes||{};
+    lights.forEach(l=>{
+      const row=document.createElement('div'); row.className='srow';
+      const lab=document.createElement('label'); lab.htmlFor='pr_'+l.id; const nm=document.createElement('span'); nm.textContent=(state.find(x=>x.id===l.id)||{}).name||l.name;
+      const sub=document.createElement('div'); sub.className='sub'; sub.textContent='Home Assistant says: '+l.state+' (changed '+ago(l.changedAgo)+')';
+      lab.append(nm,sub);
+      const sel=document.createElement('select'); sel.id='pr_'+l.id; sel.setAttribute('aria-label','Connectivity sensor for '+nm.textContent);
+      const none=document.createElement('option'); none.value=''; none.textContent='Use Home Assistant’s status'; sel.appendChild(none);
+      sensors.forEach(x=>{ const o=document.createElement('option'); o.value=x.id; o.textContent=x.name+' ('+x.state+')'; sel.appendChild(o); });
+      const cur=settings.probes[l.id]||''; if(cur&&!sensors.some(x=>x.id===cur)){ const o=document.createElement('option'); o.value=cur; o.textContent=cur+' (not found)'; sel.appendChild(o); }
+      sel.value=cur;
+      sel.onchange=()=>{ if(sel.value) settings.probes[l.id]=sel.value; else delete settings.probes[l.id]; saveSettings(); if(window.__pollLights) setTimeout(window.__pollLights,400); };
+      row.append(lab,sel); box.appendChild(row);
+    });
+    m.textContent=sensors.length?'':'No connectivity sensors found. Add the Ping integration in Home Assistant, then check again.';
+  }
+  $('probeGo').onclick=run;
+  let loaded=false; const iv=setInterval(()=>{ if(!loaded&&document.body.dataset.tabnow==='Settings'){ loaded=true; clearInterval(iv); run(); } },500);
+}
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '2.5.2':{t:'Lumora 2.5.2',items:['Settings, Offline detection: see what Home Assistant says about each light, and pick a Ping sensor to tell Lumora when a bulb that never reports “offline” has been unplugged.']},
   '2.5.1':{t:'Lumora 2.5.1',items:['Sunrise and sunset times under the date (and on the TV screensaver). The next one is highlighted.','Lights going offline or coming back online are now noticed instantly through a live link to Home Assistant, with a check every minute as a backup. You get a phone message when a light is back, too.','A light that comes back online is switched off again, so bulbs that power up on after a drop-out stay dark. Turn this off in Settings, Power outage, or list a light under “Lights that always come back on” to exempt it.']},
   '2.5.0':{t:'Lumora 2.5',items:['Offline lights flash on the panel, and Lumora checks for them every 5 seconds. Notifications now live beside the calendar (or at the top of Devices on small screens). Offline lights, cameras, weather warnings, school closures, a lost Home Assistant connection and available updates stay listed until they are fixed.']},
   '2.4.3':{t:'Lumora 2.4.3',items:['Fixes: the version line in Settings, camera pictures are size-limited, phone alert checks can no longer overlap, and the TV apps are now signed the same way every time so they can update in place.']},
