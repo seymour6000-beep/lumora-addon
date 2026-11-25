@@ -85,9 +85,9 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
       const d = Array.isArray(svc) ? svc.find((x) => x && x.domain === 'notify') : null;
       return d && d.services ? Object.keys(d.services).filter((n) => /^[a-z0-9_]{1,100}$/.test(n) && n !== 'send_message' && n !== 'persistent_notification').map((n) => 'notify.' + n) : [];
     },
-    async notify(service, title, message) {
+    async notify(service, title, message, target) {
       if (!NOTIFY_ID.test(String(service))) throw Object.assign(new Error('Not a notify service'), { status: 400 });
-      await req('/api/services/notify/' + service.slice(7), { method: 'POST', body: JSON.stringify({ title: String(title).slice(0, 100), message: String(message).slice(0, 300) }) });
+      await req('/api/services/notify/' + service.slice(7), { method: 'POST', body: JSON.stringify({ title: String(title).slice(0, 100), message: String(message).slice(0, 300), ...(target ? { target: [String(target)] } : {}) }) });
     },
     allLights,
     async discover(known = []) {

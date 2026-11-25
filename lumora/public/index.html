@@ -961,6 +961,7 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
 #newBox .nb{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:22px;max-width:520px;width:100%;max-height:85vh;overflow:auto}
 #newBox h3{margin:0 0 8px}#newBox h4{margin:14px 0 4px}#newBox ul{margin:0;padding-left:20px}#newBox li{margin:4px 0}
 body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-tab="Sky"],body.shotblur #svW,body.shotblur #svH,body.shotblur #wxPlace{filter:blur(14px)!important;transition:none!important}
+.sfilt{display:none!important}
 </style>
 </head>
 <body data-auth="out">
@@ -1170,6 +1171,8 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
 
 <section data-tab="Settings" hidden>
 <h2>Settings</h2>
+<input class="in" id="setQ" type="search" placeholder="Search settings" aria-label="Search settings" autocomplete="off" style="width:100%;max-width:420px;margin:0 0 12px">
+<p class="sub" id="setNone" hidden>No settings match that. Try a shorter word.</p>
 <div class="sgrid">
 <div class="panel"><h3>Account</h3>
   <div class="srow"><label for="sName">Display name</label><input class="in" id="sName" maxlength="30"></div>
@@ -1195,12 +1198,14 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
 <div class="panel wide" id="notifyPanel" hidden><h3>Phone alerts</h3>
   <p class="sub">Lumora asks Home Assistant to send these to your phone, so they arrive even when this page is closed. You need the Home Assistant app on your phone, signed in.</p>
   <div class="srow"><label for="nSvc">Send to</label><select id="nSvc"><option value="">Nobody yet</option></select></div>
+  <div class="srow"><label for="nPhone">Text message number</label><input class="in" id="nPhone" type="tel" inputmode="tel" placeholder="+1 902 555 0123" autocomplete="off"></div>
+  <div class="srow"><label for="nSms">Send texts with</label><select id="nSms"><option value="">Not set up</option></select></div>
   <div class="srow"><span>Severe weather warnings</span><button class="sw" role="switch" id="nWarn" aria-label="Severe weather warnings"><i></i></button></div>
   <div class="srow"><span>Lights left on when everyone is out</span><button class="sw" role="switch" id="nLeft" aria-label="Lights left on when everyone is out"><i></i></button></div>
   <div class="srow"><label for="nMins">Wait before telling me</label><select id="nMins"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></div>
   <div class="srow"><span>A light goes offline</span><button class="sw" role="switch" id="nOff" aria-label="A light goes offline"><i></i></button></div>
   <div class="nrow"><button class="btn" id="nTest" type="button">Send a test</button><button class="btn" id="nReload" type="button">Look for phones again</button><span class="sub" id="nMsg" role="status"></span></div>
-  <p class="sub">Everyone out means every person in Home Assistant shows as away. With no people set up there, Lumora uses your “I’m away” button. For text messages, set up an SMS notify service in Home Assistant and it appears in the list.</p>
+  <p class="sub">Everyone out means every person in Home Assistant shows as away. With no people set up there, Lumora uses your “I’m away” button. For text messages, Home Assistant needs an SMS service such as Twilio. Lumora can’t send texts by itself.</p>
 </div>
 <div class="panel"><h3>Cameras</h3><div id="camNames"></div><p class="sub">Removing a camera also removes automations that use its motion alerts.</p></div>
 <div class="panel"><h3>Connections</h3>
@@ -3046,7 +3051,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.4.0';
+const APP_VERSION='2.4.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3070,8 +3075,22 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   addEventListener('keyup',e=>{ if(e.key==='Meta'||e.key==='OS'){ clearTimeout(t); t=setTimeout(()=>document.body.classList.remove('shotblur'),1500); } },true);
   window.__shotBlur=go;
 })();
+
+/* search the settings page: hides panels that don't mention the words typed */
+(function(){
+  const q=$('setQ'); if(!q) return;
+  const panels=()=>[...document.querySelectorAll('section[data-tab="Settings"] .sgrid > .panel')];
+  const hay=p=>(p.textContent+' '+[...p.querySelectorAll('[aria-label],[placeholder],[title]')].map(e=>(e.getAttribute('aria-label')||'')+' '+(e.getAttribute('placeholder')||'')+' '+(e.title||'')).join(' ')).toLowerCase();
+  const run=()=>{
+    const words=q.value.toLowerCase().split(/\s+/).filter(Boolean); let shown=0;
+    panels().forEach(p=>{ const hit=!words.length||words.every(w=>hay(p).includes(w)); p.classList.toggle('sfilt',!hit); if(hit) shown++; });
+    $('setNone').hidden=!words.length||shown>0;
+  };
+  q.addEventListener('input',run); q.addEventListener('keydown',e=>{ if(e.key==='Escape'&&q.value){ q.value=''; run(); e.stopPropagation(); } });
+})();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '2.4.1':{t:'Lumora 2.4.1',items:['Search box at the top of Settings. Type a word like “camera” or “weather” to show only the matching sections.','Text messages: add a phone number under Phone alerts and pick a text service from Home Assistant (such as Twilio SMS) to get alerts by text as well.']},
   '2.4.0':{t:'Lumora 2.4',items:['Phone alerts: severe weather warnings, lights left on when everyone is out, and a light going offline. They come through the Home Assistant app on your phone (Settings, Phone alerts).','Rooms: tap a room at the top of Devices to switch every light in it, and run Evening, Movie or Bright in just that room.','Cameras: cameras that Home Assistant can see show a live picture, refreshed every 2 seconds. Tap one to enlarge it.','TV screensaver: after a few minutes idle, the TV shows the clock, weather and warnings. Press any button to come back.','This “What’s new” note.']},
   '2.3.1':{t:'Lumora 2.3.1',items:['Lumora now looks for new lights every 5 seconds.']},
   '2.3.0':{t:'Lumora 2.3',items:['Use Lumora from a TV with the remote, and sign in with a code from your phone.','Google TV app and a Samsung TV app project.']}
@@ -3108,15 +3127,24 @@ if(REMOTE){
     list.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=nice(x); sel.appendChild(o); });
     if(n.service&&!list.includes(n.service)){ const o=document.createElement('option'); o.value=n.service; o.textContent=nice(n.service)+' (not found)'; sel.appendChild(o); }
     sel.value=n.service||'';
+    const sm=$('nSms'); sm.innerHTML='<option value="">Not set up</option>';
+    list.filter(x=>!/mobile_app_/.test(x)).forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=nice(x); sm.appendChild(o); });
+    if(n.smsService&&!list.includes(n.smsService)){ const o=document.createElement('option'); o.value=n.smsService; o.textContent=nice(n.smsService)+' (not found)'; sm.appendChild(o); }
+    sm.value=n.smsService||'';
+    if(!n.smsService){ const t=list.find(x=>/sms|twilio|text/i.test(x)); if(t){ n.smsService=t; save(); sm.value=t; } }
     m.textContent=list.length?'':'No phone found. Install the Home Assistant app on your phone and sign in, then look again.';
     if(!n.service){ const ph=list.find(x=>/mobile_app_/.test(x)); if(ph){ n.service=ph; save(); sel.value=ph; m.textContent='Chose '+nice(ph)+'.'; } }
   }
   $('nSvc').onchange=e=>{ n.service=e.target.value; save(); };
+  const normPhone=t=>{ let d=String(t||'').replace(/[^\d+]/g,''); if(!d) return ''; if(d[0]!=='+'){ if(d.length===10) d='+1'+d; else if(d.length===11&&d[0]==='1') d='+'+d; else d='+'+d; } return /^\+[1-9]\d{7,14}$/.test(d)?d:null; };
+  $('nPhone').value=n.phone||'';
+  $('nPhone').onchange=e=>{ const v=normPhone(e.target.value); const m=$('nMsg'); if(v===null){ m.textContent='That number doesn’t look right. Use digits with the area code, for example 902 555 0123.'; return; } n.phone=v; save(); e.target.value=v; m.textContent=v?(n.smsService?'Number saved.':'Number saved. Choose a text service below, such as Twilio SMS.'):''; };
+  $('nSms').onchange=e=>{ n.smsService=e.target.value; save(); };
   $('nReload').onclick=loadSvc;
   $('nTest').onclick=async()=>{
-    const m=$('nMsg'); if(!n.service){ m.textContent='Choose a phone first.'; return; }
-    m.textContent='Sending…'; const r=await srvApi('POST','/api/notify/test',{service:n.service});
-    m.textContent=r.ok?'Sent. Check your phone.':((r.json&&r.json.message)||'That didn’t send. Check the phone name and try again.');
+    const m=$('nMsg'); const sms=!!(n.phone&&n.smsService); if(!n.service&&!sms){ m.textContent='Choose a phone, or add a text number and a text service, first.'; return; }
+    m.textContent='Sending…'; const r=await srvApi('POST','/api/notify/test',{service:n.service||'',smsService:n.smsService||'',phone:n.phone||''});
+    m.textContent=r.ok?'Sent. Check your phone'+(sms?' and your texts.':'.'):((r.json&&r.json.message)||'That didn’t send. Check the phone name and try again.');
   };
   loadSvc();
 }

@@ -312,8 +312,12 @@ function createApp(userConfig = {}) {
   async function notifyTick() {
     if (!ha) return;
     const n = readJson2('hub-notify', {});
-    if (!n || !ha.isNotifyId(n.service)) return;
-    const send = async (title, msg) => { try { await ha.notify(n.service, title, msg); } catch (e) { log('notify failed', e.message); } };
+    const phoneOk = n && ha.isNotifyId(n.smsService) && /^\+[1-9][0-9]{7,14}$/.test(String(n.phone || ''));
+    if (!n || (!ha.isNotifyId(n.service) && !phoneOk)) return;
+    const send = async (title, msg) => {
+      if (ha.isNotifyId(n.service)) { try { await ha.notify(n.service, title, msg); } catch (e) { log('notify failed', e.message); } }
+      if (phoneOk) { try { await ha.notify(n.smsService, title, msg, n.phone); } catch (e) { log('text failed', e.message); } }
+    };
     const now = Date.now();
     if (n.warnings !== false) {
       try {
@@ -717,8 +721,10 @@ function createApp(userConfig = {}) {
       }
       if (p === '/api/notify/test' && method === 'POST') {
         const b = await readJson(req);
-        if (!ha.isNotifyId(b.service)) return fail(req, res, 400, 'bad_service', 'Choose a phone first.');
-        await ha.notify(b.service, 'Lumora', 'This is a test. Phone alerts are working.');
+        const phoneOk = ha.isNotifyId(b.smsService) && /^\+[1-9][0-9]{7,14}$/.test(String(b.phone || ''));
+        if (!ha.isNotifyId(b.service) && !phoneOk) return fail(req, res, 400, 'bad_service', 'Choose a phone or add a text message number first.');
+        if (ha.isNotifyId(b.service)) await ha.notify(b.service, 'Lumora', 'This is a test. Phone alerts are working.');
+        if (phoneOk) await ha.notify(b.smsService, 'Lumora', 'This is a test. Text alerts are working.', b.phone);
         return json(req, res, 200, { ok: true });
       }
       if (p === '/api/cameras' && method === 'GET') return json(req, res, 200, { cameras: (await ha.cameras()).slice(0, 50) });
