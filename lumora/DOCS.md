@@ -18,3 +18,11 @@ Sky shows the Amherst forecast (Open-Meteo, fetched by the add-on) with a sunris
 **Samsung (Tizen).** Open `tv-samsung/` in Tizen Studio, create a Samsung certificate, turn on Developer mode on the TV (Apps, press 12345) with your PC's IP, then *Run as Tizen Web Application*. Samsung does not allow installing unsigned apps any other way.
 
 Chrome's *Cast* only mirrors a screen; the TV remote can't control it. Use the apps above.
+
+## Phone alerts, rooms and cameras (2.4)
+
+**Phone alerts.** Settings, Phone alerts. Lumora asks Home Assistant to notify your phone through the Home Assistant app (or any notify service, such as SMS). Alerts: severe weather warnings, lights left on when everyone is out, and a light offline for a minute. "Everyone out" uses the people in Home Assistant; with none set up it uses the I'm away button.
+
+**Cameras.** Cameras that Home Assistant exposes as `camera.*` appear on the Devices tab with a picture refreshed every 2 seconds.
+
+**Screensaver.** On a TV the clock, weather and warnings show after 5 idle minutes (Settings to change).

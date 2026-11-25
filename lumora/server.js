@@ -43,7 +43,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -304,6 +304,55 @@ function createApp(userConfig = {}) {
   if (updTimer) updTimer.unref();
   const updFirst = cfg.updateUrl ? setTimeout(checkUpdate, 5000) : null;
   if (updFirst) updFirst.unref();
+
+
+  /* ---- phone alerts: Lumora asks Home Assistant to send them through its mobile app (or any notify service) ---- */
+  const nState = { leftOnSince: 0, leftOnSent: false, offlineSeen: new Map(), offlineSent: new Set(), first: true };
+  const readJson2 = (k, d) => { try { const v = JSON.parse(store.db.data[k]); return v == null ? d : v; } catch (e) { return d; } };
+  async function notifyTick() {
+    if (!ha) return;
+    const n = readJson2('hub-notify', {});
+    if (!n || !ha.isNotifyId(n.service)) return;
+    const send = async (title, msg) => { try { await ha.notify(n.service, title, msg); } catch (e) { log('notify failed', e.message); } };
+    const now = Date.now();
+    if (n.warnings !== false) {
+      try {
+        const sent = (store.db.notified = store.db.notified || {});
+        const a = await getAlerts();
+        for (const al of a.alerts || []) {
+          const id = (al.title + '|' + al.updated).slice(0, 200);
+          if (!sent[id]) { sent[id] = now; await send('Weather warning', al.title); store.saveDb(); }
+        }
+        for (const k of Object.keys(sent)) if (now - sent[k] > 3 * 86400000) delete sent[k];
+      } catch (e) { /* feed unavailable: try again next time */ }
+    }
+    let lights = null;
+    if (n.leftOn !== false || n.offline !== false) {
+      try { lights = await ha.allLights(); } catch (e) { return; }
+      const mine = new Set(readJson2('hub-lights', []).map((d) => d && d.id)); const gone = new Set(readJson2('hub-removed', []));
+      lights = lights.filter((l) => !gone.has(l.id) && (mine.size === 0 || mine.has(l.id)));
+    }
+    if (n.offline !== false && lights) {
+      for (const l of lights) {
+        if (l.online) { nState.offlineSeen.delete(l.id); nState.offlineSent.delete(l.id); continue; }
+        const first = nState.offlineSeen.get(l.id) || now; nState.offlineSeen.set(l.id, first);
+        if (now - first >= 60000 && !nState.offlineSent.has(l.id)) { nState.offlineSent.add(l.id); await send('Light offline', l.name + ' isn’t responding. Check that it has power and Wi-Fi.'); }
+      }
+    }
+    if (n.leftOn !== false && lights) {
+      let away;
+      try { const ps = await ha.persons(); away = ps.length ? ps.every((x) => !x.home) : readJson2('hub-presence', 'home') === 'away'; } catch (e) { away = readJson2('hub-presence', 'home') === 'away'; }
+      const on = lights.filter((l) => l.online && l.on);
+      if (!away || !on.length) { nState.leftOnSince = 0; nState.leftOnSent = false; }
+      else {
+        nState.leftOnSince = nState.leftOnSince || now;
+        const wait = Math.max(1, Math.min(120, Number(n.leftOnMins) || 10)) * 60000;
+        if (!nState.leftOnSent && now - nState.leftOnSince >= wait) { nState.leftOnSent = true; await send('Lights left on', 'Nobody is home and ' + on.length + (on.length === 1 ? ' light is' : ' lights are') + ' still on: ' + on.slice(0, 4).map((l) => l.name).join(', ') + (on.length > 4 ? '…' : '') + '.'); }
+      }
+    }
+  }
+  const notifyTimer = ha ? setInterval(() => { notifyTick().catch(() => {}); }, cfg.notifyEveryMs || 30000) : null;
+  if (notifyTimer) notifyTimer.unref();
 
   function clientIp(req) {
     if (cfg.trustProxy) {
@@ -658,11 +707,26 @@ function createApp(userConfig = {}) {
     }
 
     /* real lights */
-    if (p.startsWith('/api/devices/')) {
+    if (p.startsWith('/api/devices/') || p.startsWith('/api/notify/') || p.startsWith('/api/cameras')) {
       if (!ha) return fail(req, res, 404, 'no_adapter', 'No device connection is set up on this server.');
       const wait = bump(hits, 'dev|' + me.id, 600, 60000);
       if (wait) return fail(req, res, 429, 'rate_limited', 'Slow down a little.', { retryAfter: wait });
       try {
+      if (p === '/api/notify/services' && method === 'GET') {
+        return json(req, res, 200, { services: await ha.notifyServices() });
+      }
+      if (p === '/api/notify/test' && method === 'POST') {
+        const b = await readJson(req);
+        if (!ha.isNotifyId(b.service)) return fail(req, res, 400, 'bad_service', 'Choose a phone first.');
+        await ha.notify(b.service, 'Lumora', 'This is a test. Phone alerts are working.');
+        return json(req, res, 200, { ok: true });
+      }
+      if (p === '/api/cameras' && method === 'GET') return json(req, res, 200, { cameras: (await ha.cameras()).slice(0, 50) });
+      if ((m = p.match(/^\/api\/cameras\/(camera\.[a-z0-9_]{1,100})\/image$/)) && method === 'GET') {
+        const img = await ha.cameraImage(m[1]);
+        res.writeHead(200, { 'Content-Type': img.type, 'Content-Length': img.body.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        return res.end(img.body);
+      }
         if (p === '/api/devices/discover' && method === 'GET') {
           const known = String(url.searchParams.get('known') || '').split(',').filter((x) => ha.isLightId(x)).slice(0, 100);
           return json(req, res, 200, { lights: (await ha.discover(known)).slice(0, 100) });
@@ -733,8 +797,8 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
-    parseAlerts, scanSchool, parseForecast, isLanIp,
-    close() { clearInterval(tidy); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
+    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick,
+    close() { clearInterval(tidy); if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 

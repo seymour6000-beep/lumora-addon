@@ -17,7 +17,7 @@
    none of this runs and the app stays a self-contained demo. */
 (function(){
   window.__SRV=null;
-  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money'];
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify'];
   try{
     if(!/^https?:$/.test(location.protocol)) return;
     var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
@@ -938,6 +938,29 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
 .tvaddr{font:700 1.15rem var(--fd);padding:10px 14px;border-radius:12px;background:var(--off);overflow-wrap:anywhere;user-select:all}
 .tvsteps{margin:6px 0 0;padding-left:1.2em}.tvsteps li{margin:4px 0}
 :root[data-tv="1"] :focus,:root[data-tv="1"] :focus-visible{outline:4px solid var(--accent)!important;outline-offset:3px!important}
+
+/* 2.4: room chips, live cameras, phone alerts, screensaver, what's new */
+.roomchips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}.roomchips[hidden]{display:none}
+.roomscenes{display:inline-flex;flex-wrap:wrap;gap:8px}
+.cam .feed.live{padding:0;overflow:hidden;position:relative;background:#000;cursor:zoom-in}
+.cam .feed.live img{width:100%;height:100%;object-fit:cover;display:block}
+.cam .feed.live .livebad{display:none;position:absolute;inset:0;place-items:center;background:var(--surface);color:var(--muted);padding:12px}
+.cam .feed.live.bad .livebad{display:grid}
+.cam.bigcam{position:fixed;inset:4vh 4vw;z-index:60;background:var(--surface);box-shadow:0 0 0 100vmax rgba(0,0,0,.6)}
+.cam.bigcam .feed{aspect-ratio:auto;flex:1;min-height:0;cursor:zoom-out}.cam.bigcam .feed img{object-fit:contain}
+.nrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+#saver{position:fixed;inset:0;z-index:200;display:none;color:#fff;overflow:hidden}
+#saver.on{display:block}
+#saver .sv{position:absolute;display:flex;flex-direction:column;gap:10px;align-items:flex-start;transition:left 2s linear,top 2s linear}
+#saver .svt{font:700 clamp(4rem,14vw,11rem)/1 "Red Hat Display",system-ui,sans-serif;letter-spacing:-.03em}
+#saver .svd{font-size:clamp(1.2rem,2.6vw,2rem);opacity:.85}
+#saver .svw{font-size:clamp(1.1rem,2.2vw,1.7rem);opacity:.9}
+#saver .svh{font-size:clamp(1rem,1.8vw,1.4rem);opacity:.7}
+#newBox{position:fixed;inset:0;z-index:150;display:none;place-items:center;background:rgba(0,0,0,.55);padding:16px}
+#newBox.on{display:grid}
+#newBox .nb{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:22px;max-width:520px;width:100%;max-height:85vh;overflow:auto}
+#newBox h3{margin:0 0 8px}#newBox h4{margin:14px 0 4px}#newBox ul{margin:0;padding-left:20px}#newBox li{margin:4px 0}
+body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-tab="Sky"],body.shotblur #svW,body.shotblur #svH,body.shotblur #wxPlace{filter:blur(14px)!important;transition:none!important}
 </style>
 </head>
 <body data-auth="out">
@@ -976,12 +999,13 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
 <div class="actbar" role="group" aria-label="Quick actions">
   <button class="alloff" id="alloff">All lights off</button>
   <div class="seg presbox" role="group" aria-label="Home or away"></div>
-  <div class="roombtns" id="roombtns" hidden><button class="btn" id="roomOn">Room on</button><button class="btn" id="roomOff">Room off</button></div>
+  <div class="roombtns" id="roombtns" hidden><button class="btn" id="roomOn">Room on</button><button class="btn" id="roomOff">Room off</button><span class="roomscenes" id="roomScenes"></span></div>
   <span class="grow"></span>
   <button class="btn" id="scan">Scan for devices</button>
   <button class="btn primary" id="addFound" hidden></button>
 </div>
 <div class="sub scanmsg" id="scanMsg" role="status"></div>
+<div class="roomchips" id="roomChips" role="group" aria-label="Rooms"></div>
 <div class="toolbar">
   <input class="in" id="q" type="search" placeholder="Search lights and cameras" aria-label="Search lights and cameras">
   <select id="roomSel" aria-label="Room"></select>
@@ -1158,6 +1182,7 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
 <div class="panel"><h3>Home</h3>
   <div class="srow"><label for="sHome">Home name</label><input class="in" id="sHome" data-set="homeName" maxlength="24"></div>
         <div class="srow"><span>Show weather at the top</span><button class="sw" role="switch" data-set="showWeather" aria-label="Show weather at the top"><i></i></button></div>
+  <div class="srow"><span>Blur the town and weather when a screenshot is taken</span><button class="sw" role="switch" data-set="shotBlur" aria-label="Blur the town and weather when a screenshot is taken"><i></i></button></div>
   <div class="srow"><span>Show weather warnings (Cumberland County)</span><button class="sw" role="switch" data-set="showAlerts" aria-label="Show weather warnings"><i></i></button></div>
   <div class="srow"><span>Show school status (Cumberland County)</span><button class="sw" role="switch" data-set="showSchool" aria-label="Show school status"><i></i></button></div>
   <div class="srow"><span>Show clock and calendar in the sidebar</span><button class="sw" role="switch" data-set="sideClock" aria-label="Show clock and calendar in the sidebar"><i></i></button></div>
@@ -1167,6 +1192,16 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
 <div class="panel wide"><h3>Background</h3><p class="sub" id="bgNote">Pick the backdrop behind everything. Moving ones pause when this tab is hidden and stop when “Reduce motion” is on.</p><div class="bgsel" id="bgs" role="group" aria-label="Background"></div></div>
 <div class="panel wide"><h3>Design</h3><div class="dgrid" id="designs" role="group" aria-label="Design"></div></div>
 <div class="panel"><h3>Lights</h3><div id="lightNames"></div><p class="sub">Names show on the Devices tab and in automations. Removing a light also takes it out of automations, and an automation with nothing left to do is deleted. A scan can find it again.</p></div>
+<div class="panel wide" id="notifyPanel" hidden><h3>Phone alerts</h3>
+  <p class="sub">Lumora asks Home Assistant to send these to your phone, so they arrive even when this page is closed. You need the Home Assistant app on your phone, signed in.</p>
+  <div class="srow"><label for="nSvc">Send to</label><select id="nSvc"><option value="">Nobody yet</option></select></div>
+  <div class="srow"><span>Severe weather warnings</span><button class="sw" role="switch" id="nWarn" aria-label="Severe weather warnings"><i></i></button></div>
+  <div class="srow"><span>Lights left on when everyone is out</span><button class="sw" role="switch" id="nLeft" aria-label="Lights left on when everyone is out"><i></i></button></div>
+  <div class="srow"><label for="nMins">Wait before telling me</label><select id="nMins"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></div>
+  <div class="srow"><span>A light goes offline</span><button class="sw" role="switch" id="nOff" aria-label="A light goes offline"><i></i></button></div>
+  <div class="nrow"><button class="btn" id="nTest" type="button">Send a test</button><button class="btn" id="nReload" type="button">Look for phones again</button><span class="sub" id="nMsg" role="status"></span></div>
+  <p class="sub">Everyone out means every person in Home Assistant shows as away. With no people set up there, Lumora uses your “I’m away” button. For text messages, set up an SMS notify service in Home Assistant and it appears in the list.</p>
+</div>
 <div class="panel"><h3>Cameras</h3><div id="camNames"></div><p class="sub">Removing a camera also removes automations that use its motion alerts.</p></div>
 <div class="panel"><h3>Connections</h3>
   <div class="srow demoonly"><label for="sHub">Hub server address</label><input class="in" id="sHub" data-set="hubUrl" placeholder="http://homehub.local:8080" autocomplete="off"></div>
@@ -1244,6 +1279,7 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
   <div class="srow" id="tvAsk" hidden><button class="btn primary" id="tvYes" type="button">Approve this TV</button><button class="btn" id="tvNo" type="button">Cancel</button></div>
 </div>
 <div class="panel"><h3>TV and remote</h3>
+  <div class="srow"><label for="sSv">Screensaver when idle</label><select id="sSv" data-set="saverMin"><option value="auto">Automatic (5 minutes on a TV)</option><option value="0">Off</option><option value="2">After 2 minutes</option><option value="5">After 5 minutes</option><option value="10">After 10 minutes</option><option value="30">After 30 minutes</option></select></div>
   <div class="srow"><label for="sTV">TV mode</label><select id="sTV" data-set="tvMode"><option value="auto">Automatic</option><option value="on">On</option><option value="off">Off</option></select></div>
   <div class="srow"><span>Colored remote buttons</span><button class="sw" role="switch" data-set="remoteKeys" aria-label="Colored remote buttons"><i></i></button></div>
   <div class="srow"><span>Show remote help bar</span><button class="sw" role="switch" data-set="tvLegend" aria-label="Show remote help bar"><i></i></button></div>
@@ -1318,6 +1354,8 @@ body[data-tabnow]:not([data-tabnow="Devices"]) header:not(:has(.vtag:not([hidden
   <div class="scard"><div class="brand big" data-brand></div><p class="tag">Your lights and cameras, in one place.</p><div class="sbar" aria-hidden="true"><i></i></div></div>
 </div>
 
+<div id="saver" aria-hidden="true"><div class="sv" id="svBox"><div class="svt" id="svT"></div><div class="svd" id="svD"></div><div class="svw" id="svW"></div><div class="svh" id="svH"></div></div></div>
+<div id="newBox" role="dialog" aria-modal="true" aria-labelledby="nbT"><div class="nb"><h3 id="nbT">What’s new</h3><div id="nbBody"></div><div class="srow" style="margin-top:14px"><button class="btn primary" id="nbOk" type="button">Got it</button></div></div></div>
 <script>
 /* Device layer. Every adapter exposes list() and set(id, patch).
    To control real Lepro bulbs, write a LeproAdapter with this same shape
@@ -1329,7 +1367,7 @@ const mockAdapter = {
     {id:'hall',   name:'Hallway',          on:true,  bri:100,color:'#fff1d6'},
     {id:'porch',  name:'Porch',            on:false, bri:100,color:'#fff1d6'}
   ],
-  async list(){ return this.devices.map(d=>({online:true,room:'Home',...d})); },
+  async list(){ return this.devices.map(d=>({online:true,room:'Home',...d,name:String(d.name||'').replace(/\s+bulb\s*$/i,'')||d.name})); },
   async set(id, patch){ const d=this.devices.find(x=>x.id===id); if(!d) return; if(d.online===false && !('online' in patch) && ('on' in patch||'bri' in patch||'color' in patch||'temp' in patch)) return; if('on' in patch && !('offAt' in patch)){ d.offAt=null; d.offIn=0; } Object.assign(d, patch); }
 };
 const adapter = mockAdapter;
@@ -1392,7 +1430,9 @@ if(REMOTE){
     const known=this.devices.map(d=>d.id);
     const r=await srvApi('GET','/api/devices/discover?known='+encodeURIComponent(known.join(',')));
     if(!r.ok){ deviceProblem(r); return {lights:[],cams:[]}; }
-    return {lights:r.json.lights||[],cams:[]};
+    let cs=[];
+    try{ const c=await srvApi('GET','/api/cameras'); if(c.ok&&c.json&&Array.isArray(c.json.cameras)) cs=c.json.cameras.map(x=>({id:x.id,name:x.name,room:'Home',online:x.online!==false,ha:true,alerts:false,last:null})); }catch(e){}
+    return {lights:r.json.lights||[],cams:cs};
   };
   /* pick up changes made elsewhere (a wall switch, another app) */
   setInterval(async()=>{
@@ -2235,7 +2275,7 @@ let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splas
 const MARK='<span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="#0f2f33"/><circle cx="32" cy="32" r="17" fill="none" stroke="#ffc233" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="80 27" transform="rotate(135 32 32)"/><circle cx="32" cy="32" r="6" fill="#ffc233"/><circle cx="32" cy="32" r="10" fill="#ffc233" opacity=".18"/></svg></span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -2299,7 +2339,8 @@ async function removeLight(d){
 }
 function removeCam(c){
   cams=cams.filter(x=>x.id!==c.id); saveCams();
-  adapter.camPool.push({id:c.id,name:c.name,room:c.room,online:true,battery:c.battery,alerts:true,last:null});
+  if(c.ha){ const rm=store.get('hub-removed',[]); if(!rm.includes(c.id)) rm.push(c.id); store.set('hub-removed',rm); }
+  else adapter.camPool.push({id:c.id,name:c.name,room:c.room,online:true,battery:c.battery,alerts:true,last:null});
   const gone=pruneCam(c.name);
   refreshAll();
   log('Removed camera: '+c.name+(gone?' and '+gone+(gone===1?' automation':' automations'):''));
@@ -2426,7 +2467,7 @@ function renderRoomOptions(){
   const sel=$('roomSel'), v=filters.room; sel.innerHTML='';
   const all=document.createElement('option'); all.value=''; all.textContent='All rooms'; sel.appendChild(all);
   rooms.forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o); });
-  sel.value=rooms.includes(v)?v:''; filters.room=sel.value; $('roombtns').hidden=!filters.room;
+  sel.value=rooms.includes(v)?v:''; filters.room=sel.value; $('roombtns').hidden=!filters.room; renderRoomScenes();
 }
 [['all','All'],['on','On'],['off','Off'],['offline','Offline'],['fav','Favorites']].forEach(([m,l])=>{
   const b=document.createElement('button'); b.className='chip'; b.textContent=l; b.dataset.m=m; b.onclick=()=>{ filters.mode=m; syncFilters(); }; $('modes').appendChild(b);
@@ -2446,7 +2487,29 @@ const roomSet=async on=>{
   state=await adapter.list(); save(); render(); chime(on); log((on?'Turned on':'Turned off')+' all '+filters.room+' lights');
 };
 $('roomOn').onclick=()=>roomSet(true); $('roomOff').onclick=()=>roomSet(false);
+async function roomScene(name){
+  const room=filters.room; if(!room||!SCENES[name]) return; const sc=expandScene(SCENES[name]);
+  const ds=state.filter(d=>d.room===room&&d.online!==false&&sc[d.id]); for(const d of ds) await adapter.set(d.id,sc[d.id]);
+  state=await adapter.list(); save(); render(); log('Scene '+name+' in '+room);
+  if(!ds.length) toast('“'+name+'” has nothing for the lights in '+room+'.');
+}
+function renderRoomScenes(){
+  const box=$('roomScenes'); if(!box) return; box.innerHTML='';
+  Object.keys(SCENES).filter(n=>n!=='All off').forEach(n=>{ const b=document.createElement('button'); b.className='btn'; b.type='button'; b.textContent=n; b.onclick=()=>roomScene(n); box.appendChild(b); });
+}
+function renderRoomChips(){
+  const box=$('roomChips'); if(!box) return; box.innerHTML='';
+  const rooms=[...new Set(state.map(d=>d.room||'Home'))].sort();
+  if(rooms.length<2){ box.hidden=true; return; } box.hidden=false;
+  rooms.forEach(r=>{
+    const ds=state.filter(d=>(d.room||'Home')===r&&d.online!==false), on=ds.filter(d=>d.on).length;
+    const b=document.createElement('button'); b.type='button'; b.className='chip rchip'; b.setAttribute('aria-pressed',String(on>0));
+    b.textContent=r+' · '+on+'/'+ds.length; b.title='Switch every light in '+r; b.onclick=()=>roomToggle(r); box.appendChild(b);
+  });
+}
 
+const camUrl=id=>'/api/cameras/'+encodeURIComponent(id)+'/image?t='+Date.now();
+setInterval(()=>{ if(document.hidden) return; document.querySelectorAll('img.livecam').forEach(im=>{ if(im.offsetParent!==null) im.src=camUrl(im.dataset.cam); }); },2000);
 function renderCams(){
   const root=$('cams'); root.innerHTML='';
   const q=filters.q.toLowerCase();
@@ -2458,11 +2521,21 @@ function renderCams(){
     bt.textContent='Battery '+c.battery+'%'+(low?' (low)':'')+(c.last?' · last motion '+tstr(c.last):''); bt.classList.toggle('low',low);
     const sw=el.querySelector('.sw'), on=c.alerts!==false; sw.classList.toggle('on',on); sw.setAttribute('aria-checked',String(on)); sw.setAttribute('aria-label','Motion alerts for '+c.name);
     sw.onclick=()=>{ c.alerts=!on; saveCams(); renderCams(); };
+    if(c.ha){
+      const f=el.querySelector('.feed'); f.className='feed live'; f.textContent='';
+      const im=document.createElement('img'); im.className='livecam'; im.alt='Live view of '+c.name; im.dataset.cam=c.id; im.src=camUrl(c.id);
+      im.onerror=()=>f.classList.add('bad'); im.onload=()=>f.classList.remove('bad');
+      const bad=document.createElement('span'); bad.className='livebad'; bad.textContent='This camera isn’t sending a picture right now.';
+      f.append(im,bad); f.tabIndex=0; f.setAttribute('role','button'); f.setAttribute('aria-label','Enlarge '+c.name);
+      const big=()=>el.classList.toggle('bigcam'); f.onclick=big; f.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); big(); } };
+      el.querySelector('.bat').hidden=true; el.querySelector('.mrow').hidden=true;
+    }
     root.appendChild(el);
   });
   $('ccount').textContent=cams.length+' of '+MAX_CAMS;
 }
 function renderStats(){
+  try{ renderRoomChips(); }catch(e){}
   const live=state.filter(d=>d.online!==false), on=live.filter(d=>d.on);
   const t=[['Lights on',on.length+' / '+state.length],['Offline',String(state.length-live.length)],['Cameras',cams.filter(c=>c.online!==false).length+' / '+cams.length]];
   $('stats').innerHTML=t.map(([l,v])=>'<div class="stat"><span class="sub">'+l+'</span><b>'+v+'</b></div>').join('');
@@ -2473,7 +2546,7 @@ async function commitFound(f){
   const L=f.lights.slice(0,Math.max(0,MAX_LIGHTS-state.length)), C=f.cams.slice(0,Math.max(0,MAX_CAMS-cams.length));
   f.lights.slice(L.length).forEach(d=>adapter.pool.push(d)); f.cams.slice(C.length).forEach(c=>adapter.camPool.push(c));
   L.forEach(d=>adapter.devices.push(d)); C.forEach(c=>cams.push(c));
-  if(L.length){ const rm=store.get('hub-removed',[]).filter(id=>!L.some(d=>d.id===id)); store.set('hub-removed',rm); }
+  if(L.length||C.length){ const rm=store.get('hub-removed',[]).filter(id=>!L.some(d=>d.id===id)&&!C.some(d=>d.id===id)); store.set('hub-removed',rm); }
   const full=(L.length<f.lights.length?' Light limit ('+MAX_LIGHTS+') reached.':'')+(C.length<f.cams.length?' Camera limit ('+MAX_CAMS+') reached.':'');
   $('scanMsg').textContent='Added '+L.length+' lights and '+C.length+' cameras.'+full;
   log('Scan added '+L.length+' lights and '+C.length+' cameras');
@@ -2497,10 +2570,11 @@ if(REMOTE){
       const gone=store.get('hub-removed',[]);
       const f=await adapter.scan();
       f.lights=f.lights.filter(d=>!gone.includes(d.id)&&!state.some(x=>x.id===d.id));
-      f.cams=[];
-      if(!f.lights.length) return;
-      if(settings.autoAdd){ await commitFound(f); $('scanMsg').textContent='Found and added '+f.lights.length+' new light'+(f.lights.length>1?'s':'')+'.'; }
-      else { found=f; $('addFound').hidden=false; $('addFound').textContent='Add '+f.lights.length+' light'+(f.lights.length>1?'s':''); $('scanMsg').textContent='Found new lights.'; }
+      f.cams=f.cams.filter(c=>!gone.includes(c.id)&&!cams.some(x=>x.id===c.id)).slice(0,Math.max(0,MAX_CAMS-cams.length));
+      if(!f.lights.length&&!f.cams.length) return;
+      const what=(f.lights.length?f.lights.length+' new light'+(f.lights.length>1?'s':''):'')+(f.lights.length&&f.cams.length?' and ':'')+(f.cams.length?f.cams.length+' camera'+(f.cams.length>1?'s':''):'');
+      if(settings.autoAdd){ await commitFound(f); $('scanMsg').textContent='Found and added '+what+'.'; }
+      else { found=f; $('addFound').hidden=false; $('addFound').textContent='Add '+what; $('scanMsg').textContent='Found something new.'; }
     }catch(e){} finally{ busy=false; }
   },5000);
 }
@@ -2510,7 +2584,7 @@ let custom=store.get('hub-scenes',{}); Object.assign(SCENES,custom);
 const BUILTIN=['Evening','Movie','Bright','All off'];
 async function applyScene(name){ for(const [id,p] of Object.entries(expandScene(SCENES[name]))) await adapter.set(id,p); state=await adapter.list(); save(); render(); log('Scene: '+name); }
 function renderScenes(){
-  const root=$('scenes'); root.innerHTML='';
+  const root=$('scenes'); root.innerHTML=''; try{ renderRoomScenes(); }catch(e){}
   Object.keys(SCENES).filter(n=>n!=='All off').forEach(n=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=n; b.onclick=()=>applyScene(n); root.appendChild(b); });
   rules.filter(r=>r.on&&r.t.type==='manual').forEach(r=>{ const b=document.createElement('button'); b.className='btn quick'; b.textContent=r.name||'Routine'; b.onclick=()=>runRule(r,{force:true}); root.appendChild(b); });
   const box=$('sceneList'); box.innerHTML='';
@@ -2718,6 +2792,7 @@ function nudge(el,dir){
 }
 function colorKey(c){ if(c==='red') $('alloff').click(); else applyScene({green:'Evening',yellow:'Movie',blue:'Bright'}[c]); }
 window.tvBack=function(){
+  if(window.__saverOn&&window.__saverOn()){ window.__saverHide(); return true; }
   if(adjusting){ stopAdjust(); return true; }
   if(openColor){ const id=openColor; openColor=null; render(); const dot=document.querySelector('[data-id="'+id+'"] .dot'); if(dot) dot.focus(); return true; }
   if(!$('login').hidden||document.body.dataset.auth!=='in') return false;
@@ -2971,7 +3046,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.3.1';
+const APP_VERSION='2.4.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -2980,6 +3055,100 @@ const haUpdatesUrl=()=>{
 };
 const updToast=v=>{ const u=haUpdatesUrl(); toast('Version '+v+' is available. Home Assistant installs it automatically, or open Apps, then Lumora, then Update.',null,u?{link:{text:'Open Home Assistant updates',url:u}}:undefined); };
 const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=String(b).split('.').map(n=>parseInt(n,10)||0); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)?1:-1; } return 0; };
+
+
+/* Blur the town and weather when a screenshot looks to be happening. A web page cannot truly see screenshots: this reacts to the screenshot keys
+   (Print Screen, Win+Shift+S, Mac Shift+Command+3/4/5) and clears a few seconds later. */
+(function(){
+  let t=0;
+  const go=()=>{ if(settings.shotBlur===false) return; document.body.classList.add('shotblur'); clearTimeout(t); t=setTimeout(()=>document.body.classList.remove('shotblur'),8000); };
+  const isShot=e=>e.key==='PrintScreen'||e.code==='PrintScreen'||((e.metaKey||e.getModifierState&&e.getModifierState('OS'))&&e.shiftKey&&String(e.key).toLowerCase()==='s')||(e.metaKey&&e.shiftKey&&['3','4','5','#','$','%'].includes(e.key));
+  addEventListener('keydown',e=>{ if(isShot(e)) go(); },true);
+  addEventListener('keyup',e=>{ if(isShot(e)) go(); },true);
+  /* the Windows snipping bar and similar take focus away from the page for a moment while the Windows key is down */
+  addEventListener('keydown',e=>{ if(e.key==='Meta'||e.key==='OS') document.body.classList.add('shotblur'); },true);
+  addEventListener('keyup',e=>{ if(e.key==='Meta'||e.key==='OS'){ clearTimeout(t); t=setTimeout(()=>document.body.classList.remove('shotblur'),1500); } },true);
+  window.__shotBlur=go;
+})();
+/* ---- 2.4: what's new, phone alerts, screensaver ---- */
+const RELEASE_NOTES={
+  '2.4.0':{t:'Lumora 2.4',items:['Phone alerts: severe weather warnings, lights left on when everyone is out, and a light going offline. They come through the Home Assistant app on your phone (Settings, Phone alerts).','Rooms: tap a room at the top of Devices to switch every light in it, and run Evening, Movie or Bright in just that room.','Cameras: cameras that Home Assistant can see show a live picture, refreshed every 2 seconds. Tap one to enlarge it.','TV screensaver: after a few minutes idle, the TV shows the clock, weather and warnings. Press any button to come back.','This “What’s new” note.']},
+  '2.3.1':{t:'Lumora 2.3.1',items:['Lumora now looks for new lights every 5 seconds.']},
+  '2.3.0':{t:'Lumora 2.3',items:['Use Lumora from a TV with the remote, and sign in with a code from your phone.','Google TV app and a Samsung TV app project.']}
+};
+function showWhatsNew(ver,all){
+  const keys=Object.keys(RELEASE_NOTES).sort((a,b)=>vcmp(b,a)); const list=all?keys.slice(0,3):keys.filter(k=>k===ver);
+  if(!list.length) return false;
+  const body=$('nbBody'); body.innerHTML='';
+  list.forEach((k,i)=>{ const h=document.createElement('h4'); h.textContent=RELEASE_NOTES[k].t+(i===0&&k===APP_VERSION?'':''); if(i||all) body.appendChild(h); const ul=document.createElement('ul'); RELEASE_NOTES[k].items.forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); }); body.appendChild(ul); });
+  $('nbT').textContent=all?'What’s new':'What’s new in '+ver;
+  $('newBox').classList.add('on'); $('nbOk').focus(); return true;
+}
+$('nbOk').onclick=()=>{ $('newBox').classList.remove('on'); };
+$('newBox').addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.stopPropagation(); $('newBox').classList.remove('on'); } },true);
+$('verTag').addEventListener('contextmenu',e=>{ e.preventDefault(); showWhatsNew(APP_VERSION,true); });
+(function(){
+  const b=document.createElement('button'); b.className='btn'; b.type='button'; b.textContent='What’s new'; b.onclick=()=>showWhatsNew(APP_VERSION,true);
+  const host=$('tvUse')&&$('tvUse').parentNode; if(host){ const p=document.createElement('div'); p.className='panel'; p.innerHTML='<h3>About Lumora</h3><p class="sub" id="aboutVer"></p><div class="srow" id="aboutRow"></div>'; host.insertBefore(p,$('tvUse')); $('aboutVer').textContent='Version '+APP_VERSION; $('aboutRow').appendChild(b); }
+})();
+
+if(REMOTE){
+  const panel=$('notifyPanel'); panel.hidden=false;
+  let n={service:'',warnings:true,leftOn:true,offline:true,leftOnMins:10,...store.get('hub-notify',{})};
+  const save=()=>store.set('hub-notify',n);
+  const sw=(id,key)=>{ const b=$(id); const paint=()=>{ b.classList.toggle('on',!!n[key]); b.setAttribute('aria-checked',String(!!n[key])); }; paint(); b.onclick=()=>{ n[key]=!n[key]; save(); paint(); }; };
+  sw('nWarn','warnings'); sw('nLeft','leftOn'); sw('nOff','offline');
+  $('nMins').value=String(n.leftOnMins); $('nMins').onchange=e=>{ n.leftOnMins=+e.target.value; save(); };
+  const nice=id=>id.replace(/^notify\./,'').replace(/^mobile_app_/,'Phone: ').replace(/_/g,' ');
+  async function loadSvc(){
+    const m=$('nMsg'); m.textContent='Looking for phones…';
+    const r=await srvApi('GET','/api/notify/services'); const sel=$('nSvc');
+    if(!r.ok){ m.textContent='Couldn’t ask Home Assistant. Check the connection and try again.'; return; }
+    const list=(r.json&&r.json.services)||[]; sel.innerHTML='<option value="">Nobody yet</option>';
+    list.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=nice(x); sel.appendChild(o); });
+    if(n.service&&!list.includes(n.service)){ const o=document.createElement('option'); o.value=n.service; o.textContent=nice(n.service)+' (not found)'; sel.appendChild(o); }
+    sel.value=n.service||'';
+    m.textContent=list.length?'':'No phone found. Install the Home Assistant app on your phone and sign in, then look again.';
+    if(!n.service){ const ph=list.find(x=>/mobile_app_/.test(x)); if(ph){ n.service=ph; save(); sel.value=ph; m.textContent='Chose '+nice(ph)+'.'; } }
+  }
+  $('nSvc').onchange=e=>{ n.service=e.target.value; save(); };
+  $('nReload').onclick=loadSvc;
+  $('nTest').onclick=async()=>{
+    const m=$('nMsg'); if(!n.service){ m.textContent='Choose a phone first.'; return; }
+    m.textContent='Sending…'; const r=await srvApi('POST','/api/notify/test',{service:n.service});
+    m.textContent=r.ok?'Sent. Check your phone.':((r.json&&r.json.message)||'That didn’t send. Check the phone name and try again.');
+  };
+  loadSvc();
+}
+
+/* screensaver: clock, weather and warnings while the TV sits idle */
+(function(){
+  let idle=0, on=false, tick=0, moveT=0;
+  const mins=()=>{ const v=settings.saverMin; if(v==='auto'||v==null) return isTV()?5:0; return +v||0; };
+  const text=id=>{ const e=$(id); return e&&!e.closest('[hidden]')?(e.textContent||'').trim():''; };
+  function paint(){
+    const d=new Date(), use24=settings.timeFormat==='24';
+    $('svT').textContent=use24?d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false}):d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    $('svD').textContent=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+    const wx=[text('wxTemp'),text('wxCond'),text('wxPlace')].filter(Boolean).join('  ·  ');
+    $('svW').textContent=wx; $('svW').hidden=!wx;
+    const al=$('tbAl')&&!$('tbAl').hidden?($('tbAl').textContent||'').trim():'';
+    const lit=state.filter(x=>x.online!==false&&x.on).length;
+    $('svH').textContent=(al?al+'   ':'')+(state.length?lit+' of '+state.length+' lights on':''); $('svH').hidden=!$('svH').textContent;
+    const h=d.getHours()+d.getMinutes()/60; let g;
+    if(h<5||h>=21) g='linear-gradient(160deg,#050a14,#0e1b33)'; else if(h<8) g='linear-gradient(160deg,#1c2a4a,#c9805a)'; else if(h<17) g='linear-gradient(160deg,#10304f,#3f7fb0)'; else if(h<19.5) g='linear-gradient(160deg,#1a2644,#d27a4a)'; else g='linear-gradient(160deg,#0a1224,#2a2f5c)';
+    $('saver').style.background=g;
+  }
+  function place(){ const b=$('svBox'), w=$('saver').clientWidth, h=$('saver').clientHeight; b.style.left=Math.round(Math.random()*Math.max(0,w-b.offsetWidth-40)+20)+'px'; b.style.top=Math.round(Math.random()*Math.max(0,h-b.offsetHeight-40)+20)+'px'; }
+  function show(){ if(on) return; on=true; paint(); $('saver').classList.add('on'); $('saver').setAttribute('aria-hidden','false'); place(); tick=setInterval(paint,10000); moveT=setInterval(place,60000); }
+  function hide(){ on=false; idle=Date.now(); $('saver').classList.remove('on'); $('saver').setAttribute('aria-hidden','true'); clearInterval(tick); clearInterval(moveT); }
+  window.__saverOn=()=>on; window.__saverHide=hide; window.__saverShow=show;
+  const wake=e=>{ if(on){ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); hide(); } else idle=Date.now(); };
+  ['keydown','pointerdown','click','wheel','touchstart'].forEach(t=>addEventListener(t,wake,true));
+  addEventListener('mousemove',()=>{ if(!on) idle=Date.now(); },true);
+  idle=Date.now();
+  setInterval(()=>{ const m=mins(); if(!m||on||document.body.dataset.auth!=='in') return; if(Date.now()-idle>=m*60000) show(); },5000);
+})();
 {
   const tags=[$('verTag'),$('verTagM')], cur=(SRV&&SRV.version)||APP_VERSION; let stale=false, shownLatest=null;
   const paintOne=(tag,latest)=>{
@@ -2993,7 +3162,7 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   if(SRV&&SRV.user){
     const seenKey='hub-seenver'; let seen=null; try{ seen=localStorage.getItem(seenKey); }catch(e){}
     setTimeout(()=>{
-      if(seen&&seen!==cur&&vcmp(cur,seen)>0) toast('Lumora was updated to version '+cur+'.');
+      if(seen&&seen!==cur&&vcmp(cur,seen)>0){ if(!showWhatsNew(cur,false)) toast('Lumora was updated to version '+cur+'.'); }
       try{ localStorage.setItem(seenKey,cur); }catch(e){}
       if(SRV.latest&&vcmp(SRV.latest,cur)>0){ shownLatest=SRV.latest; updToast(SRV.latest); }
     },3000);

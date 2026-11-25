@@ -3,6 +3,8 @@
    Any light Home Assistant can see (Lepro, Hue, LIFX, Govee, ...) shows up in Lumora through this. */
 
 const LIGHT_ID = /^light\.[a-z0-9_]{1,100}$/;
+const CAMERA_ID = /^camera\.[a-z0-9_]{1,100}$/;
+const NOTIFY_ID = /^notify\.[a-z0-9_]{1,100}$/;
 
 function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
   if (!url || !token) throw new Error('HA_URL and HA_TOKEN are both required');
@@ -33,7 +35,7 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
     const on = s.state === 'on';
     const out = {
       id: s.entity_id,
-      name: String(a.friendly_name || s.entity_id).replace(/[<>&"']/g, '').slice(0, 30),
+      name: (String(a.friendly_name || s.entity_id).replace(/[<>&"']/g, '').replace(/\s+bulb\s*$/i, '').trim() || s.entity_id).slice(0, 30),
       room: 'Home',
       on,
       online,
@@ -54,6 +56,39 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
     name: 'homeassistant',
     isLightId: (id) => LIGHT_ID.test(String(id)),
     async ping() { await req('/api/'); return true; },
+    isCameraId: (id) => CAMERA_ID.test(String(id)),
+    isNotifyId: (id) => NOTIFY_ID.test(String(id)),
+    /* people Home Assistant tracks (phones with the companion app): who is home */
+    async persons() {
+      const states = await req('/api/states');
+      if (!Array.isArray(states)) return [];
+      return states.filter((s) => s && /^person\./.test(String(s.entity_id))).map((s) => ({ id: s.entity_id, home: s.state === 'home' }));
+    },
+    async cameras() {
+      const states = await req('/api/states');
+      if (!Array.isArray(states)) return [];
+      return states.filter((s) => s && CAMERA_ID.test(String(s.entity_id)))
+        .map((s) => ({ id: s.entity_id, name: String((s.attributes || {}).friendly_name || s.entity_id).replace(/[<>&"']/g, '').slice(0, 40), online: s.state !== 'unavailable' }));
+    },
+    async cameraImage(id) {
+      if (!CAMERA_ID.test(String(id))) throw Object.assign(new Error('Not a camera'), { status: 400 });
+      let res;
+      try { res = await fetchImpl(base + '/api/camera_proxy/' + id, { headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(timeoutMs) }); }
+      catch (e) { throw Object.assign(new Error('Could not reach Home Assistant'), { status: 502 }); }
+      if (!res.ok) throw Object.assign(new Error('Home Assistant returned ' + res.status), { status: 502 });
+      const type = String(res.headers.get('content-type') || '');
+      if (!/^image\/(jpeg|png|gif|webp)/.test(type)) throw Object.assign(new Error('Not an image'), { status: 502 });
+      return { type: type.split(';')[0], body: Buffer.from(await res.arrayBuffer()) };
+    },
+    async notifyServices() {
+      const svc = await req('/api/services');
+      const d = Array.isArray(svc) ? svc.find((x) => x && x.domain === 'notify') : null;
+      return d && d.services ? Object.keys(d.services).filter((n) => /^[a-z0-9_]{1,100}$/.test(n) && n !== 'send_message' && n !== 'persistent_notification').map((n) => 'notify.' + n) : [];
+    },
+    async notify(service, title, message) {
+      if (!NOTIFY_ID.test(String(service))) throw Object.assign(new Error('Not a notify service'), { status: 400 });
+      await req('/api/services/notify/' + service.slice(7), { method: 'POST', body: JSON.stringify({ title: String(title).slice(0, 100), message: String(message).slice(0, 300) }) });
+    },
     allLights,
     async discover(known = []) {
       const skip = new Set(known);
