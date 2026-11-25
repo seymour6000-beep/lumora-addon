@@ -338,9 +338,12 @@ function createApp(userConfig = {}) {
     }
     if (n.offline !== false && lights) {
       for (const l of lights) {
-        if (l.online) { nState.offlineSeen.delete(l.id); nState.offlineSent.delete(l.id); continue; }
+        if (l.online) {
+          if (nState.offlineSent.has(l.id)) await send('Light back online', l.name + ' is responding again.');
+          nState.offlineSeen.delete(l.id); nState.offlineSent.delete(l.id); continue;
+        }
         const first = nState.offlineSeen.get(l.id) || now; nState.offlineSeen.set(l.id, first);
-        if (now - first >= 60000 && !nState.offlineSent.has(l.id)) { nState.offlineSent.add(l.id); await send('Light offline', l.name + ' isn’t responding. Check that it has power and Wi-Fi.'); }
+        if (now - first >= (cfg.offlineWaitMs != null ? cfg.offlineWaitMs : 60000) && !nState.offlineSent.has(l.id)) { nState.offlineSent.add(l.id); await send('Light offline', l.name + ' isn’t responding. Check that it has power and Wi-Fi.'); }
       }
     }
     if (n.leftOn !== false && lights) {
@@ -357,6 +360,95 @@ function createApp(userConfig = {}) {
   }
   const notifyTimer = ha ? setInterval(() => { if (nState.busy) return; nState.busy = true; notifyTick().catch(() => {}).finally(() => { nState.busy = false; }); }, cfg.notifyEveryMs || 30000) : null;
   if (notifyTimer) notifyTimer.unref();
+
+  /* ---- a light that comes back online stays off (bulbs usually power up ON after a drop-out) ---- */
+  const rec = { prev: new Map(), recent: new Map(), busy: false };
+  function wantKeepOff(id, outage) {
+    const st = readJson2('hub-settings', {});
+    if (st.keepOffReturn === false) return false;
+    if (Array.isArray(st.powerOn) && st.powerOn.includes(id)) return false;
+    if (outage && st.afterPower && st.afterPower !== 'keepOff') return false;   /* the outage settings decide after a whole-house power cut */
+    return true;
+  }
+  async function keepOff(id, outage) {
+    if (!ha || !wantKeepOff(id, outage)) return;
+    const t = rec.recent.get(id); if (t && Date.now() - t < 5000) return;
+    rec.recent.set(id, Date.now());
+    try { await ha.setLight(id, { on: false }); log('kept off after returning online:', id); } catch (e) { log('keep-off failed', e.message); }
+  }
+  async function recoverTick() {
+    if (!ha || rec.busy) return; rec.busy = true;
+    try {
+      const lights = await ha.allLights();
+      const gone = new Set(readJson2('hub-removed', []));
+      const offBefore = [...rec.prev.values()].filter((v) => v === false).length;
+      const outage = lights.length > 1 && offBefore >= lights.length;
+      for (const l of lights) {
+        const was = rec.prev.get(l.id);
+        if (was === false && l.online && l.on && !gone.has(l.id)) await keepOff(l.id, outage);
+        rec.prev.set(l.id, l.online);
+      }
+    } catch (e) { /* next time */ } finally { rec.busy = false; }
+  }
+  const recTimer = ha ? setInterval(recoverTick, cfg.recoverEveryMs || 5000) : null;
+  if (recTimer) recTimer.unref();
+
+  /* ---- live link to Home Assistant: it tells us the moment a light changes or drops off, instead of waiting for the next check ---- */
+  const sse = new Set();
+  const live = { ok: false, ws: null, timer: null, retry: 1000, closed: false, lastEvent: 0, probeTimer: null };
+  let nudgeT = null;
+  function broadcast(ev, data) {
+    const msg = 'event: ' + ev + '\ndata: ' + JSON.stringify(data) + '\n\n';
+    for (const r of sse) { try { r.write(msg); } catch (e) { sse.delete(r); } }
+  }
+  function onLiveEvent(evt) {
+    const d = evt && evt.data; if (!d || !ha || !ha.isLightId(d.entity_id)) return;
+    live.lastEvent = Date.now();
+    const st = d.new_state && d.new_state.state;
+    const was = d.old_state && d.old_state.state;
+    if ((was === 'unavailable' || was === 'unknown') && st === 'on') { const all = [...rec.prev.values()]; keepOff(d.entity_id, all.length > 1 && all.every((v) => v === false)); }
+    if (st) rec.prev.set(d.entity_id, st !== 'unavailable' && st !== 'unknown');
+    broadcast('light', { id: d.entity_id, online: st !== 'unavailable' && st !== 'unknown', on: st === 'on' });
+    /* check phone alerts soon, and again once a light has been gone long enough to count */
+    clearTimeout(nudgeT);
+    nudgeT = setTimeout(() => { if (!nState.busy) { nState.busy = true; notifyTick().catch(() => {}).finally(() => { nState.busy = false; }); } }, cfg.nudgeMs != null ? cfg.nudgeMs : 2000);
+    if (nudgeT.unref) nudgeT.unref();
+    if (st === 'unavailable') { const t2 = setTimeout(() => { if (!nState.busy) { nState.busy = true; notifyTick().catch(() => {}).finally(() => { nState.busy = false; }); } }, cfg.offlineWaitMs != null ? cfg.offlineWaitMs + 1000 : 61000); if (t2.unref) t2.unref(); }
+  }
+  function connectLive() {
+    const WS = cfg.WebSocketImpl || globalThis.WebSocket;
+    if (!ha || !WS || live.closed) return;
+    let ws;
+    try { const base = String(cfg.haUrl).replace(/\/+$/, '').replace(/^http/, 'ws'); ws = new WS(base + (/\/core$/.test(base) ? '/websocket' : '/api/websocket')); } catch (e) { return scheduleLive(); }
+    live.ws = ws;
+    ws.onmessage = (m) => {
+      let j; try { j = JSON.parse(typeof m.data === 'string' ? m.data : String(m.data)); } catch (e) { return; }
+      if (j.type === 'auth_required') ws.send(JSON.stringify({ type: 'auth', access_token: cfg.haToken }));
+      else if (j.type === 'auth_ok') { live.ok = true; live.retry = 1000; ws.send(JSON.stringify({ id: 1, type: 'subscribe_events', event_type: 'state_changed' })); broadcast('live', { ok: true }); }
+      else if (j.type === 'auth_invalid') { live.ok = false; live.closed = true; log('live link: Home Assistant rejected the token'); try { ws.close(); } catch (e) { /* ignore */ } }
+      else if (j.type === 'event') onLiveEvent(j.event);
+    };
+    const lost = () => { if (live.ws !== ws) return; live.ws = null; if (live.ok) broadcast('live', { ok: false }); live.ok = false; scheduleLive(); };
+    ws.onclose = lost; ws.onerror = lost;
+  }
+  function scheduleLive() {
+    if (live.closed || live.timer) return;
+    live.timer = setTimeout(() => { live.timer = null; connectLive(); }, live.retry);
+    if (live.timer.unref) live.timer.unref();
+    live.retry = Math.min(60000, live.retry * 2);
+  }
+  /* some integrations only learn a bulb is gone when asked: ask them to refresh, once a minute */
+  async function probeLights() {
+    if (!ha || cfg.probe === false) return;
+    try { const ids = (await ha.allLights()).map((l) => l.id).slice(0, 60); if (ids.length) await ha.refresh(ids); } catch (e) { /* next time */ }
+  }
+  if (ha) {
+    connectLive();
+    live.probeTimer = cfg.probe === false ? null : setInterval(probeLights, cfg.probeEveryMs || 60000);
+    if (live.probeTimer) live.probeTimer.unref();
+  }
+  const sseKeep = setInterval(() => { for (const r of sse) { try { r.write(': keep\n\n'); } catch (e) { sse.delete(r); } } }, 20000);
+  sseKeep.unref();
 
   function clientIp(req) {
     if (cfg.trustProxy) {
@@ -634,6 +726,14 @@ function createApp(userConfig = {}) {
       return json(req, res, 200, { ok: true }, { 'Set-Cookie': clearCookie(req) });
     }
     if (p === '/api/rev' && method === 'GET') return json(req, res, 200, { rev: store.db.rev });
+    if (p === '/api/events' && method === 'GET') {
+      if (!ha) return fail(req, res, 404, 'no_adapter', 'No device connection is set up on this server.');
+      if (sse.size >= 40) return fail(req, res, 429, 'busy', 'Too many live connections.');
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' });
+      res.write('retry: 3000\n\nevent: live\ndata: ' + JSON.stringify({ ok: live.ok }) + '\n\n');
+      sse.add(res); req.on('close', () => sse.delete(res));
+      return;
+    }
 
     if (p === '/api/profile' && method === 'POST') {
       const name = cleanName((await readJson(req)).name);
@@ -803,8 +903,8 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
-    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick,
-    close() { clearInterval(tidy); if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
+    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live,
+    close() { clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 

@@ -977,11 +977,21 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
 @keyframes nflash{from{opacity:1;filter:drop-shadow(0 0 5px var(--warn))}to{opacity:.2;filter:none}}
 :root[data-motion="reduced"] .nbulb{animation:none}
 @media (prefers-reduced-motion:reduce){.nbulb{animation:none}}
+.nlive{font:600 .72rem/1 var(--f);color:var(--muted);margin-left:6px}
 .nclear{font-size:.85rem;color:var(--muted);margin:0}
 .notem{margin:0 0 12px}.notem .nitem{background:var(--surface)}
 @media (min-width:1000px){.notem{display:none}}
 :root[data-tv="1"] .notem{display:block}
 @media (min-width:1700px){:root[data-tv="1"] .notem{display:none}}
+
+.sunrow{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:.88rem;color:var(--muted);font-weight:600}
+.sunrow span{display:inline-flex;align-items:center;gap:5px}.sunrow svg{width:17px;height:17px;flex:none}
+.sunrow .nx{color:var(--ink)}
+.sunrow:empty{display:none}
+.sunm{margin:0 0 10px}
+@media (min-width:1000px){.sunm{display:none}}
+:root[data-tv="1"] .sunm{display:inline-flex}
+@media (min-width:1700px){:root[data-tv="1"] .sunm{display:none}}
 </style>
 </head>
 <body data-auth="out">
@@ -1016,6 +1026,7 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
 <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
 <div class="devsplit">
 <div class="devmain">
+<div class="sunrow sunm" id="sunRowM" aria-label="Sunrise and sunset"></div>
 <div class="notes notem" id="noteBoxM" aria-label="Notifications"><h3 class="nh">Notifications</h3><div id="noteListM" aria-live="polite"></div></div>
 <div class="stats" id="stats"></div>
 <div class="actbar" role="group" aria-label="Quick actions">
@@ -1264,6 +1275,7 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
       <div class="srow"><label for="sBri">Brightness when turning on</label><span class="rng"><input id="sBri" type="range" min="10" max="100" step="5" data-set="powerBri" aria-label="Brightness when turning on"><b id="sBriV"></b></span></div>
       <div class="srow"><label for="sWait">Wait before turning lights on</label><select id="sWait" data-set="powerWait"><option value="0">No wait</option><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div>
       <div class="srow"><label for="sGap">Turn them on</label><select id="sGap" data-set="powerGap"><option value="0">All at once</option><option value="1">One by one, 1 s apart</option><option value="3">One by one, 3 s apart</option></select></div>
+      <div class="srow"><span>Keep a light off when it comes back online</span><button class="sw" role="switch" data-set="keepOffReturn" aria-label="Keep a light off when it comes back online"><i></i></button></div>
       <div class="srow"><span>Keep lights off at night</span><button class="sw" role="switch" data-set="powerNight" aria-label="Keep lights off at night"><i></i></button></div>
       <div class="srow"><label for="sNf">Night is from</label><span class="trow"><input class="in" type="time" id="sNf" data-set="powerFrom" aria-label="Night starts"> <span class="sub">to</span> <input class="in" type="time" id="sNt" data-set="powerTo" aria-label="Night ends"></span></div>
     </div>
@@ -1335,6 +1347,7 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
   <div class="sidetop" id="sideTop">
     <div class="sclock" id="sClock" role="timer" aria-live="off"></div>
     <div class="sdate" id="sDate"></div>
+    <div class="sunrow" id="sunRow" aria-label="Sunrise and sunset"></div>
     <div class="sverrow">
       <button class="vtag" id="verTag" type="button" aria-live="polite"></button>
       <button class="updic" id="updBtn" type="button" aria-label="Check for updates" title="Check for updates"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3M4 5v3.5h3.5"/><path d="M4 13a8 8 0 0 0 14.9 3M20 19v-3.5h-3.5"/></svg></button>
@@ -1344,7 +1357,7 @@ body.shotblur #tbWx,body.shotblur #tbAl,body.shotblur #tbSc,body.shotblur [data-
     <div class="calnav"><button type="button" id="calPrev" aria-label="Previous month">‹</button><span id="calTitle" aria-live="polite"></span><button type="button" id="calNext" aria-label="Next month">›</button></div>
     <table class="mcal" id="mcal" aria-label="Calendar"></table>
   </div>
-  <div class="notes" id="noteBox" aria-label="Notifications"><h3 class="nh">Notifications</h3><div id="noteList" aria-live="polite"></div></div>
+  <div class="notes" id="noteBox" aria-label="Notifications"><h3 class="nh">Notifications <span class="nlive" id="noteLive"></span></h3><div id="noteList" aria-live="polite"></div></div>
   <div class="acct" id="acct"></div>
 </aside>
 <div class="dock">
@@ -1463,12 +1476,13 @@ if(REMOTE){
     return {lights:r.json.lights||[],cams:cs};
   };
   /* pick up changes made elsewhere (a wall switch, another app) */
-  setInterval(async()=>{
+  async function pollLights(){
     if(typeof started==='undefined'||!started||document.hidden) return;
     const a=document.activeElement; if(a&&a.type==='range') return;
     const n=await adapter.list();
     if(JSON.stringify(n)!==JSON.stringify(state)){ state=n; save(); render(); }
-  },5000);
+  }
+  window.__pollLights=pollLights; setInterval(pollLights,5000);
 }
 /* scenes written as {'*':...} apply to every light that is online */
 const expandScene=sc=>{ if(sc&&sc['*']) return Object.fromEntries(state.filter(d=>d.online!==false).map(d=>[d.id,sc['*']])); return sc||{}; };
@@ -1654,9 +1668,9 @@ const saveRules=()=>{ try{ localStorage.setItem('hub-rules',JSON.stringify(rules
 
 /* ---- sun ---- */
 function hasLoc(){ const la=parseFloat(settings.lat), lo=parseFloat(settings.lon); return isFinite(la)&&isFinite(lo)&&Math.abs(la)<=90&&Math.abs(lo)<=180; }
-function sunMinutes(date){
-  if(!hasLoc()) return null;
-  const lat=parseFloat(settings.lat), lon=parseFloat(settings.lon), rad=Math.PI/180;
+function sunMinutes(date,dflt){
+  if(!hasLoc()&&!dflt) return null;
+  const lat=hasLoc()?parseFloat(settings.lat):45.8167, lon=hasLoc()?parseFloat(settings.lon):-64.2167, rad=Math.PI/180;   /* Amherst unless a location is set */
   const doy=Math.round((Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())-Date.UTC(date.getFullYear(),0,0))/864e5);
   const g=2*Math.PI/365*(doy-1);
   const eq=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g));
@@ -2238,6 +2252,7 @@ function renderInfo(){
       if(settings.popups) toast(d.name+(first?' is offline':' went offline'),FIX_TIPS);
       if(!first) fireTrigger('lightoff',{light:d.id});
     }
+    if(now && seen[d.id]===false){ if(settings.popups) toast(d.name+' is back online'); log(d.name+' is back online'); }
     seen[d.id]=now;
   }
   renderStats();
@@ -2303,7 +2318,7 @@ let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splas
 const MARK='<span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="#0f2f33"/><circle cx="32" cy="32" r="17" fill="none" stroke="#ffc233" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="80 27" transform="rotate(135 32 32)"/><circle cx="32" cy="32" r="6" fill="#ffc233"/><circle cx="32" cy="32" r="10" fill="#ffc233" opacity=".18"/></svg></span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',keepOffReturn:true,saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -3075,7 +3090,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='2.5.0';
+const APP_VERSION='2.5.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3152,8 +3167,43 @@ const vcmp=(a,b)=>{ const x=String(a).split('.').map(n=>parseInt(n,10)||0), y=St
   window.__renderNotes=render; window.__noteItems=items;
   setInterval(render,3000);
 })();
+
+/* sunrise and sunset, worked out on this device from the location (Amherst unless one is set in Settings) */
+(function(){
+  let last='';
+  const UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v6M9 6l3-3 3 3M4 18h16M6.3 14a6 6 0 0 1 11.4 0"/></svg>';
+  const DN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9V3M9 6l3 3 3-3M4 18h16M6.3 14a6 6 0 0 1 11.4 0"/></svg>';
+  window.__sunText=()=>{ const s=sunMinutes(new Date(),true); if(!s||s.none) return ''; return 'Sunrise '+fmt(minToHM(s.rise))+'  ·  Sunset '+fmt(minToHM(s.set)); };
+  function draw(){
+    const d=new Date(), s=sunMinutes(d,true), key=s?(s.none?'n':s.rise+'-'+s.set)+'|'+(settings.timeFormat)+'|'+Math.floor((d.getHours()*60+d.getMinutes())):'';
+    if(key===last) return; last=key;
+    ['sunRow','sunRowM'].forEach(id=>{
+      const box=$(id); if(!box) return; box.replaceChildren();
+      if(!s) return;
+      if(s.none){ const sp=document.createElement('span'); sp.textContent=s.up?'The sun does not set today':'The sun does not rise today'; box.appendChild(sp); return; }
+      const now=d.getHours()*60+d.getMinutes(), nextRise=now<s.rise||now>=s.set, nextSet=!nextRise;
+      const mk=(svg,label,min,isNext)=>{ const sp=document.createElement('span'); if(isNext) sp.className='nx'; sp.innerHTML=svg; const t=document.createElement('span'); t.textContent=label+' '+fmt(minToHM(min)); sp.appendChild(t); sp.setAttribute('aria-label',label+' '+fmt(minToHM(min))+(isNext?', next':'')); box.appendChild(sp); };
+      mk(UP,'Sunrise',s.rise,nextRise); mk(DN,'Sunset',s.set,nextSet);
+    });
+  }
+  window.__drawSun=draw; draw(); setInterval(draw,20000);
+})();
+
+/* live link: the server tells this page the moment a light changes or drops off */
+if(REMOTE&&window.EventSource){
+  let t=0, es=null;
+  const mark=on=>{ window.__live=!!on; const e=$('noteLive'); if(e) e.textContent=on?'Live':'Checking every 5 s'; };
+  const go=()=>{
+    try{ es=new EventSource('/api/events'); }catch(e){ return; }
+    es.addEventListener('live',e=>{ try{ mark(JSON.parse(e.data).ok); }catch(x){} });
+    es.addEventListener('light',()=>{ clearTimeout(t); t=setTimeout(()=>{ if(window.__pollLights) window.__pollLights(); },250); });
+    es.onerror=()=>mark(false);
+  };
+  mark(false); go();
+}
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '2.5.1':{t:'Lumora 2.5.1',items:['Sunrise and sunset times under the date (and on the TV screensaver). The next one is highlighted.','Lights going offline or coming back online are now noticed instantly through a live link to Home Assistant, with a check every minute as a backup. You get a phone message when a light is back, too.','A light that comes back online is switched off again, so bulbs that power up on after a drop-out stay dark. Turn this off in Settings, Power outage, or list a light under “Lights that always come back on” to exempt it.']},
   '2.5.0':{t:'Lumora 2.5',items:['Offline lights flash on the panel, and Lumora checks for them every 5 seconds. Notifications now live beside the calendar (or at the top of Devices on small screens). Offline lights, cameras, weather warnings, school closures, a lost Home Assistant connection and available updates stay listed until they are fixed.']},
   '2.4.3':{t:'Lumora 2.4.3',items:['Fixes: the version line in Settings, camera pictures are size-limited, phone alert checks can no longer overlap, and the TV apps are now signed the same way every time so they can update in place.']},
   '2.4.2':{t:'Lumora 2.4.2',items:['When a phone alert test fails, Lumora now says which phone failed and what to check.']},
@@ -3227,9 +3277,10 @@ if(REMOTE){
     $('svD').textContent=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
     const wx=[text('wxTemp'),text('wxCond'),text('wxPlace')].filter(Boolean).join('  ·  ');
     $('svW').textContent=wx; $('svW').hidden=!wx;
+    const sun=window.__sunText?window.__sunText():'';
     const al=$('tbAl')&&!$('tbAl').hidden?($('tbAl').textContent||'').trim():'';
     const lit=state.filter(x=>x.online!==false&&x.on).length;
-    $('svH').textContent=(al?al+'   ':'')+(state.length?lit+' of '+state.length+' lights on':''); $('svH').hidden=!$('svH').textContent;
+    $('svH').textContent=(sun?sun+'   ':'')+(al?al+'   ':'')+(state.length?lit+' of '+state.length+' lights on':''); $('svH').hidden=!$('svH').textContent;
     const h=d.getHours()+d.getMinutes()/60; let g;
     if(h<5||h>=21) g='linear-gradient(160deg,#050a14,#0e1b33)'; else if(h<8) g='linear-gradient(160deg,#1c2a4a,#c9805a)'; else if(h<17) g='linear-gradient(160deg,#10304f,#3f7fb0)'; else if(h<19.5) g='linear-gradient(160deg,#1a2644,#d27a4a)'; else g='linear-gradient(160deg,#0a1224,#2a2f5c)';
     $('saver').style.background=g;

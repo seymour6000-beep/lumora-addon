@@ -83,6 +83,11 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
       if (body.length > 8 * 1024 * 1024) throw Object.assign(new Error('Picture too large'), { status: 502 });
       return { type: type.split(';')[0], body };
     },
+    /* ask the integrations to re-read these lights now (so a bulb that dropped off is noticed sooner) */
+    async refresh(ids) {
+      const list = (Array.isArray(ids) ? ids : []).filter((x) => LIGHT_ID.test(String(x))).slice(0, 60);
+      if (list.length) await req('/api/services/homeassistant/update_entity', { method: 'POST', body: JSON.stringify({ entity_id: list }) });
+    },
     async notifyServices() {
       const svc = await req('/api/services');
       const d = Array.isArray(svc) ? svc.find((x) => x && x.domain === 'notify') : null;
