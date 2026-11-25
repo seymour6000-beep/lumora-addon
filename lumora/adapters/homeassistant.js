@@ -87,7 +87,7 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) 
     },
     async notify(service, title, message, target) {
       if (!NOTIFY_ID.test(String(service))) throw Object.assign(new Error('Not a notify service'), { status: 400 });
-      await req('/api/services/notify/' + service.slice(7), { method: 'POST', body: JSON.stringify({ title: String(title).slice(0, 100), message: String(message).slice(0, 300), ...(target ? { target: [String(target)] } : {}) }) });
+      try { await req('/api/services/notify/' + service.slice(7), { method: 'POST', body: JSON.stringify({ title: String(title).slice(0, 100), message: String(message).slice(0, 300), ...(target ? { target: [String(target)] } : {}) }) }); } catch (e) { throw Object.assign(new Error('Home Assistant couldn’t send through ' + service + (e.message ? ' (' + e.message.replace(/^Home Assistant /, '') + ')' : '')), { status: 502, cause: e }); }
     },
     allLights,
     async discover(known = []) {
