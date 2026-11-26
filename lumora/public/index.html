@@ -871,6 +871,11 @@ html[data-popout="1"] #sidetab,html[data-tv="1"] #sidetab{display:none}
 }
 
 html:not([data-remote]) [data-remote-only]{display:none!important}
+
+.histtools{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:2px 0 14px}
+.htool{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+.htool .in{width:110px;height:38px}
+.histsum.energy{font-weight:500;color:var(--muted);margin-top:-6px}
 /* ---- Lumora 4: icons and graphics ---- */
 :root{--accent2:#ff7ab6}
 :root[data-design="daylight"]{--accent2:#e0479a}:root[data-design="ember"]{--accent2:#ffd25a}:root[data-design="lagoon"]{--accent2:#6aa8ff}:root[data-design="porcelain"]{--accent2:#2bb7a6}:root[data-design="mono"]{--accent2:#9a9a9a}
@@ -3140,7 +3145,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.1.0';
+const APP_VERSION='4.2.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3592,6 +3597,8 @@ const HEALTH={server:true,ha:null};
     if(!h){ out.appendChild(el('p','sub','History isn’t available right now.')); return; }
     const total=h.days.reduce((a,d)=>a+d.sec,0), max=Math.max(1,...h.days.map(d=>d.sec));
     if(!total&&!h.events.length){ out.appendChild(el('p','note','Nothing recorded yet. Lumora starts counting the moment a light is on, so check back after a day or two.')); return; }
+    const W=Math.max(1,Math.min(200,+settings.lightWatts||9)), P=Math.max(0,+settings.kwhPrice>=0&&settings.kwhPrice!==''&&settings.kwhPrice!=null?+settings.kwhPrice:0.19), kwh=total/3600*W/1000;
+    out.appendChild(el('p','histsum energy','Estimated energy: '+(kwh<10?kwh.toFixed(2):kwh.toFixed(1))+' kWh, about $'+(kwh*P).toFixed(2)+' ('+W+' W per light at $'+P.toFixed(2)+' per kWh).'));
     const best=h.days.reduce((a,d)=>d.sec>a.sec?d:a,h.days[0]);
     out.appendChild(el('p','histsum','Lights were on for '+hrs(total)+' in the last '+histDays+' days'+(total?', most on '+new Date(best.date+'T12:00:00').toLocaleDateString([], {weekday:'long'})+' ('+hrs(best.sec)+').':'.')));
     const chart=el('div','hbars'); chart.setAttribute('role','img'); chart.setAttribute('aria-label','Hours the lights were on, per day');
@@ -3608,6 +3615,16 @@ const HEALTH={server:true,ha:null};
     if(!offs.length) out.appendChild(el('p','sub','No lights went offline in this time.'));
     else{ const ul=el('ul','log'); offs.slice(0,30).forEach(o=>{ const li=el('li'); li.textContent=new Date(o.t).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:settings.timeFormat!=='24'})+'  '+o.name+' went offline'+(o.end?' for '+dur(o.end-o.t):' and has not come back'); ul.appendChild(li); }); out.appendChild(ul); }
   }
+  async function exportCsv(){
+    const h=await loadHist(histDays); if(!h) return toast('History isn’t available right now.');
+    const W=Math.max(1,Math.min(200,+settings.lightWatts||9)); const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const ids=[...new Set(h.days.flatMap(d=>Object.keys(d.by||{})))];
+    let t='Date,'+ids.map(i=>q((h.names[i]||i)+' (minutes on)')).join(',')+',Total minutes on,Estimated kWh\n';
+    h.days.forEach(d=>{ t+=d.date+','+ids.map(i=>Math.round((d.by[i]||0)/60)).join(',')+','+Math.round(d.sec/60)+','+(d.sec/3600*W/1000).toFixed(3)+'\n'; });
+    t+='\nOffline events\nTime,Light,Event\n'; h.events.forEach(e=>{ t+=new Date(e.t).toISOString()+','+q(e.name)+','+e.type+'\n'; });
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'})); a.download='lumora-history-'+dayKey(Date.now())+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+  }
+  window.__exportCsv=exportCsv;
   window.__renderHist=renderHist;
 
   /* ---------- other devices ---------- */
@@ -3760,7 +3777,12 @@ const HEALTH={server:true,ha:null};
     const box=el('div'); box.id='histBox'; const h2=sec.querySelector('h2');
     const hd=el('div','histhead'); hd.appendChild(el('h2',null,'Usage history'));
     const seg=el('div','seg'); [7,14,30].forEach(n=>{ const b=el('button','btn',n+' days'); b.type='button'; b.setAttribute('aria-pressed',String(n===histDays)); b.onclick=()=>{ histDays=n; seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderHist(); }; seg.appendChild(b); });
-    hd.appendChild(seg); box.appendChild(hd); const out=el('div'); out.id='histOut'; box.appendChild(out);
+    hd.appendChild(seg);
+    const tools=el('div','histtools');
+    const mk=(lbl,key,def,min,max,step)=>{ const l=el('label','htool'); l.appendChild(el('span',null,lbl)); const i=el('input','in'); i.type='number'; i.min=min; i.max=max; i.step=step; i.value=settings[key]!=null&&settings[key]!==''?settings[key]:def; i.onchange=()=>{ const v=parseFloat(i.value); if(isFinite(v)&&v>=min&&v<=max){ settings[key]=v; saveSettings(); renderHist(); } }; l.appendChild(i); return l; };
+    tools.appendChild(mk('Watts per light','lightWatts',9,1,200,1)); tools.appendChild(mk('$ per kWh','kwhPrice',0.19,0,5,0.01));
+    const csv=el('button','btn','Download CSV'); csv.type='button'; csv.onclick=exportCsv; tools.appendChild(csv);
+    box.appendChild(hd); box.appendChild(tools); const out=el('div'); out.id='histOut'; box.appendChild(out);
     sec.insertBefore(box,h2); h2.textContent='Activity log';
     const o=new MutationObserver(()=>{ if(!sec.hidden) renderHist(); }); o.observe(sec,{attributes:true,attributeFilter:['hidden']});
   }
@@ -3975,6 +3997,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '4.2.0':{t:'Energy estimates and CSV',items:['Usage history now shows an estimate of the energy your lights used and what it cost. Set watts per light and your price per kWh right above the chart.','Download CSV saves the history (minutes on per light per day, estimated kWh and offline events) so you can open it in a spreadsheet.']},
   '4.1.0':{t:'Automations run on the server',items:['Your automations now run inside Lumora on your Home Assistant, so they keep working when no browser is open. This covers set times, sunrise and sunset, door and motion sensors, locks, temperature, “light left on”, “light offline” and home or away.','A new switch at the top of Automations, Run on the server, turns this on or off. When it is on, the browser stands back so nothing runs twice. Camera motion and power-cut rules still need a Lumora page open.','Automations can lock a door but never unlock one. Last-run times and counts are kept on the server too.']},
   '4.0.1':{t:'More new icons',items:['The weather icons and the status lamps on the left tab now use the new icon set too.']},
   '4.0.0':{t:'Lumora 4: new look and icons',items:['A new set of icons drawn for Lumora, with a soft two-tone fill, used in the menu, light cards, stars, scenes and headings.','A new logo and app icon, and glossier cards, a glowing status ring and a livelier menu bar.','Small animations when a light turns on, a favourite is starred or a tab opens. They switch off with Effects off or Reduce motion.']},
