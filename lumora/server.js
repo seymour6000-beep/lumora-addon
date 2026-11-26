@@ -522,7 +522,7 @@ function createApp(userConfig = {}) {
   function secSound(reason) {
     if (sec.alarm.state === 'sounding') return;
     sec.alarm = { state: 'sounding', since: Date.now(), reason }; secSave(); secEvent('alarm', 'ALARM: ' + reason);
-    secPhone('Alarm', reason + '. Open Lumora to see what is happening.'); secFlashOn();
+    secPhone('Alarm', reason + '. Open Lumora to see what is happening.'); secFlashOn(); autoEv('alarm', {});
   }
   function secTrigger(reason, entry) {
     if (sec.mode === 'off' || sec.alarm.state !== 'idle') return;
@@ -568,7 +568,7 @@ function createApp(userConfig = {}) {
     const live = (await ha.allLights()).filter((l) => ids.includes(l.id) && l.online && l.on);
     if (!live.length) throw Object.assign(new Error('The ' + c.room + ' lights are already off.'), { status: 409 });
     slp = { room: c.room, minutes: Math.max(1, Math.min(120, Number(minutes) || c.minutes)), startedAt: Date.now(), from: live.map((l) => ({ id: l.id, bri: l.bri })), warm: c.warm, step: 0 };
-    sleepSave(); secEvent('mode', 'Sleep mode started in ' + c.room); await sleepTick(); return sleepView();
+    sleepSave(); secEvent('mode', 'Sleep mode started in ' + c.room); autoEv('sleepstart', {}); await sleepTick(); return sleepView();
   }
   function sleepStop(why) { if (!slp) return; const r = slp.room; slp = null; sleepSave(); if (why) secEvent('mode', why.replace('{room}', r)); broadcast('sleep', { t: Date.now() }); }
   async function sleepTick() {
@@ -582,7 +582,7 @@ function createApp(userConfig = {}) {
         } catch (e) { /* one light failing must not stop the others */ }
       }
       slp && (slp.step = (slp.step || 0) + 1);
-      if (done) sleepStop('Sleep mode finished: {room} lights are off');
+      if (done) { sleepStop('Sleep mode finished: {room} lights are off'); autoEv('sleepend', {}); }
     } finally { slpBusy = false; }
   }
   function sleepView() { const c = sleepCfg(); return { active: !!slp, room: slp ? slp.room : c.room, minutes: slp ? slp.minutes : c.minutes, startedAt: slp ? slp.startedAt : 0, endsAt: slp ? slp.startedAt + slp.minutes * 60000 : 0, cfg: c, ha: !!ha, now: Date.now() }; }
@@ -607,7 +607,18 @@ function createApp(userConfig = {}) {
     activity: (m) => { autoLog.unshift({ t: Date.now(), m: String(m).slice(0, 200) }); autoLog.length = Math.min(autoLog.length, 100); autoLogDirty = true; broadcast('auto', { t: Date.now() }); },
     onStat: (st) => { store.db.data['hub-autostat'] = JSON.stringify(st); store.saveDb(); },
     onOtherEvent: (s, a) => secOther(s, a),
+    hooks: {
+      alarmMode: () => sec.mode,
+      alarm: (m) => { secSetMode(m); },
+      sleep: (mins) => sleepStart(mins).then(() => broadcast('sleep', { t: Date.now() })),
+      media: async (op) => {
+        const ps = await ha.mediaPlayers(); const p = ps.find((x) => x.state === 'playing') || ps.find((x) => x.spotify) || ps[0]; if (!p) throw new Error('no media player');
+        if (op === 'volume_up' || op === 'volume_down') return ha.mediaCall(p.id, 'volume', Math.max(0, Math.min(100, (p.volume == null ? 30 : p.volume) + (op === 'volume_up' ? 10 : -10))));
+        return ha.mediaCall(p.id, op === 'play_pause' ? 'toggle' : op, undefined);
+      },
+    },
   }) : null;
+  const autoEv = (t, c) => { try { if (auto) auto.fireEvent(t, c); } catch (e) { /* never block */ } };
   if (auto) auto.setStats(readJson2('hub-autostat', {}));
   const autoFlush = setInterval(() => { if (!autoLogDirty) return; autoLogDirty = false; try { store.write(path.join(cfg.dataDir, 'autolog.json'), autoLog); } catch (e) { /* ignore */ } }, 30000); autoFlush.unref();
   const rec = { prev: new Map(), recent: new Map(), busy: false };
@@ -936,7 +947,7 @@ function createApp(userConfig = {}) {
         server: true,
         version: VERSION,
         latest,
-        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo', lan: lanAddrs(), automations: !!ha, serverTypes: ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual'] },
+        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo', lan: lanAddrs(), automations: !!ha, serverTypes: ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual', 'interval', 'alarm', 'sleepstart', 'sleepend'] },
         user: sess ? publicUser(sess.user) : null,
         data: sess ? bootData(sess.user) : null,
         rev: store.db.rev,

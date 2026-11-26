@@ -111,3 +111,13 @@ Open the app and choose *Find my server automatically*, or type your server addr
 - **Colours stick**: the colour you pick is held while the bulb catches up, and a brief "no colour" report from Home Assistant is ignored.
 - **New More page**: the main page is now just lights and cameras. The alarm, music, sleep mode and other devices (plugs, sensors, locks, thermostats) are on the More tab.
 - **Layout fixes**: switches no longer stretch, Settings panels keep a readable width on wide screens, and the camera, sleep and Spotify cards fit on phones.
+
+## Lumora 6.2: more automations
+
+- **New triggers**: every so often (every N minutes), the alarm goes off, sleep mode starts, sleep mode finishes. These run on the add-on, so they work with every browser closed.
+- **New steps**: start sleep mode, control the music (pause, play, next, previous, volume), arm the alarm. Automations can arm the alarm in Home or Away but never switch it off, the same way they can lock a door but never unlock one.
+- **New conditions**: only on certain days, only if a light is on (or every light is off), only if the alarm is armed (or off).
+- **Wait between runs**: set a number of minutes in the builder and the automation will not run again until that time has passed. Handy for motion triggers. Running it by hand always works.
+- **Duplicate**: copies an automation, switched off, so you can change it.
+- **Messages** can include {light} (the light that triggered it), {time} and {rule}.
+- **Ideas**: seven new starting points in the Automations page.

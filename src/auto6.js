@@ -4,8 +4,8 @@
   if(document.documentElement.dataset.popout==='1') return;
   const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
   const openH=new Set(), openC=new Set();
-  const trigIc=t=>({time:'clock',sun:'sun',motion:'camera',nomotion:'camera',lefton:'bulb',lightoff:'bulboff',manual:'power',home:'user',away:'away',sensor:'sensor',lockev:'lock',temp:'thermo',lowbat:'battery',outage:'boltoff',restored:'bolt'})[t]||'bolt';
-  const actIc=k=>({light:'bulb',bri:'bulb',color:'bulb',scene:'evening',room:'home',fadeup:'sun',fadedown:'movie',notify:'bell',wait:'clock',plug:'plug',therm:'thermo',lock:'lock'})[k]||'bolt';
+  const trigIc=t=>({time:'clock',sun:'sun',motion:'camera',nomotion:'camera',lefton:'bulb',lightoff:'bulboff',manual:'power',home:'user',away:'away',sensor:'sensor',lockev:'lock',temp:'thermo',lowbat:'battery',outage:'boltoff',restored:'bolt',interval:'clock',alarm:'shield',sleepstart:'moon',sleepend:'moon'})[t]||'bolt';
+  const actIc=k=>({light:'bulb',bri:'bulb',color:'bulb',scene:'evening',room:'home',fadeup:'sun',fadedown:'movie',notify:'bell',wait:'clock',plug:'plug',therm:'thermo',lock:'lock',sleep:'moon',media:'music',alarm:'shield'})[k]||'bolt';
   const chip=(ic,text,cls)=>{ const c=el('span','fchip'+(cls?' '+cls:'')); c.innerHTML=ICO(ic); c.append(el('span','',text)); return c; };
   const arrow=()=>{ const a=el('span','farrow'); a.setAttribute('aria-hidden','true'); a.innerHTML=ICO('chev'); return a; };
   function explain(r){

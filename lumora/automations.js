@@ -2,7 +2,7 @@
 /* Lumora automation engine: runs the household's automations on the server, so they work with every browser closed.
    Rules are the same objects the web app saves in "hub-rules". The browser stands aside for the trigger types listed in SERVER_TYPES. */
 
-const SERVER_TYPES = ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual'];
+const SERVER_TYPES = ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual', 'interval', 'alarm', 'sleepstart', 'sleepend'];
 const BUILTIN = { Evening: { on: true, bri: 45, color: '#ffb35c' }, Movie: { on: true, bri: 12, color: '#8fc1ff' }, Bright: { on: true, bri: 100, color: '#fff1d6' }, 'All off': { on: false } };
 const AMHERST = { lat: 45.8167, lon: -64.2167 };
 
@@ -19,7 +19,7 @@ function sunMinutes(dateParts, tzOffsetMin, lat, lon) {
   return { rise: m(720 - 4 * (lon + ha) - eq + tzOffsetMin), set: m(720 - 4 * (lon - ha) - eq + tzOffsetMin) };
 }
 
-function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), onStat, onOtherEvent }) {
+function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), onStat, onOtherEvent, hooks = {} }) {
   const lightsNow = new Map();            // id -> light
   const prevOnline = new Map();           // id -> bool
   const onSince = new Map();              // id -> ms
@@ -31,6 +31,8 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
   let others = {};                         // id -> latest other state
   let stopped = false, lastPresence = null;
   const stats = {};                        // rule id -> { last, count, done }
+  const lastEvery = new Map();             // rule id -> ms of the last 'every N minutes' run
+  const MEDIA = ['play_pause', 'next', 'previous', 'volume_up', 'volume_down', 'pause', 'play'];
 
   const fmtParts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short' });
   function local(ms) {
@@ -61,6 +63,9 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
       case 'between': return inRange(local(now).min, c.from, c.to);
       case 'lighton': { const d = lightsNow.get(c.id); return !!d && d.online !== false && (!!d.on === (c.v === 'on')); }
       case 'othstate': { const s = others[c.id]; return !!s && (!!s.active === (c.v === 'active')); }
+      case 'weekday': { const days = Array.isArray(c.days) && c.days.length ? c.days : [0, 1, 2, 3, 4, 5, 6]; return days.includes(local(now).dow); }
+      case 'anyon': { const any = [...lightsNow.values()].some((d) => d.on && d.online !== false); return any === (c.v !== 'off'); }
+      case 'alarmmode': { const m = hooks.alarmMode ? hooks.alarmMode() : 'off'; return c.v === 'armed' ? m !== 'off' : m === 'off'; }
     }
     return true;
   }
@@ -90,6 +95,8 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
       if (i === steps) await setLight(d.id, dir === 'up' ? { bri: to } : { on: false }); else await setLight(d.id, { bri: Math.max(1, Math.round(from + (to - from) * i / steps)) });
     }
   }
+  /* {light}, {time} and {rule} in a message are replaced when it is sent */
+  const fill = (t, ctx, now) => String(t).replace(/\{light\}/g, ctx && ctx.light ? nameOf(ctx.light) : 'a light').replace(/\{time\}/g, (() => { const l = local(now); return String(l.h).padStart(2, '0') + ':' + String(l.mi).padStart(2, '0'); })()).replace(/\{rule\}/g, (ctx && ctx.rule) || 'Automation').slice(0, 200);
   async function doAct(a, ctx, now) {
     switch (a.k) {
       case 'light':
@@ -104,7 +111,10 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
       case 'room': { const mine = readJson('hub-lights', []).filter((x) => x && x.room === a.room).map((x) => x.id); for (const d of [...lightsNow.values()].filter((x) => mine.includes(x.id) && x.online !== false)) await setLight(d.id, { on: a.op === 'on' }); break; }
       case 'fadeup': targets(a.id, ctx).forEach((d) => fade(d, 'up', a.mins, a.bri).catch(() => {})); break;
       case 'fadedown': targets(a.id, ctx).forEach((d) => fade(d, 'down', a.mins).catch(() => {})); break;
-      case 'notify': activity('Notification: ' + (a.text || 'Automation')); if (notify) await notify('Lumora', String(a.text || 'Automation')); break;
+      case 'notify': { const text = fill(a.text || 'Automation', ctx, now); activity('Notification: ' + text); if (notify) await notify('Lumora', String(text)); break; }
+      case 'sleep': if (hooks.sleep) { try { await hooks.sleep(a.mins); } catch (e) { activity('Sleep mode could not start: ' + (e && e.message)); } } break;
+      case 'media': if (hooks.media && MEDIA.includes(a.op)) { try { await hooks.media(a.op); } catch (e) { activity('Music: ' + (e && e.message)); } } break;
+      case 'alarm': if (hooks.alarm && (a.mode === 'home' || a.mode === 'away')) hooks.alarm(a.mode); break;   /* automations arm the alarm, they never disarm it */
       case 'wait': await wait(Math.min(3600, (a.unit === 'm' ? 60 : 1) * (+a.n || 0)) * 1000); break;
       case 'plug': case 'therm': case 'lock': {
         const kind = { plug: 'switch.', therm: 'climate.', lock: 'lock.' }[a.k];
@@ -126,8 +136,9 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
       const bad = (r.c || []).find((c) => !condOK(c, now));
       if (bad) { activity('Skipped “' + title(r) + '”: a condition was not met'); return false; }
     }
+    if (!force && +r.cool > 0 && stats[r.id] && stats[r.id].last && now - stats[r.id].last < Math.min(1440, +r.cool) * 60000) return false;   /* wait-between-runs */
     if (busy.has(r.id)) return false;
-    busy.add(r.id);
+    busy.add(r.id); ctx = Object.assign({ rule: title(r) }, ctx);
     try { for (const a of r.acts) await doAct(a, ctx, now); }
     catch (e) { activity('Automation problem: ' + title(r) + ' (' + (e && e.message) + ')'); }
     finally { busy.delete(r.id); }
@@ -188,6 +199,9 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
         const days = Array.isArray(r.t.days) && r.t.days.length ? r.t.days : [0, 1, 2, 3, 4, 5, 6];
         const k = r.id + '|' + l.key + '|' + r.t.at;
         if (toMin(r.t.at) === l.min && days.includes(l.dow) && !firedTime.has(k)) { firedTime.add(k); run(r).catch(() => {}); }
+      } else if (r.t.type === 'interval') {
+        const every = Math.max(1, Math.min(1440, Math.round(+r.t.every) || 60)) * 60000;
+        if (!lastEvery.has(r.id)) lastEvery.set(r.id, now); else if (now - lastEvery.get(r.id) >= every) { lastEvery.set(r.id, now); run(r).catch(() => {}); }
       } else if (r.t.type === 'sun') {
         s = s || sun(now); if (s.none) continue;
         const at = ((((r.t.which === 'sunrise' ? s.rise : s.set) + Math.round(+r.t.off || 0)) % 1440) + 1440) % 1440;
@@ -203,6 +217,7 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
   return {
     SERVER_TYPES, run, onLights, onOther, tick, pollOthers, isDark, sun, local, condOK,
     onPresence() { tick(); },
+    fireEvent(type, ctx) { if (['alarm', 'sleepstart', 'sleepend'].includes(type)) fire(type, ctx || {}); },
     runById: (id) => { const r = (readJson('hub-rules', []) || []).find((x) => x && x.id === id && Array.isArray(x.acts)); return r ? run(r, {}, true) : Promise.resolve(false); },
     setStats(s) { Object.assign(stats, s || {}); },
     stats: () => stats,

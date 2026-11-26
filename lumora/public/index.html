@@ -1212,6 +1212,8 @@ html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s eas
 /* wide panels stay a readable width on big screens */
 .sgrid>.panel.wide{max-width:980px}
 .sgrid>.panel.wide .pgrid{max-width:100%}
+.bcool{margin-top:6px;max-width:520px}.bcool .in{max-width:160px}
+.rtools .rdup{margin-left:0}
 
 /* ---- 6.1: bluetooth ---- */
 .btlist{display:grid;gap:8px;margin-top:10px}
@@ -1368,6 +1370,7 @@ section[data-tab="Settings"][data-search="1"] .sgtitle,section[data-tab="Setting
   <div class="bstep"><h4>Only if <span class="sub">(optional)</span></h4><div id="bConds"></div><div id="bCondAdd"></div></div>
   <div class="bstep"><h4>Then</h4><div id="bActs"></div><div id="bActAdd"></div></div>
   <label class="chk"><input type="checkbox" id="bOnce">Run only once, then turn it off</label>
+  <label class="f bcool">Wait at least this long before it can run again (minutes, blank for no wait)<input class="in" id="bCool" type="number" min="1" max="1440" step="1" placeholder="No wait"></label>
   <p class="sub" id="bHint" hidden></p>
   <div class="btns"><button class="btn primary" id="bSave">Add automation</button><button class="btn" id="bCancel" hidden>Cancel</button></div>
   <p class="sub" id="bMsg" role="status"></p>
@@ -1978,7 +1981,7 @@ const ruleBusy=new Set();
 
 function migrate(r){
   if(!r||typeof r!=='object'||!r.t||typeof r.t!=='object') return null;
-  if(Array.isArray(r.acts)) return {id:String(r.id||'r'+Date.now()),on:r.on!==false,name:String(r.name||'').slice(0,40),t:r.t,c:Array.isArray(r.c)?r.c:[],acts:r.acts,once:!!r.once,last:r.last||null,count:r.count||0};
+  if(Array.isArray(r.acts)) return {id:String(r.id||'r'+Date.now()),on:r.on!==false,name:String(r.name||'').slice(0,40),t:r.t,c:Array.isArray(r.c)?r.c:[],acts:r.acts,once:!!r.once,cool:+r.cool>0?Math.min(1440,Math.round(+r.cool)):0,last:r.last||null,count:r.count||0};
   const a=r.a||{}, acts=[];
   if(a.type==='scene') acts.push({k:'scene',name:a.name});
   else if(a.type==='light') acts.push({k:'light',id:a.id,op:a.on?'on':'off',mins:0});
@@ -2051,7 +2054,7 @@ function trigText(t){
     case 'manual': return 'I tap its button';
     case 'sensor': case 'lockev': case 'temp': return window.__othText(t.type,t);
   }
-  return 'something happens';
+  return (window.__autoText&&window.__autoText(t.type,t))||'something happens';
 }
 function actText(a){
   const L=lightName(a.id);
@@ -2065,6 +2068,8 @@ function actText(a){
     case 'fadedown': return 'slowly dim '+L+' over '+a.mins+' min, then turn off';
     case 'notify': return 'show “'+a.text+'”';
     case 'wait': return 'wait '+a.n+(a.unit==='m'?' min':' sec');
+    case 'sleep': case 'media': return window.__autoText(a.k,a);
+    case 'alarm': return window.__autoText('alarm-act',a);
     case 'plug': case 'therm': case 'lock': return window.__othText(a.k,a);
   }
   return 'do something';
@@ -2077,7 +2082,7 @@ function condText(c){
     case 'lighton': return lightName(c.id)+' is '+(c.v==='on'?'on':'off');
     case 'othstate': return window.__othText('othstate',c);
   }
-  return 'a condition is met';
+  return (window.__autoText&&window.__autoText(c.k,c))||'a condition is met';
 }
 const ruleTitle=r=>r.name||cap(r.acts.map(actText).join(', then '));
 const needsLoc=r=>(r.t.type==='sun'||r.c.some(c=>c.k==='dark'))&&!hasLoc();
@@ -2198,7 +2203,7 @@ function pills(host,arr,txt,empty,rm,num){
 }
 
 /* ---- builder ---- */
-const newB=()=>({name:'',t:{type:'time'},c:[],acts:[],once:false,editing:null});
+const newB=()=>({name:'',t:{type:'time'},c:[],acts:[],once:false,cool:0,editing:null});
 let B=newB();
 const bCtx=()=>({trig:B.t.type});
 const condAdder=makeAdder($('bCondAdd'),COND,c=>{ B.c.push(c); drawLists(); },bCtx,'Condition type');
@@ -2220,7 +2225,7 @@ function drawLists(){
 function drawHead(){
   $('bHead').textContent=B.editing?'Edit automation':'New automation';
   $('bSave').textContent=B.editing?'Save changes':'Add automation'; $('bCancel').hidden=!B.editing;
-  $('bName').value=B.name; $('bOnce').checked=B.once;
+  $('bName').value=B.name; $('bOnce').checked=B.once; $('bCool').value=B.cool>0?B.cool:'';
 }
 function fillSelects(){
   const ok=id=>!id||id==='all'||id==='@trigger'||state.some(d=>d.id===id);
@@ -2235,7 +2240,7 @@ $('bSave').onclick=()=>{
   if(def.f.some(f=>f.t==='sel'&&!tv[f.n])){ m.textContent='Add a camera first. Scan for devices on the Devices tab.'; return; }
   if(def.f.some(f=>f.t==='time'&&!tv[f.n])){ m.textContent='Pick a time.'; return; }
   if(!B.acts.length){ m.textContent='Add at least one step under Then.'; return; }
-  const base={name:$('bName').value.replace(/[<>&"']/g,'').trim().slice(0,40),t:Object.assign({type},tv),c:B.c.map(x=>({...x})),acts:B.acts.map(x=>({...x})),once:$('bOnce').checked};
+  const base={name:$('bName').value.replace(/[<>&"']/g,'').trim().slice(0,40),t:Object.assign({type},tv),c:B.c.map(x=>({...x})),acts:B.acts.map(x=>({...x})),once:$('bOnce').checked,cool:Math.max(0,Math.min(1440,Math.round(+$('bCool').value)||0))};
   if(B.editing){ const r=rules.find(x=>x.id===B.editing); if(r) Object.assign(r,base); }
   else rules.push(Object.assign({id:'r'+Date.now()+'-'+rules.length,on:true,last:null,count:0},base));
   const nm=base.name||cap(base.acts.map(actText).join(', then '));
@@ -2243,7 +2248,7 @@ $('bSave').onclick=()=>{
   B=newB(); fillSelects(); m.textContent='Saved.';
 };
 function editRule(r){
-  B={name:r.name||'',t:{...r.t},c:r.c.map(x=>({...x})),acts:r.acts.map(x=>({...x})),once:!!r.once,editing:r.id};
+  B={name:r.name||'',t:{...r.t},c:r.c.map(x=>({...x})),acts:r.acts.map(x=>({...x})),once:!!r.once,cool:+r.cool>0?+r.cool:0,editing:r.id};
   $('bMsg').textContent=''; fillSelects();
   $('bHead').scrollIntoView({block:'start'}); $('bName').focus();
 }
@@ -2289,7 +2294,8 @@ async function doAct(a,ctx){
     case 'room': for(const d of state.filter(x=>x.room===a.room&&x.online!==false)) await adapter.set(d.id,{on:a.op==='on'}); break;
     case 'fadeup': targetsFor(a.id,ctx).forEach(d=>startFade(d,'up',a.mins,a.bri)); break;
     case 'fadedown': targetsFor(a.id,ctx).forEach(d=>startFade(d,'down',a.mins)); break;
-    case 'notify': toast(a.text||'Automation'); break;
+    case 'notify': toast(String(a.text||'Automation').replace(/\{light\}/g,ctx&&ctx.light?nameOf(ctx.light):'a light').replace(/\{time\}/g,new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})).replace(/\{rule\}/g,ctx&&ctx.rule||'Automation')); break;
+    case 'sleep': case 'media': case 'alarm': await window.__autoAct(a,ctx); break;
     case 'plug': case 'therm': case 'lock': await window.__othAct(a.k==='plug'?Object.assign({k2:'plug'},a):a.k==='lock'?Object.assign({k2:'lock'},a):a); break;
     case 'wait': await waitMs((a.unit==='m'?60000:1000)*a.n); break;
   }
@@ -2305,6 +2311,7 @@ function condOK(c){
     case 'between': return inRange(minNow(),c.from,c.to);
     case 'othstate': return window.__othCond(c);
     case 'lighton': { const d=state.find(x=>x.id===c.id); return !!d&&d.online!==false&&(!!d.on===(c.v==='on')); }
+    case 'weekday': case 'anyon': case 'alarmmode': return window.__autoCond(c);
   }
   return true;
 }
@@ -2320,8 +2327,9 @@ async function runRule(r,o){
     const bad=r.c.find(c=>!condOK(c));
     if(bad){ log('Skipped “'+ruleTitle(r)+'”: not true that '+condText(bad)); return; }
   }
+  if(!o.force&&+r.cool>0&&r.last&&Date.now()-r.last<Math.min(1440,+r.cool)*60000) return;
   if(ruleBusy.has(r.id)) return;
-  ruleBusy.add(r.id);
+  ruleBusy.add(r.id); ctx.rule=ruleTitle(r);
   try{ for(const a of r.acts) await doAct(a,ctx); }
   catch(e){ log('Automation problem: '+ruleTitle(r)); }
   finally{ ruleBusy.delete(r.id); }
@@ -2424,7 +2432,7 @@ function renderRules(){
     line('name',r.name||'When '+trigText(r.t));
     if(r.name) line('sub','When '+trigText(r.t));
     line('sub','Then '+r.acts.map(actText).join(', then ')+(r.c.length?' · Only if '+r.c.map(condText).join(' and '):''));
-    line('sub meta',(r.once?'Runs once · ':'')+(r.count?'Last ran '+whenTxt(r.last)+' · '+r.count+(r.count===1?' time':' times'):'Never run')+(needsLoc(r)?' · Needs your location in Settings':''));
+    line('sub meta',(r.once?'Runs once · ':'')+(+r.cool>0?'Waits '+r.cool+' min between runs · ':'')+(r.count?'Last ran '+whenTxt(r.last)+' · '+r.count+(r.count===1?' time':' times'):'Never run')+(needsLoc(r)?' · Needs your location in Settings':''));
     const sw=document.createElement('button'); sw.className='sw'; sw.setAttribute('role','switch'); sw.setAttribute('aria-checked',String(r.on)); sw.setAttribute('aria-label','Enabled: '+ruleTitle(r)); sw.innerHTML='<i></i>';
     sw.onclick=()=>{ r.on=!r.on; saveRules(); renderRules(); };
     const x=(t,l,fn)=>{ const b=document.createElement('button'); b.className='x'; b.type='button'; b.textContent=t; b.setAttribute('aria-label',l+': '+ruleTitle(r)); b.onclick=fn; return b; };
@@ -3513,7 +3521,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='6.1.1';
+const APP_VERSION='6.2.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4737,8 +4745,8 @@ window.__claudeSplash=function(){
   if(document.documentElement.dataset.popout==='1') return;
   const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
   const openH=new Set(), openC=new Set();
-  const trigIc=t=>({time:'clock',sun:'sun',motion:'camera',nomotion:'camera',lefton:'bulb',lightoff:'bulboff',manual:'power',home:'user',away:'away',sensor:'sensor',lockev:'lock',temp:'thermo',lowbat:'battery',outage:'boltoff',restored:'bolt'})[t]||'bolt';
-  const actIc=k=>({light:'bulb',bri:'bulb',color:'bulb',scene:'evening',room:'home',fadeup:'sun',fadedown:'movie',notify:'bell',wait:'clock',plug:'plug',therm:'thermo',lock:'lock'})[k]||'bolt';
+  const trigIc=t=>({time:'clock',sun:'sun',motion:'camera',nomotion:'camera',lefton:'bulb',lightoff:'bulboff',manual:'power',home:'user',away:'away',sensor:'sensor',lockev:'lock',temp:'thermo',lowbat:'battery',outage:'boltoff',restored:'bolt',interval:'clock',alarm:'shield',sleepstart:'moon',sleepend:'moon'})[t]||'bolt';
+  const actIc=k=>({light:'bulb',bri:'bulb',color:'bulb',scene:'evening',room:'home',fadeup:'sun',fadedown:'movie',notify:'bell',wait:'clock',plug:'plug',therm:'thermo',lock:'lock',sleep:'moon',media:'music',alarm:'shield'})[k]||'bolt';
   const chip=(ic,text,cls)=>{ const c=el('span','fchip'+(cls?' '+cls:'')); c.innerHTML=ICO(ic); c.append(el('span','',text)); return c; };
   const arrow=()=>{ const a=el('span','farrow'); a.setAttribute('aria-hidden','true'); a.innerHTML=ICO('chev'); return a; };
   function explain(r){
@@ -4798,6 +4806,85 @@ window.__claudeSplash=function(){
     if(p.textContent!==t) p.textContent=t;
   }
   setInterval(()=>{ if(!document.hidden) prev(); },500);
+})();
+/* Lumora 6.2: more automation building blocks, a wait-between-runs setting and a Duplicate button */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const NEED=' (runs on the add-on)';
+  Object.assign(TRIG,{
+    interval:{l:'Every so often'+NEED,f:[{n:'every',t:'num',l:'Every (minutes)',d:60,min:1,max:1440}]},
+    alarm:{l:'The alarm goes off'+NEED,f:[]},
+    sleepstart:{l:'Sleep mode starts'+NEED,f:[]},
+    sleepend:{l:'Sleep mode finishes'+NEED,f:[]}
+  });
+  Object.assign(COND,{
+    weekday:{l:'It is one of these days',f:[{n:'days',t:'days',l:'Days'}]},
+    anyon:{l:'Any light is on, or all are off',f:[{n:'v',t:'sel',l:'Right now',o:[['on','At least one light is on'],['off','Every light is off']],d:'on'}]},
+    alarmmode:{l:'The alarm is armed or off',f:[{n:'v',t:'sel',l:'The alarm is',o:[['armed','Armed (Home or Away)'],['off','Off']],d:'armed'}]}
+  });
+  Object.assign(ACT,{
+    sleep:{l:'Start sleep mode',f:[{n:'mins',t:'num',l:'Fade over (min, 0 = your usual)',d:0,min:0,max:120}]},
+    media:{l:'Control the music',f:[{n:'op',t:'sel',l:'Do',o:[['pause','Pause'],['play','Play'],['next','Next track'],['previous','Previous track'],['volume_up','Volume up'],['volume_down','Volume down']],d:'pause'}]},
+    alarm:{l:'Arm the alarm',f:[{n:'mode',t:'sel',l:'Arm it as',o:[['home','Home'],['away','Away']],d:'home'}]}
+  });
+  const MEDIAW={pause:'pause the music',play:'play the music',next:'skip to the next track',previous:'go back a track',volume_up:'turn the music up',volume_down:'turn the music down'};
+  window.__autoText=(k,x)=>{
+    switch(k){
+      case 'interval': { const n=Math.round(+x.every)||60; return n%60===0?'every '+(n===60?'hour':n/60+' hours'):'every '+n+' min'; }
+      case 'alarm': return 'the alarm goes off';
+      case 'sleepstart': return 'sleep mode starts';
+      case 'sleepend': return 'sleep mode finishes';
+      case 'weekday': return 'today is '+(typeof dayList==='function'?dayList(x.days&&x.days.length?x.days:[0,1,2,3,4,5,6]):'a chosen day');
+      case 'anyon': return x.v==='off'?'every light is off':'at least one light is on';
+      case 'alarmmode': return x.v==='off'?'the alarm is off':'the alarm is armed';
+      case 'sleep': return 'start sleep mode'+(+x.mins>0?' over '+x.mins+' min':'');
+      case 'media': return MEDIAW[x.op]||'control the music';
+      case 'alarm-act': return 'arm the alarm ('+(x.mode==='away'?'Away':'Home')+')';
+    }
+    return '';
+  };
+  /* client-side running (a rule started by hand or by a browser trigger) */
+  window.__autoAct=async(a,ctx)=>{
+    if(!(typeof REMOTE!=='undefined'&&REMOTE)){ log('“'+(a.k==='sleep'?'Start sleep mode':a.k==='media'?'Control the music':'Arm the alarm')+'” needs the add-on, so it was skipped'); return; }
+    if(a.k==='sleep'){ const r=await srvApi('POST','/api/sleep/start',+a.mins>0?{minutes:+a.mins}:{}); if(!r.ok) log('Sleep mode could not start'); }
+    else if(a.k==='alarm'){ if(a.mode==='home'||a.mode==='away') await srvApi('POST','/api/security/mode',{mode:a.mode}); }
+    else if(a.k==='media'){
+      const l=await srvApi('GET','/api/media'); const ps=(l.ok&&l.json&&l.json.players)||[]; const p=ps.find(x=>x.state==='playing')||ps.find(x=>x.spotify)||ps[0]; if(!p){ log('Music: no player found'); return; }
+      if(a.op==='volume_up'||a.op==='volume_down') await srvApi('POST','/api/media',{id:p.id,action:'volume',value:Math.max(0,Math.min(100,(p.volume==null?30:p.volume)+(a.op==='volume_up'?10:-10)))});
+      else await srvApi('POST','/api/media',{id:p.id,action:a.op,value:undefined});
+    }
+  };
+  window.__autoCond=c=>{
+    if(c.k==='weekday'){ const d=(Array.isArray(c.days)&&c.days.length?c.days:[0,1,2,3,4,5,6]); return d.includes(new Date().getDay()); }
+    if(c.k==='anyon'){ const any=state.some(d=>d.on&&d.online!==false); return any===(c.v!=='off'); }
+    if(c.k==='alarmmode'){ let m='off'; try{ m=(window.__secView&&window.__secView().mode)||'off'; }catch(e){} return c.v==='armed'?m!=='off':m==='off'; }
+    return true;
+  };
+  /* ideas */
+  const mk=(n,d,f)=>TPL.push({n,d,mk:f});
+  mk('Alarm sounds: tell me','Shows a message with the time whenever the alarm goes off.',()=>({t:{type:'alarm'},acts:[{k:'notify',text:'The alarm went off at {time}.'}]}));
+  mk('Arm the alarm at bedtime','Arms the alarm in Home mode at 11:00 PM every night.',()=>({t:{type:'time',at:'23:00',days:ALLDAYS},acts:[{k:'alarm',mode:'home'}]}));
+  mk('Arm the alarm when I leave','When you switch to “I’m away”, the alarm arms in Away mode.',()=>({t:{type:'away'},acts:[{k:'alarm',mode:'away'}]}));
+  mk('Quiet the music at sleep time','When sleep mode starts, the music pauses.',()=>({t:{type:'sleepstart'},acts:[{k:'media',op:'pause'}]}));
+  mk('Weekday morning music','Plays music at 7:30 AM on weekdays, only if every light is off.',()=>({t:{type:'time',at:'07:30',days:[1,2,3,4,5]},c:[{k:'anyon',v:'off'}],acts:[{k:'media',op:'play'}]}));
+  mk('Stretch break','Every hour between 9:00 AM and 5:00 PM, shows a reminder to stand up.',()=>({t:{type:'interval',every:60},c:[{k:'between',from:'09:00',to:'17:00'},{k:'weekday',days:[1,2,3,4,5]}],acts:[{k:'notify',text:'Time to stand up and stretch.'}]}));
+  mk('Name the light left on','When a light has been on for 3 hours, tells you which one and turns it off.',()=>state.length&&{t:{type:'lefton',mins:180},acts:[{k:'notify',text:'{light} was left on. Turning it off.'},{k:'light',id:'@trigger',op:'off',mins:0}]});
+  /* duplicate */
+  function addDup(){
+    const root=document.getElementById('rules'); if(!root||typeof rules==='undefined') return;
+    [...root.querySelectorAll('.rule')].forEach((card,i)=>{
+      const r=rules[i]; const tools=card.querySelector('.rtools'); if(!r||!tools||tools.querySelector('.rdup')) return;
+      const b=document.createElement('button'); b.type='button'; b.className='chip rdup'; b.textContent='Duplicate'; b.title='Make a switched-off copy you can change';
+      b.onclick=()=>{
+        if(rules.length>=60){ toast('You can have up to 60 automations.'); return; }
+        const c=JSON.parse(JSON.stringify(r)); c.id='r'+Date.now()+'-'+rules.length; c.name=((r.name||ruleTitle(r)).slice(0,32)+' (copy)'); c.on=false; c.last=null; c.count=0;
+        rules.splice(i+1,0,c); saveRules(); renderRules(); log('Automation copied: '+ruleTitle(r)); toast('Copied. It is switched off until you turn it on.');
+      };
+      tools.append(b);
+    });
+  }
+  const _r7=renderRules; renderRules=function(){ _r7.apply(this,arguments); try{ addDup(); }catch(e){} };
+  try{ addDup(); }catch(e){}
 })();
 
 /* ---- Lumora 6, part 3: security (alarm modes, timeline, snapshots) ---- */
@@ -5217,6 +5304,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '6.2.0':{t:'Lumora 6.2',items:["Automations can now start every so often (every 15 minutes, every hour\u2026), when the alarm goes off, and when sleep mode starts or finishes.", "New steps: start sleep mode, pause, play or skip the music, and arm the alarm. Automations can arm the alarm but never switch it off.", "New conditions: only on certain days, only if a light is on (or all are off), and only if the alarm is armed or off.", "Wait between runs: set a rest period so a busy trigger, like motion, can\u2019t run an automation again and again.", "A Duplicate button on every automation makes a switched-off copy to tweak, and messages can include {light}, {time} and {rule}.", "Seven new ideas in the Automations page, including Alarm sounds: tell me, Arm the alarm at bedtime and Stretch break."]},
   '6.1.1':{t:'Lumora 6.1.1',items:["Colour changes now stick: Lumora keeps the colour you picked while the bulb catches up, ignores a bulb that briefly reports no colour, and no longer drifts to a slightly rounded colour.", "The main page is now just your lights and cameras. A new More page holds the alarm, music, sleep mode and your other devices (plugs, sensors, locks and thermostats).", "Cleaner layout: switches keep their proper size everywhere, Settings panels no longer overlap or stretch on very wide screens, and the camera, sleep and Spotify cards fit on phones."]},
   '6.1.0':{t:'Lumora 6.1',items:["Sleep mode: a Sleep button on the Bedroom card fades the room to a dim warm glow and then off. Choose the room, the fade time and an optional bedtime in Settings. On the add-on it carries on with the page closed.", "Spotify and music: a Music card with play, skip, volume, shuffle, where to play, and a paste-a-link box. It uses Home Assistant's Spotify integration, and Settings has the steps.", "Bluetooth: a Bluetooth light on the left, and a Settings page to find and connect nearby devices from Chrome, Edge or the Windows app. A browser cannot make Lumora discoverable to other devices.", "The left lights now follow one rule: green is good, yellow is a warning, red is an issue. A red light beeps for 5 seconds, and you can turn that off.", "A new dock with labels, a new look for the left lights, and Settings sorted into eight topics: account, home, lights, devices, alerts, connections, screens and system."]},
   '6.0.1':{t:'Lumora 6.0.1',items:["Fixes: silencing the alarm while the lights are still flashing now always restores them, and they are restored even if the add-on restarted during an alarm.", "The automation builder no longer scrolls sideways on a phone, small buttons are easier to tap, and the logo no longer repeats internal ids."]},

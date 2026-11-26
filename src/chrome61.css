@@ -75,3 +75,5 @@ html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s eas
 /* wide panels stay a readable width on big screens */
 .sgrid>.panel.wide{max-width:980px}
 .sgrid>.panel.wide .pgrid{max-width:100%}
+.bcool{margin-top:6px;max-width:520px}.bcool .in{max-width:160px}
+.rtools .rdup{margin-left:0}

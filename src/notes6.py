@@ -15,4 +15,7 @@ rep("'6.0.1':{t:'Lumora 6.0.1'","'6.1.0':{t:'Lumora 6.1',items:"+_j.dumps(N61)+"
 rep("APP_VERSION='6.0.1'","APP_VERSION='6.1.0'")
 N611=["Colour changes now stick: Lumora keeps the colour you picked while the bulb catches up, ignores a bulb that briefly reports no colour, and no longer drifts to a slightly rounded colour.","The main page is now just your lights and cameras. A new More page holds the alarm, music, sleep mode and your other devices (plugs, sensors, locks and thermostats).","Cleaner layout: switches keep their proper size everywhere, Settings panels no longer overlap or stretch on very wide screens, and the camera, sleep and Spotify cards fit on phones."]
 rep("'6.1.0':{t:'Lumora 6.1'","'6.1.1':{t:'Lumora 6.1.1',items:"+_j.dumps(N611)+"},\n  '6.1.0':{t:'Lumora 6.1'")
-rep("APP_VERSION='6.1.0'","APP_VERSION='6.1.1'")
+
+rep("APP_VERSION='6.1.0'","APP_VERSION='6.2.0'")
+N62=["Automations can now start every so often (every 15 minutes, every hour…), when the alarm goes off, and when sleep mode starts or finishes.","New steps: start sleep mode, pause, play or skip the music, and arm the alarm. Automations can arm the alarm but never switch it off.","New conditions: only on certain days, only if a light is on (or all are off), and only if the alarm is armed or off.","Wait between runs: set a rest period so a busy trigger, like motion, can’t run an automation again and again.","A Duplicate button on every automation makes a switched-off copy to tweak, and messages can include {light}, {time} and {rule}.","Seven new ideas in the Automations page, including Alarm sounds: tell me, Arm the alarm at bedtime and Stretch break."]
+rep("'6.1.1':{t:'Lumora 6.1.1'","'6.2.0':{t:'Lumora 6.2',items:"+_j.dumps(N62)+"},\n  '6.1.1':{t:'Lumora 6.1.1'")
