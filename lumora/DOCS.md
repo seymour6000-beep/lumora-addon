@@ -57,3 +57,18 @@ From December 1 to January 5 Lumora switches to a festive theme by itself: green
 ## Splash, logos and version (4.6)
 
 After the Lumora splash a short "Made by Claude AI" screen plays once per browser session. The logo and icons have a 3D look. The version number is in Settings under About Lumora; it only shows on the main screen when an update is waiting.
+
+## Light watch (4.8)
+
+Settings, Light watch controls how Lumora spots a light that has gone offline and how it tells you:
+
+- **Send a phone alert after:** right away, or 1, 2, 5, 10 or 30 minutes. Short drop-outs that fix themselves never alert.
+- **Remind me while it stays offline:** every hour, 3 hours, 6 hours or every day.
+- **Tell me when it comes back:** says how long the light was away.
+- **Keeps dropping out:** warns when a light goes offline 2 to 8 times in one hour (set the count). Usually weak Wi-Fi, a loose bulb or a switch that cuts power.
+- **Several lights drop together:** warns when at least half your lights (but not all of them) go offline at once. Check the router or Wi-Fi extender first. All lights offline is treated as a power cut.
+- **Quiet hours:** no phone alerts between the times you choose. If a light is still offline when quiet hours end, you get one alert then.
+- **Lights to watch:** switch a light off here if you unplug it on purpose. It then never alerts or shows in notifications.
+- **Health report:** per light, how much of the last 7 or 30 days it was online, how many drops, the longest outage and the last drop.
+
+Phone alerts need the Phone alerts settings and keep working with the page closed.

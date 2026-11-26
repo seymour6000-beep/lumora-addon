@@ -44,7 +44,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-others', 'hub-autostat',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-others', 'hub-autostat',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -319,7 +319,10 @@ function createApp(userConfig = {}) {
 
 
   /* ---- phone alerts: Lumora asks Home Assistant to send them through its mobile app (or any notify service) ---- */
-  const nState = { leftOnSince: 0, leftOnSent: false, offlineSeen: new Map(), offlineSent: new Set(), busy: false };
+  const nState = { leftOnSince: 0, leftOnSent: false, offlineSeen: new Map(), offlineSent: new Set(), lastRemind: new Map(), flapSent: new Map(), groupSent: false, busy: false };
+  const hhmmFmt = new Intl.DateTimeFormat('en-GB', { timeZone: cfg.timeZone, hour: '2-digit', minute: '2-digit', hour12: false });
+  const inQuiet = (w, now) => { const q = w && w.quiet; if (!q || !q.on || !/^\d\d:\d\d$/.test(q.from || '') || !/^\d\d:\d\d$/.test(q.to || '')) return false; const cur = hhmmFmt.format(now); return q.from <= q.to ? (cur >= q.from && cur < q.to) : (cur >= q.from || cur < q.to); };
+  const niceDur = (ms) => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? m + ' min' : (Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '')); };
   const readJson2 = (k, d) => { try { const v = JSON.parse(store.db.data[k]); return v == null ? d : v; } catch (e) { return d; } };
   async function notifyTick() {
     if (!ha) return;
@@ -331,6 +334,9 @@ function createApp(userConfig = {}) {
       if (phoneOk) { try { await ha.notify(n.smsService, title, msg, n.phone); } catch (e) { log('text failed', e.message); } }
     };
     const now = Date.now();
+    const watch = readJson2('hub-watch', {}) || {};
+    const quiet = inQuiet(watch, now);
+    const sendQ = async (title, msg) => { if (quiet) return false; await send(title, msg); return true; };
     if (n.warnings !== false) {
       try {
         const sent = (store.db.notified = store.db.notified || {});
@@ -349,13 +355,42 @@ function createApp(userConfig = {}) {
       lights = lights.filter((l) => !gone.has(l.id) && (mine.size === 0 || mine.has(l.id)));
     }
     if (n.offline !== false && lights) {
-      for (const l of lights) {
+      const muted = new Set(Array.isArray(watch.muted) ? watch.muted : []);
+      const waitMs = watch.delay != null ? Math.max(0, Math.min(3600, Number(watch.delay) || 0)) * 1000 : (cfg.offlineWaitMs != null ? cfg.offlineWaitMs : 60000);
+      const remindMs = Math.max(0, Math.min(168, Number(watch.reminderH) || 0)) * 3600000;
+      const watched = lights.filter((l) => !muted.has(l.id));
+      for (const l of watched) {
         if (l.online) {
-          if (nState.offlineSent.has(l.id)) await send('Light back online', l.name + ' is responding again.');
-          nState.offlineSeen.delete(l.id); nState.offlineSent.delete(l.id); continue;
+          if (nState.offlineSent.has(l.id) && watch.backOnline !== false) {
+            const was = nState.offlineSeen.get(l.id);
+            if (await sendQ('Light back online', l.name + ' is responding again' + (was ? ' after ' + niceDur(now - was) : '') + '.')) { nState.offlineSeen.delete(l.id); nState.offlineSent.delete(l.id); nState.lastRemind.delete(l.id); }
+          } else { nState.offlineSeen.delete(l.id); nState.offlineSent.delete(l.id); nState.lastRemind.delete(l.id); }
+          continue;
         }
         const first = nState.offlineSeen.get(l.id) || now; nState.offlineSeen.set(l.id, first);
-        if (now - first >= (cfg.offlineWaitMs != null ? cfg.offlineWaitMs : 60000) && !nState.offlineSent.has(l.id)) { nState.offlineSent.add(l.id); await send('Light offline', l.name + ' isn’t responding. Check that it has power and Wi-Fi.'); }
+        if (now - first >= waitMs && !nState.offlineSent.has(l.id)) {
+          if (await sendQ('Light offline', l.name + ' isn’t responding. Check that it has power and Wi-Fi.')) { nState.offlineSent.add(l.id); nState.lastRemind.set(l.id, now); }
+        } else if (nState.offlineSent.has(l.id) && remindMs && now - (nState.lastRemind.get(l.id) || first) >= remindMs) {
+          if (await sendQ('Still offline', l.name + ' has been offline for ' + niceDur(now - first) + '.')) nState.lastRemind.set(l.id, now);
+        }
+      }
+      /* a light that keeps dropping out: several offline events within the last hour, even if each one was too short to alert on */
+      if (watch.flap !== false) {
+        const limit = Math.max(2, Math.min(10, Number(watch.flapN) || 3));
+        for (const l of watched) {
+          const recent = hist.events.filter((e) => e.id === l.id && e.type === 'offline' && now - e.t <= 3600000).length;
+          const sentAt = nState.flapSent.get(l.id) || 0;
+          if (recent >= limit && now - sentAt > 6 * 3600000) { if (await sendQ('Light keeps dropping out', l.name + ' went offline ' + recent + ' times in the last hour. That usually means weak Wi-Fi, a loose bulb, or a switch that cuts its power.')) nState.flapSent.set(l.id, now); }
+        }
+      }
+      /* several lights down together but not all of them: points at the router or Wi-Fi, not the bulbs (all of them means a power cut, which has its own alert) */
+      if (watch.group !== false && watched.length >= 3) {
+        const down = watched.filter((l) => !l.online);
+        const together = down.length >= Math.max(2, Number(watch.groupMin) || 2) && down.length < watched.length && down.length * 2 >= watched.length;
+        if (!together) nState.groupSent = false;
+        else if (!nState.groupSent && down.every((l) => now - (nState.offlineSeen.get(l.id) || now) >= waitMs)) {
+          if (await sendQ('Several lights are offline', down.length + ' of ' + watched.length + ' lights dropped at once (' + down.slice(0, 4).map((l) => l.name).join(', ') + '). Check your router or Wi-Fi extender first.')) nState.groupSent = true;
+        }
       }
     }
     if (n.leftOn !== false && lights) {
