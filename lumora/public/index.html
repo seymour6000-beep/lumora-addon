@@ -1913,21 +1913,33 @@ setDesign(startDesign);
 
 let soundOn=true, actx=null;
 try{ soundOn=localStorage.getItem('hub-sound')!=='off'; }catch(e){}
+let fxBus=null;
+function soundBus(){
+  if(fxBus&&fxBus.ctx===actx) return fxBus.out;
+  const c=actx, out=c.createGain(), lp=c.createBiquadFilter(), comp=c.createDynamicsCompressor(), conv=c.createConvolver(), wet=c.createGain();
+  lp.type='lowpass'; lp.frequency.value=6200; lp.Q.value=.4; wet.gain.value=.3;
+  const len=Math.floor(c.sampleRate*1.5), buf=c.createBuffer(2,len,c.sampleRate);
+  for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.4); }
+  conv.buffer=buf; out.connect(lp); lp.connect(comp); comp.connect(c.destination); lp.connect(conv); conv.connect(wet); wet.connect(comp);
+  fxBus={ctx:c,out}; return out;
+}
+/* soft glassy two-note chimes: up = lights on, down = lights off */
 function chime(up){
   if(!soundOn) return;
   try{
     actx=actx||new (window.AudioContext||window.webkitAudioContext)();
     if(actx.state==='suspended') actx.resume();
-    const t=actx.currentTime, notes=up?[660,880]:[880,587];
-    notes.forEach((f,i)=>{
-      const o=actx.createOscillator(), g=actx.createGain(), s=t+i*0.09;
-      o.type='sine'; o.frequency.value=f;
-      g.gain.setValueAtTime(0.0001,s);
-      g.gain.exponentialRampToValueAtTime(Math.max(0.0002,0.2*settings.volume/100),s+0.015);
-      g.gain.exponentialRampToValueAtTime(0.0001,s+0.2);
-      o.connect(g); g.connect(actx.destination);
-      o.start(s); o.stop(s+0.22);
-    });
+    const c=actx, bus=soundBus(), t=c.currentTime+.01, vol=Math.max(.0002,settings.volume/100);
+    const voice=(f,start,peak,decay,glide)=>{
+      [[1,'sine',1],[2.003,'sine',.22],[3.01,'triangle',.07]].forEach(([m,type,lv])=>{
+        const o=c.createOscillator(), g=c.createGain(), s=t+start;
+        o.type=type; o.frequency.setValueAtTime(f*m*(glide?.985:1),s); if(glide) o.frequency.exponentialRampToValueAtTime(f*m,s+.05);
+        g.gain.setValueAtTime(.0001,s); g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak*lv*vol),s+.008); g.gain.exponentialRampToValueAtTime(.0001,s+decay);
+        o.connect(g); g.connect(bus); o.start(s); o.stop(s+decay+.05);
+      });
+    };
+    if(up){ voice(659.25,0,.2,.55,true); voice(987.77,.075,.2,.7,true); voice(1318.5,.16,.07,.5,false); }
+    else{ voice(783.99,0,.17,.5,false); voice(523.25,.09,.17,.75,false); }
   }catch(e){}
 }
 function setSound(on){
@@ -2839,7 +2851,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='3.1.0';
+const APP_VERSION='3.1.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3168,6 +3180,7 @@ const HEALTH={server:true,ha:null};
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '3.1.1':{t:'New sounds',items:['The chimes are new: soft, glassy two-note tones with a little echo. A rising pair when a light turns on, a falling pair when it turns off. Volume is still in Settings.']},
   '3.1.0':{t:'24 new backgrounds',items:['Settings, Background now has 38 choices: Nebula, Ocean waves, Synthwave, Bokeh, Lava lamp, Spotlight (follows your pointer), Plasma, Prism, City at night, Fireflies, Embers, Digital rain, Bubbles, Star warp, and still ones like Mesh gradient, Sunset, Honeycomb, Circuit board, Blueprint, Film grain, Mountains, Stripes, Checkerboard and Glass grid.','Cards turn slightly see-through so the background shows. Moving backgrounds pause when Effects is Off and slow down in Subtle.']},
   '3.0.0':{t:'Lumora 3',items:['A completely new design, built from scratch. The home screen is now a calm “Now” view with a live clock, a ring showing how many lights are on, and tall light cards that fill up like a glass as you turn them up.','The whole room glows in the colour of the lights you have on.','A floating menu at the bottom, and a Today panel (calendar, notifications, account) that slides in from the right.','Six new looks: Nocturne, Daylight, Ember, Lagoon, Porcelain and Mono. Effects can be turned down or off in Settings, and slow screens drop to a lighter mode on their own.','Sturdier: a bar appears if the server can’t be reached, a recovery screen replaces a blank page, Settings shows a health report, and you can download and restore a backup.']},
   '2.5.2':{t:'Lumora 2.5.2',items:['Settings, Offline detection: see what Home Assistant says about each light, and pick a Ping sensor to tell Lumora when a bulb that never reports “offline” has been unplugged.']},
