@@ -633,10 +633,9 @@ html[data-bg="fx"] .tbwx{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur
 .sfilt{display:none!important}
 
 /* wider screens: everything scales up with the screen, and grids use the extra room */
-@media (min-width:1700px){html:not([data-tv="1"]){zoom:1.15}}
-@media (min-width:2200px){html:not([data-tv="1"]){zoom:1.35}}
-@media (min-width:2800px){html:not([data-tv="1"]){zoom:1.7}}
-@media (min-width:3600px){html:not([data-tv="1"]){zoom:2.1}}
+@media (min-width:2560px){html:not([data-tv="1"]){zoom:1.1}}
+@media (min-width:3200px){html:not([data-tv="1"]){zoom:1.3}}
+@media (min-width:3840px){html:not([data-tv="1"]){zoom:1.55}}
 @media (min-width:1100px){
   .list{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
   .hero{grid-template-columns:minmax(0,1.5fr) minmax(300px,.7fr)}
@@ -2985,7 +2984,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='3.2.0';
+const APP_VERSION='3.2.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3683,6 +3682,7 @@ const HEALTH={server:true,ha:null};
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '3.2.1':{t:'Normal size on big screens',items:['The app no longer scales up on ordinary large monitors. It only grows a little on very large or 4K screens.']},
   '3.2.0':{t:'Lumora 3.2',items:['Other devices: add smart plugs, door and motion sensors, thermostats and locks that Home Assistant already has. New automations such as “when the front door opens and it is dark, turn on the hallway”. Automations can lock a door but never unlock one.','Accounts with different access: admin, family and guest. Money and phone numbers are admin-only (an admin can allow Money for a family member). Guests only see lights and devices.','Two-step sign-in with an authenticator app, recovery codes, and a password reset code from the admin.','Usage history in Activity: hours each light was on, per day and per light, and a list of offline events with how long they lasted.','A soft start-up sound, a tidier control area on Devices, more on the clock card, and the whole app now scales up on wide screens and TVs.']},
   '3.1.1':{t:'New sounds',items:['The chimes are new: soft, glassy two-note tones with a little echo. A rising pair when a light turns on, a falling pair when it turns off. Volume is still in Settings.']},
   '3.1.0':{t:'24 new backgrounds',items:['Settings, Background now has 38 choices: Nebula, Ocean waves, Synthwave, Bokeh, Lava lamp, Spotlight (follows your pointer), Plasma, Prism, City at night, Fireflies, Embers, Digital rain, Bubbles, Star warp, and still ones like Mesh gradient, Sunset, Honeycomb, Circuit board, Blueprint, Film grain, Mountains, Stripes, Checkerboard and Glass grid.','Cards turn slightly see-through so the background shows. Moving backgrounds pause when Effects is Off and slow down in Subtle.']},
