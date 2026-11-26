@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2718%27 fill=%27%230f2f33%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2717%27 fill=%27none%27 stroke=%27%23ffc233%27 stroke-width=%275.5%27 stroke-linecap=%27round%27 stroke-dasharray=%2780 27%27 transform=%27rotate(135 32 32)%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%276%27 fill=%27%23ffc233%27/%3E%3C/svg%3E">
 <script>
-window.__errs=[];addEventListener('error',function(e){var m=String(e.message||'');if(/ResizeObserver|Script error/i.test(m))return;window.__errs.push({t:Date.now(),m:m.slice(0,300),s:String(e.filename||'').split('/').pop()+':'+e.lineno});if(window.__errs.length>30)window.__errs.shift()});addEventListener('unhandledrejection',function(e){var r=e.reason;window.__errs.push({t:Date.now(),m:String(r&&r.message||r).slice(0,300),s:'promise'});if(window.__errs.length>30)window.__errs.shift()});
+if(/[?&]popout=1/.test(location.search)){document.documentElement.setAttribute('data-popout','1');document.title='Lumora (beta pop-out)';}window.__errs=[];addEventListener('error',function(e){var m=String(e.message||'');if(/ResizeObserver|Script error/i.test(m))return;window.__errs.push({t:Date.now(),m:m.slice(0,300),s:String(e.filename||'').split('/').pop()+':'+e.lineno});if(window.__errs.length>30)window.__errs.shift()});addEventListener('unhandledrejection',function(e){var r=e.reason;window.__errs.push({t:Date.now(),m:String(r&&r.message||r).slice(0,300),s:'promise'});if(window.__errs.length>30)window.__errs.shift()});
 
 /* Server mode. When this page is served by the Lumora server, load the household's saved data
    before the app starts, and save changes back as they happen. Anywhere else (a file, a preview)
@@ -811,12 +811,34 @@ body[data-role="guest"] h2:has(#ccount){display:none}
 .palhead b{font-size:.9rem}
 .palx{height:34px;padding:0 16px;border-radius:var(--rp);border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 8%,transparent);font-weight:600;font-size:.85rem;color:var(--ink)}
 .palx:hover{background:color-mix(in srgb,var(--ink) 14%,transparent)}
+
+/* ---- pop-out window (beta) ---- */
+.betatag{display:inline-block;font:700 .62rem/1 var(--fb);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:var(--rp);background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);vertical-align:middle;margin-left:4px}
+.todaytop{display:flex;justify-content:space-between;align-items:center;gap:8px;align-self:stretch}
+.popchip{margin-left:8px;vertical-align:middle;font-size:.78rem;height:30px;padding:0 12px}
+#popHead{display:none}
+html[data-popout="1"] #popHead{display:flex;align-items:center;gap:8px;padding:2px 0 14px}
+html[data-popout="1"] #popHead .brand{font-size:1.05rem}
+html[data-popout="1"] .topbar,html[data-popout="1"] #tabs,html[data-popout="1"] #todayBtn,html[data-popout="1"] .bellbtn,html[data-popout="1"] .dock,
+html[data-popout="1"] .hero,html[data-popout="1"] .actbar,html[data-popout="1"] .roomchips,html[data-popout="1"] .toolbar,html[data-popout="1"] #othBox,
+html[data-popout="1"] details.tools,html[data-popout="1"] h2:has(#ccount),html[data-popout="1"] #cams,html[data-popout="1"] #empty,html[data-popout="1"] .popchip,
+html[data-popout="1"] section[data-tab]:not([data-tab="Devices"]),html[data-popout="1"] #netbar~.scrim{display:none!important}
+html[data-popout="1"] h2:has(#ccount)+p.note{display:none}
+html[data-popout="1"] main{padding:14px 12px 24px;max-width:none}
+html[data-popout="1"] .notem{display:block!important;margin:0 0 16px}
+html[data-popout="1"] .list{grid-template-columns:1fr}
+html[data-popout="1"] h2{margin:6px 0 10px;font-size:1.05rem}
+html[data-popout="1"] .nclear{font-size:.9rem}
+a.btn{text-decoration:none;color:inherit;display:inline-flex;align-items:center}
+html[data-popout="1"] #toasts{display:none!important}
+html[data-popout="1"] #popHead .brand{display:inline-flex;align-items:center}
 </style>
 </head>
 <body data-auth="out">
 <div id="bgfx" aria-hidden="true"></div>
 <div id="pool2" aria-hidden="true"></div><div id="pool" aria-hidden="true"></div>
 <main>
+<div id="popHead"><span class="brand" data-brand></span><span class="betatag">Beta</span><span class="grow"></span><a class="btn sm" id="popBack" href="./" target="_blank" rel="noopener">Open full app</a></div>
 <div class="topbar" id="topBar" hidden>
   <div class="tbwx" id="tbWx" hidden>
     <span class="wxic" id="wxIc" aria-hidden="true"></span>
@@ -874,7 +896,7 @@ body[data-role="guest"] h2:has(#ccount){display:none}
   <div class="chips" id="modes"></div>
   <button class="chip" id="grpBtn" aria-pressed="false" title="Show lights under their room names">Group by room</button>
 </div>
-<h2>Lights <span class="sub" id="lcount"></span></h2>
+<h2>Lights <span class="sub" id="lcount"></span> <button class="btn sm popchip" id="popOutBtn2" type="button" title="Open notifications and lights in their own small window">Pop out <span class="betatag">Beta</span></button></h2>
 <div class="list" id="lights"></div>
 <p class="note" id="empty" hidden>No lights match your search or filter.</p>
 <details class="tools">
@@ -1190,7 +1212,7 @@ body[data-role="guest"] h2:has(#ccount){display:none}
 <button id="todayBtn" type="button" aria-label="Today: calendar, notifications and account" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="3"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/></svg><span class="pip" id="todayPip" hidden></span></button>
 <div class="scrim" id="todayScrim"></div>
 <aside class="today" id="today" aria-label="Today">
-  <button class="btn sm" id="todayClose" type="button" style="align-self:flex-end">Close</button>
+  <div class="todaytop"><button class="btn sm" id="popOutBtn" type="button" title="Open notifications and lights in their own small window">Pop out <span class="betatag">Beta</span></button><button class="btn sm" id="todayClose" type="button">Close</button></div>
   <div class="sidetop" id="sideTop">
     <div class="sclock" id="sClock" role="timer" aria-live="off"></div>
     <div class="sdate" id="sDate"></div>
@@ -2976,7 +2998,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='3.2.2';
+const APP_VERSION='3.3.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3674,8 +3696,25 @@ const HEALTH={server:true,ha:null};
 })();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openColor&&!document.querySelector('dialog[open]')){ openColor=null; render(); } });
 document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e.target.closest('.lt'))){ openColor=null; render(); } },true);
+(function(){
+  const POP=document.documentElement.dataset.popout==='1';
+  if(POP){
+    /* the pop-out only shows things; automations keep running in the main window so nothing fires twice */
+    runRule=async function(){}; bootPlayed=true;
+    try{ document.body.dataset.tvhint=''; }catch(e){}
+    document.addEventListener('DOMContentLoaded',()=>{ try{ showTab('Devices'); }catch(e){} });
+    setTimeout(()=>{ try{ showTab('Devices'); }catch(e){} },300);
+  }
+  const open=()=>{
+    const w=window.open(location.pathname+'?popout=1','lumora-popout','popup=yes,width=400,height=720,left='+Math.max(0,screen.availWidth-440)+',top=60');
+    if(!w){ toast('Your browser blocked the pop-out window. Allow pop-ups for this page and try again.'); return; }
+    try{ w.focus(); }catch(e){}
+  };
+  ['popOutBtn','popOutBtn2'].forEach(id=>{ const b=document.getElementById(id); if(b) b.onclick=open; });
+})();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '3.3.0':{t:'Pop-out window (beta)',items:['New: Pop out opens notifications and your lights in their own small window you can keep beside other work. Find it in the Today panel or next to Lights. This is a beta, so tell me what feels off.']},
   '3.2.2':{t:'Back to the usual size',items:['Wide-screen scaling is removed. Screens and layouts are sized the way they were in 3.1.0. The colour panel on a light has a Done button, and also closes with Esc or a click outside.']},
   '3.2.0':{t:'Lumora 3.2',items:['Other devices: add smart plugs, door and motion sensors, thermostats and locks that Home Assistant already has. New automations such as “when the front door opens and it is dark, turn on the hallway”. Automations can lock a door but never unlock one.','Accounts with different access: admin, family and guest. Money and phone numbers are admin-only (an admin can allow Money for a family member). Guests only see lights and devices.','Two-step sign-in with an authenticator app, recovery codes, and a password reset code from the admin.','Usage history in Activity: hours each light was on, per day and per light, and a list of offline events with how long they lasted.','A soft start-up sound, a tidier control area on Devices, more on the clock card, and the whole app now scales up on wide screens and TVs.']},
   '3.1.1':{t:'New sounds',items:['The chimes are new: soft, glassy two-note tones with a little echo. A rising pair when a light turns on, a falling pair when it turns off. Volume is still in Settings.']},
