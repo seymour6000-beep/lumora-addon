@@ -53,3 +53,7 @@ Automations run inside the add-on, so they keep working with every browser close
 ## Christmas season (4.5)
 
 From December 1 to January 5 Lumora switches to a festive theme by itself: green and red colours, falling snow (off if your device asks for reduced motion) and a garland along the top. Once, when the season starts and you are signed in, it adds three automations: Christmas lights at sunset (or 4:30 pm if no location is set), green at 8 pm, and lights off at 11 pm. Change or delete them freely. A deleted one stays deleted that year. They switch themselves off after January 5. The Christmas, Christmas tree and Christmas gold scenes are always available. To turn the theme off or on, press Ctrl+K and type "Christmas".
+
+## Splash, logos and version (4.6)
+
+After the Lumora splash a short "Made by Claude AI" screen plays once per browser session. The logo and icons have a 3D look. The version number is in Settings under About Lumora; it only shows on the main screen when an update is waiting.
