@@ -3277,7 +3277,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.11.0';
+const APP_VERSION='5.0.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4453,6 +4453,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '5.0.0':{t:'Welcome to Lumora 5',items:['A new look: 3D logo and icons, a redesigned Today panel, and a festive Christmas theme from December 1 to January 5 with its own lighting automations.','Automations now run on the server, so they work with every browser closed.','Light watch: delayed and repeat alerts, drop-out and router-problem detection, quiet hours and a health report for every light.','Command palette (Ctrl+K), an energy estimate with CSV export, a status-lamp side tab and a pop-out window that stays on top.','Google Home and Alexa through Home Assistant, a Windows desktop app, and an easier Android TV install.','The server address is at the bottom of Settings, and the version number is in Settings, About Lumora.']},
   '4.11.0':{t:'Lumora for Windows',items:['There is now a Windows desktop app: a system tray icon, Windows alerts for new warnings, an always-on-top pop-out, and automatic updates. Download it from Settings, Lumora for Windows.']},
   '4.10.0':{t:'Google Home, Alexa and server address',items:['New Google Home and Alexa settings: Lumora shares your scenes with Home Assistant so you can say them out loud, lists phrases to try for your own lights, and has step-by-step setup for both assistants.','The address of your server is now at the bottom of Settings, with a Copy button.']},
   '4.9.0':{t:'Pop-out window is final',items:['The pop-out window is no longer a beta.','It now shows the time and how many lights are on, has an All lights off button, and remembers its size and position.']},
