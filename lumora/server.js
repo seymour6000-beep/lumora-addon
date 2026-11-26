@@ -1147,6 +1147,12 @@ function createApp(userConfig = {}) {
     try { url = new URL(req.url, 'http://x'); } catch (e) { return send(req, res, 400, 'Bad request'); }
     try {
       if (url.pathname.startsWith('/api/')) await api(req, res, url);
+      else if (url.pathname === '/tv.apk') { res.writeHead(302, { Location: cfg.tvApkUrl || 'https://github.com/seymour6000-beep/lumora-addon/releases/download/tv-latest/Lumora-TV.apk', 'Cache-Control': 'no-store' }); res.end(); }
+      else if (url.pathname === '/tv') {
+        const host = String(req.headers.host || '').replace(/[^A-Za-z0-9.:\-]/g, '');
+        const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lumora on your TV</title><style>body{margin:0;font:20px/1.5 system-ui,sans-serif;background:#0d0b1f;color:#f3f1ff;display:grid;place-items:center;min-height:100vh}main{max-width:640px;padding:28px}h1{margin:0 0 6px}code{background:#241f4a;padding:2px 10px;border-radius:8px;font-size:1.05em}ol{padding-left:1.2em}li{margin:12px 0}a.b{display:inline-block;margin-top:10px;background:#7a66ff;color:#fff;padding:12px 22px;border-radius:14px;text-decoration:none;font-weight:700}</style></head><body><main><h1>Lumora on your TV</h1><p>Three steps on Google TV or Android TV.</p><ol><li>Install the free <b>Downloader</b> app from the Play Store on the TV and open it.</li><li>In its address box type <code>' + host + '/tv.apk</code> and choose Go. Then choose Install.</li><li>Open <b>Lumora</b>, choose <b>Find my server automatically</b>, then <b>Sign in with a code from my phone</b>. Approve the code on your phone in Lumora, Settings, Approve a TV.</li></ol><a class="b" href="/tv.apk">Download the TV app</a></main></body></html>';
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); res.end(html);
+      }
       else serveStatic(req, res, url);
     } catch (e) {
       if (res.headersSent) return res.destroy();

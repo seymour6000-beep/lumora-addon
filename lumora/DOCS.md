@@ -13,7 +13,7 @@ Sky shows the Amherst forecast (Open-Meteo, fetched by the add-on) with a sunris
 
 **Sign in with a code.** On the TV choose *Sign in with a code from my phone*. A six-digit code appears. On your phone, signed in to Lumora, open Settings → *Approve a TV* and enter it. The code lasts five minutes and works once.
 
-**Google TV / Android TV.** Download `Lumora-TV.apk` from this repository's Releases page (tag `tv-latest`, built automatically from `tv-android/`). Install it with the Downloader app (enter the release link) or `adb install Lumora-TV.apk`. Open Lumora, type your server address (for example `192.168.1.50:8080`) or choose *Find my server automatically*. Back goes back inside Lumora; press Menu to change the address.
+**Google TV / Android TV, the easy way.** Install the free *Downloader* app from the Play Store on the TV. In its address box type your Lumora address followed by `/tv.apk` (for example `192.168.1.50:8099/tv.apk`), choose Go, then Install. Lumora redirects that address to the latest TV app (`Lumora-TV.apk`, tag `tv-latest`, built automatically from `tv-android/`). Settings, Use Lumora on a TV shows the exact address to type, and `/tv` on your server shows the same steps as a page. You can also `adb install Lumora-TV.apk`. Open Lumora, type your server address (for example `192.168.1.50:8080`) or choose *Find my server automatically*. Back goes back inside Lumora; press Menu to change the address.
 
 **Samsung (Tizen).** Open `tv-samsung/` in Tizen Studio, create a Samsung certificate, turn on Developer mode on the TV (Apps, press 12345) with your PC's IP, then *Run as Tizen Web Application*. Samsung does not allow installing unsigned apps any other way.
 

@@ -1040,6 +1040,7 @@ aside.today{border-radius:30px 0 0 30px;border-left:1px solid color-mix(in srgb,
 .wbar{display:block;height:8px;border-radius:99px;background:color-mix(in srgb,var(--bad) 28%,var(--off));overflow:hidden;box-shadow:inset 0 1px 2px rgb(0 0 0/.3)}
 .wbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(180deg,color-mix(in srgb,var(--ok) 70%,#fff),var(--ok))}
 .wm{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;color:var(--muted);font-size:.82rem}
+body[data-role="guest"] #watchPanel,body[data-role="family"] #watchPanel{display:none!important}
 </style>
 </head>
 <body data-auth="out">
@@ -1375,11 +1376,14 @@ aside.today{border-radius:30px 0 0 30px;border-left:1px solid color-mix(in srgb,
   <div class="nrow"><button class="btn" id="hBackup" type="button">Download a backup</button><button class="btn" id="hRestore" type="button">Restore from a backup</button><input id="hFile" type="file" accept="application/json,.json" hidden><span class="sub" id="hMsg" role="status"></span></div>
 </div>
 <div class="panel wide" id="tvUse"><h3>Use Lumora on a TV</h3>
-  <p>Install the Lumora TV app, then give it this server address:</p>
+  <p><b>Easiest way for Google TV or Android TV, three steps:</b></p>
+  <ol class="tvsteps"><li>On the TV, install the free <b>Downloader</b> app from the Play Store and open it.</li><li>In Downloader’s address box type this short address, choose Go, then Install:</li></ol>
+  <p class="tvaddr" id="tvApk"></p>
+  <ol class="tvsteps" start="3"><li>Open <b>Lumora</b> on the TV, choose <b>Find my server automatically</b>, then <b>Sign in with a code from my phone</b>. If it can’t find the server, type this address:</li></ol>
   <p class="tvaddr" id="tvAddr"></p>
   <p class="sub" id="tvAddrNote"></p>
   <ol class="tvsteps">
-    <li><b>Google TV or Android TV:</b> install the Lumora TV app (Lumora-TV.apk from the add-on’s GitHub page, Releases) with the Downloader app or adb, open it, and enter the address above.</li>
+    <li><b>Google TV or Android TV:</b> follow the three steps above. The same page is at <b>/tv</b> on your server if you would rather read the steps on the TV.</li>
     <li><b>Samsung TV:</b> build the Lumora app from the tv-samsung folder in Tizen Studio and install it on the TV in developer mode. The add-on’s documentation has the steps.</li>
     <li>On the TV choose <b>Sign in with a code from my phone</b>, then enter the code under <b>Approve a TV</b> below.</li>
   </ol>
@@ -2958,7 +2962,7 @@ const localTV=()=>{ try{ return localStorage.getItem('hub-tv')==='1'; }catch(e){
 const isTV=()=>settings.tvMode==='on'||(settings.tvMode!=='off'&&(TV_UA.test(navigator.userAgent)||localTV()));
 let adjusting=null, backTrap=false;
 function tvInfo(){
-  const a=$('tvAddr'); if(!a) return; a.textContent=location.origin+'/?tv=1';
+  const a=$('tvAddr'); if(!a) return; a.textContent=location.origin+'/?tv=1'; if($('tvApk')) $('tvApk').textContent=location.host+'/tv.apk';
   const h=location.hostname, ip=/^\d+\.\d+\.\d+\.\d+$/.test(h);
   $('tvAddrNote').textContent=ip?'This is your server’s address on your home network. Most routers can keep it the same every day; if the TV stops finding it, check the address again here.':'Some TVs can’t find names like “'+h+'”. If the page won’t open, use your server’s IP address instead, for example http://192.168.1.50:'+(location.port||'8080')+'/?tv=1. You can find it in Home Assistant under Settings, System, Network.';
 }
@@ -3256,7 +3260,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.8.0';
+const APP_VERSION='4.8.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4341,6 +4345,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '4.8.1':{t:'Easier TV install',items:['Installing on Google TV or Android TV is now three steps: Downloader app, type your server address followed by /tv.apk, then sign in with a code. The steps are in Settings, Use Lumora on a TV, and on a page at /tv on your server.']},
   '4.8.0':{t:'Light watch',items:['New Light watch settings: choose how long to wait before a phone alert, get reminders while a light stays offline, and be told when it comes back and how long it was away.','Lumora now spots a light that keeps dropping out, and several lights dropping together (usually the router or Wi-Fi).','Quiet hours stop phone alerts overnight, and you can stop watching a light you unplug on purpose.','A health report shows each light\u2019s time online, drop-outs and longest outage.']},
   '4.7.0':{t:'New Today panel',items:['The calendar, clock and notifications panel was redesigned to match the new look: a raised clock card, a calendar with rounded days and a glowing today, and notification cards with a coloured edge.']},
   '4.6.0':{t:'3D logos and a new splash',items:['After the Lumora splash, a short Made by Claude AI screen plays.','The Lumora logo and every icon were redrawn with a 3D look: raised edges, depth and soft shadows.','The version number moved to Settings (About Lumora). It only appears on the main screen when an update is waiting.']},
