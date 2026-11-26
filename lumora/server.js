@@ -587,7 +587,7 @@ function createApp(userConfig = {}) {
     const method = req.method, p = url.pathname;
     const ip = clientIp(req);
 
-    if (p === '/api/health' && method === 'GET') return json(req, res, 200, { ok: true, version: VERSION, latest, uptime: Math.round(process.uptime()) });
+    if (p === '/api/health' && method === 'GET') return json(req, res, 200, { ok: true, version: VERSION, latest, uptime: Math.round(process.uptime()), ha: ha ? { live: live.ok } : null });
 
     if (method !== 'GET' && method !== 'HEAD') {
       if (String(req.headers['x-requested-with'] || '').toLowerCase() !== 'lumora' || !sameOrigin(req)) return fail(req, res, 403, 'forbidden', 'Request blocked.');
@@ -922,4 +922,7 @@ if (require.main === module) {
   });
   const stop = () => { console.log('Shutting down…'); app.close().then(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };
   process.on('SIGTERM', stop); process.on('SIGINT', stop);
+  /* a home hub should keep running: log a surprise and carry on instead of dropping every light control */
+  process.on('uncaughtException', (e) => console.error('Uncaught:', e && e.stack || e));
+  process.on('unhandledRejection', (e) => console.error('Unhandled:', e && e.stack || e));
 }
