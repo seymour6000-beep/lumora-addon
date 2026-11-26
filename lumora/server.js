@@ -44,7 +44,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-others', 'hub-others',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-others', 'hub-autostat',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -407,6 +407,21 @@ function createApp(userConfig = {}) {
     const cutoff = now - n * 86400000;
     return { days: out, names: hist.names, events: hist.events.filter((e) => e.t >= cutoff).slice(-400), now, tz: cfg.timeZone };
   }
+  /* ---- automations that run on the server ---- */
+  let autoLog = store.read(path.join(cfg.dataDir, 'autolog.json'), []); if (!Array.isArray(autoLog)) autoLog = [];
+  let autoLogDirty = false;
+  const pushMsg = async (title, msg) => {
+    if (!ha) return; const n = readJson2('hub-notify', {}) || {};
+    if (ha.isNotifyId(n.service)) { try { await ha.notify(n.service, title, msg); } catch (e) { log('notify failed', e.message); } }
+    if (ha.isNotifyId(n.smsService) && /^\+[1-9][0-9]{7,14}$/.test(String(n.phone || ''))) { try { await ha.notify(n.smsService, title, msg, n.phone); } catch (e) { log('text failed', e.message); } }
+  };
+  const auto = ha ? require('./automations').create({
+    ha, readJson: readJson2, tz: cfg.timeZone, notify: pushMsg,
+    activity: (m) => { autoLog.unshift({ t: Date.now(), m: String(m).slice(0, 200) }); autoLog.length = Math.min(autoLog.length, 100); autoLogDirty = true; broadcast('auto', { t: Date.now() }); },
+    onStat: (st) => { store.db.data['hub-autostat'] = JSON.stringify(st); store.saveDb(); },
+  }) : null;
+  if (auto) auto.setStats(readJson2('hub-autostat', {}));
+  const autoFlush = setInterval(() => { if (!autoLogDirty) return; autoLogDirty = false; try { store.write(path.join(cfg.dataDir, 'autolog.json'), autoLog); } catch (e) { /* ignore */ } }, 30000); autoFlush.unref();
   const rec = { prev: new Map(), recent: new Map(), busy: false };
   function wantKeepOff(id, outage) {
     const st = readJson2('hub-settings', {});
@@ -426,6 +441,7 @@ function createApp(userConfig = {}) {
     try {
       const lights = await ha.allLights();
       try { recordHistory(lights); } catch (e) { /* never block the checks */ }
+      try { if (auto) auto.onLights(lights); } catch (e) { /* never block the checks */ }
       const gone = new Set(readJson2('hub-removed', []));
       const offBefore = [...rec.prev.values()].filter((v) => v === false).length;
       const outage = lights.length > 1 && offBefore >= lights.length;
@@ -450,7 +466,7 @@ function createApp(userConfig = {}) {
   function onLiveEvent(evt) {
     const d = evt && evt.data; if (!d || !ha) return;
     if (ha.isOtherId(d.entity_id)) {
-      if (d.new_state && readJson2('hub-others', []).some((x) => x && x.id === d.entity_id)) { live.lastEvent = Date.now(); try { broadcast('other', ha.mapOther(d.new_state, null)); } catch (e) { /* ignore */ } }
+      if (d.new_state && readJson2('hub-others', []).some((x) => x && x.id === d.entity_id)) { live.lastEvent = Date.now(); try { const o = ha.mapOther(d.new_state, null); broadcast('other', o); if (auto) auto.onOther(o); } catch (e) { /* ignore */ } }
       return;
     }
     if (!ha.isLightId(d.entity_id)) return;
@@ -639,7 +655,7 @@ function createApp(userConfig = {}) {
   const roleOf = (u) => (u.role === 'admin' ? 'admin' : u.role === 'guest' ? 'guest' : 'family');
   const canMoney = (u) => roleOf(u) === 'admin' || (roleOf(u) === 'family' && u.money === true);
   const keyRead = (u, k) => { const r = roleOf(u); if (k === 'hub-notify') return r === 'admin'; if (k === 'hub-money') return canMoney(u); if (r === 'guest' && k === 'hub-rules') return false; return true; };
-  const keyWrite = (u, k) => { const r = roleOf(u); if (r === 'admin') return true; if (k === 'hub-notify') return false; if (k === 'hub-money') return canMoney(u); if (r === 'guest') return k === 'hub-lights' || k === 'hub-activity'; return true; };
+  const keyWrite = (u, k) => { const r = roleOf(u); if (k === 'hub-autostat') return false; if (r === 'admin') return true; if (k === 'hub-notify') return false; if (k === 'hub-money') return canMoney(u); if (r === 'guest') return k === 'hub-lights' || k === 'hub-activity'; return true; };
   const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: roleOf(u), money: canMoney(u), twofa: !!(u.totp && u.totp.on) });
   const userCount = () => Object.keys(store.db.users).length;
   const bootData = (u) => { const d = {}; for (const k of SYNC_KEYS) if (typeof store.db.data[k] === 'string' && (!u || keyRead(u, k))) d[k] = store.db.data[k]; return d; };
@@ -670,7 +686,7 @@ function createApp(userConfig = {}) {
         server: true,
         version: VERSION,
         latest,
-        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo' },
+        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo', automations: !!ha, serverTypes: ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual'] },
         user: sess ? publicUser(sess.user) : null,
         data: sess ? bootData(sess.user) : null,
         rev: store.db.rev,
@@ -902,6 +918,15 @@ function createApp(userConfig = {}) {
       return json(req, res, 200, { ok: true });
     }
 
+    /* automations on the server */
+    if (p === '/api/automations/log' && method === 'GET') return json(req, res, 200, { log: autoLog.slice(0, 60) });
+    const am = p.match(/^\/api\/automations\/([A-Za-z0-9_-]{1,40})\/run$/);
+    if (am && method === 'POST') {
+      if (roleOf(me) === 'guest' || !auto) return fail(req, res, 403, 'forbidden', 'Your account can’t do that.');
+      const okRun = await auto.runById(am[1]);
+      return json(req, res, 200, { ok: !!okRun });
+    }
+
     /* usage history */
     if (p === '/api/history' && method === 'GET') {
       if (roleOf(me) === 'guest') return fail(req, res, 403, 'forbidden', 'Your account can’t see history.');
@@ -920,6 +945,7 @@ function createApp(userConfig = {}) {
         if (typeof b.value !== 'string' || b.value.length > MAX_VALUE) return fail(req, res, 400, 'bad_value', 'Value must be text under 512 KB.');
         try { JSON.parse(b.value); } catch (e) { return fail(req, res, 400, 'bad_value', 'Value must be valid JSON.'); }
         store.db.data[key] = b.value; store.db.rev++; store.saveDb();
+        if (key === 'hub-presence' && auto) setTimeout(() => auto.onPresence(), 50);
         return json(req, res, 200, { ok: true, rev: store.db.rev });
       }
       if (method === 'DELETE') {
@@ -1099,8 +1125,8 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
-    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live, recordHistory, historyView, saveHistory,
-    close() { saveHistory(); clearInterval(histTimer); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
+    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live, recordHistory, historyView, saveHistory, auto,
+    close() { saveHistory(); if (auto) auto.close(); clearInterval(autoFlush); clearInterval(histTimer); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 

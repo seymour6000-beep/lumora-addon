@@ -19,7 +19,7 @@ if(/[?&]popout=1/.test(location.search)){document.documentElement.setAttribute('
    none of this runs and the app stays a self-contained demo. */
 (function(){
   window.__SRV=null;
-  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others'];
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others','hub-autostat'];
   try{
     if(!/^https?:$/.test(location.protocol)) return;
     var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
@@ -869,6 +869,8 @@ html[data-popout="1"] #sidetab,html[data-tv="1"] #sidetab{display:none}
   #sidetab[data-alert="1"] .stgrip{color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
   #sidetab[data-lit="1"]:not([data-alert="1"]) .stgrip{color:#ffa84a}
 }
+
+html:not([data-remote]) [data-remote-only]{display:none!important}
 /* ---- Lumora 4: icons and graphics ---- */
 :root{--accent2:#ff7ab6}
 :root[data-design="daylight"]{--accent2:#e0479a}:root[data-design="ember"]{--accent2:#ffd25a}:root[data-design="lagoon"]{--accent2:#6aa8ff}:root[data-design="porcelain"]{--accent2:#2bb7a6}:root[data-design="mono"]{--accent2:#9a9a9a}
@@ -1010,7 +1012,9 @@ summary.hic{display:flex}
 <div class="autotop">
   <div class="seg presbox" role="group" aria-label="Home or away"></div>
   <div class="mrow"><span>Pause all automations</span><button class="sw" role="switch" data-set="pauseAll" aria-label="Pause all automations"><i></i></button></div>
+  <div class="mrow" data-remote-only><span>Run on the server</span><button class="sw" role="switch" data-set="serverAuto" aria-label="Run automations on the server"><i></i></button></div>
 </div>
+<p class="sub" data-remote-only id="srvAutoNote">On: your automations keep running when no browser is open. This covers times, sunrise and sunset, door and motion sensors, locks, temperature, “light left on”, “light offline”, and home or away. Camera motion and power-cut triggers still need a Lumora page open.</p>
 <h3 class="gap">Your automations</h3>
 <div id="rules"></div>
 <h3 class="gap" id="bHead">New automation</h3>
@@ -1627,6 +1631,7 @@ let rules=[
 ];
 try{ const s=JSON.parse(localStorage.getItem('hub-rules')||'null'); if(Array.isArray(s)) rules=s.map(migrate).filter(Boolean); else if(REMOTE) rules=[]; }catch(e){}
 const saveRules=()=>{ try{ localStorage.setItem('hub-rules',JSON.stringify(rules)); }catch(e){} };
+try{ const st=JSON.parse(localStorage.getItem('hub-autostat')||'{}'); rules.forEach(r=>{ const x=st[r.id]; if(!x) return; if(x.last&&(!r.last||x.last>r.last)) r.last=x.last; if(x.count>(r.count||0)) r.count=x.count; if(x.done) r.on=false; }); }catch(e){}
 
 /* ---- sun ---- */
 function hasLoc(){ const la=parseFloat(settings.lat), lo=parseFloat(settings.lon); return isFinite(la)&&isFinite(lo)&&Math.abs(la)<=90&&Math.abs(lo)<=180; }
@@ -1944,6 +1949,10 @@ function condOK(c){
 }
 async function runRule(r,o){
   o=o||{}; const ctx=o.ctx||{};
+  if(window.__srvAuto&&window.__srvAuto(r)){
+    if(o.force){ if(window.__srvFlush) await window.__srvFlush(); const x=await srvApi('POST','/api/automations/'+encodeURIComponent(r.id)+'/run'); if(!x.ok) toast('The server couldn’t run that.'); else{ r.last=Date.now(); r.count=(r.count||0)+1; saveRules(); renderRules(); } }
+    return;
+  }
   if(!o.force){
     if(settings.pauseAll) return;
     if(power.outage&&settings.powerPause&&r.t.type!=='outage'&&r.t.type!=='restored') return;
@@ -2366,7 +2375,7 @@ const MARKSVG_OLD='<span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true
 const MARK='<span class="mark">'+LOGO+'</span><span>Lumora</span>';
 document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
-const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',fxMode:'auto',probes:{},keepOffReturn:true,saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
+const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',fxMode:'auto',serverAuto:true,probes:{},keepOffReturn:true,saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
 const saveSettings=()=>store.set('hub-settings',settings);
 const fmt=hm=>{ if(settings.timeFormat==='24') return hm; const [h,m]=hm.split(':'); return ((+h%12)||12)+':'+m+(+h<12?' AM':' PM'); };
@@ -3131,7 +3140,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.0.1';
+const APP_VERSION='4.1.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3907,6 +3916,23 @@ const HEALTH={server:true,ha:null};
   window.__refreshLamps=refresh;
 })();
 
+
+/* ---- automations that run on the server: client side ---- */
+(function(){
+  window.__srvAuto=r=>!!(REMOTE&&SRV&&SRV.config&&SRV.config.automations&&settings.serverAuto!==false&&(SRV.config.serverTypes||[]).includes(r.t.type));
+  if(!REMOTE) return;
+  const merge=async()=>{
+    if(document.hidden||document.documentElement.dataset.popout==='1') return;
+    const r=await srvApi('GET','/api/automations/log'); if(!r.ok||!Array.isArray(r.json.log)) return;
+    const have=new Set(activity.map(a=>a.t+'|'+a.m)); let add=0;
+    r.json.log.forEach(e=>{ if(!have.has(e.t+'|'+e.m)){ activity.push({t:e.t,m:e.m}); add++; } });
+    if(!add) return; activity.sort((a,b)=>b.t-a.t); activity.length=Math.min(activity.length,100);
+    try{ localStorage.setItem('hub-activity',JSON.stringify(activity)); }catch(e){} renderLog();
+  };
+  setInterval(merge,30000); setTimeout(merge,2500);
+  if(window.EventSource){ try{ const es=new EventSource('/api/events'); let t=0; es.addEventListener('auto',()=>{ clearTimeout(t); t=setTimeout(()=>{ merge(); try{ renderRules(); }catch(e){} },800); }); }catch(e){} }
+})();
+
 /* ---- Lumora 4: icons dropped into headings, scenes and buttons ---- */
 (function(){
   const HEAD={'Lights':'bulb','Other devices':'plug','Cameras':'camera','Usage history':'chart','Activity log':'list','Power events':'bolt','Account':'user','Household':'user','Phone alerts':'bell','Health and backup':'shield','Notifications':'bell','Scenes and testing':'sliders'};
@@ -3949,6 +3975,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '4.1.0':{t:'Automations run on the server',items:['Your automations now run inside Lumora on your Home Assistant, so they keep working when no browser is open. This covers set times, sunrise and sunset, door and motion sensors, locks, temperature, “light left on”, “light offline” and home or away.','A new switch at the top of Automations, Run on the server, turns this on or off. When it is on, the browser stands back so nothing runs twice. Camera motion and power-cut rules still need a Lumora page open.','Automations can lock a door but never unlock one. Last-run times and counts are kept on the server too.']},
   '4.0.1':{t:'More new icons',items:['The weather icons and the status lamps on the left tab now use the new icon set too.']},
   '4.0.0':{t:'Lumora 4: new look and icons',items:['A new set of icons drawn for Lumora, with a soft two-tone fill, used in the menu, light cards, stars, scenes and headings.','A new logo and app icon, and glossier cards, a glowing status ring and a livelier menu bar.','Small animations when a light turns on, a favourite is starred or a tab opens. They switch off with Effects off or Reduce motion.']},
   '3.4.0':{t:'Status lamps and holidays',items:['The clock card now shows the next holiday and how many days away it is (Canadian and Nova Scotia holidays, plus Halloween, Mother’s Day and similar).','A floating tab on the left edge works like the warning lights on a car dashboard: lamps for power cut, light offline, server link, doors open, locks unlocked, low camera battery, lights on, heating, motion and away mode. Lit lamps glow, quiet ones stay dim. Tap the arrow to see what each one says, or tap a lamp to jump to the right place.']},

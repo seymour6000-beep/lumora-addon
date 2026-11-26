@@ -38,3 +38,7 @@ Chrome's *Cast* only mirrors a screen; the TV remote can't control it. Use the a
 ## Other devices and history
 
 Smart plugs (switch), door/motion/smoke/leak sensors (binary_sensor with a device class), thermostats (climate) and locks that Home Assistant already has can be added on the Devices tab. Automations can lock a door but never unlock one. Automations run while a Lumora page is open in a browser. Usage history (light hours and offline events) is recorded by the add-on itself.
+
+## Automations on the server
+
+Automations run inside the add-on, so they keep working with every browser closed. Supported triggers: set times, sunrise and sunset, door/motion sensors, locks, temperature, light left on, light offline, and home or away. Camera motion and power-cut triggers still need a Lumora page open. Turn the behaviour off with **Run on the server** at the top of the Automations tab. Automations can lock a door but never unlock one.
