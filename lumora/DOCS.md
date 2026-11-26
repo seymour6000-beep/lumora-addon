@@ -49,3 +49,7 @@ Automations run inside the add-on, so they keep working with every browser close
 - **Energy:** the History tab estimates energy from light on-time. Set watts per light and your price per kWh there. It is an estimate, not a meter reading. Export the history as CSV from the same tab.
 - **Pop-out (beta):** opens a small window with lights and notifications.
 - **Status lamps:** the side tab on the screen edge shows the state of your home at a glance.
+
+## Christmas season (4.5)
+
+From December 1 to January 5 Lumora switches to a festive theme by itself: green and red colours, falling snow (off if your device asks for reduced motion) and a garland along the top. Once, when the season starts and you are signed in, it adds three automations: Christmas lights at sunset (or 4:30 pm if no location is set), green at 8 pm, and lights off at 11 pm. Change or delete them freely. A deleted one stays deleted that year. They switch themselves off after January 5. The Christmas, Christmas tree and Christmas gold scenes are always available. To turn the theme off or on, press Ctrl+K and type "Christmas".
