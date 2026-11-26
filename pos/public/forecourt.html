@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forecourt simulator · Harbourline</title>
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="pos.css">
+</head>
+<body>
+<div class="top" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:#0d1527">
+  <span class="logo"><img src="icon.svg" width="26" height="26" alt=""> Forecourt simulator</span>
+  <span class="muted small grow">You are the customers at the pumps. The cashier screen updates live.</span>
+  <span id="live"></span>
+</div>
+<div id="fc" class="fc"><div class="muted">Loading…</div></div>
+<script src="common.js"></script>
+<script src="forecourt.js"></script>
+</body>
+</html>

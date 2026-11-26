@@ -1,0 +1,13 @@
+{
+  "name": "harbourline-pos",
+  "version": "1.0.0",
+  "description": "Simulated fuel and convenience point of sale for a Home Assistant server. Runs beside Lumora.",
+  "main": "server.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": { "node": ">=18.17" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/server.test.js"
+  }
+}

@@ -1,0 +1,15 @@
+name: Harbourline POS
+version: "1.0.0"
+slug: harbourline_pos
+description: Simulated fuel and convenience point of sale (pumps, store sales, loyalty, phone app, back office). Runs beside Lumora.
+url: https://github.com/seymour6000-beep/lumora-addon
+arch: [amd64, aarch64]
+startup: application
+boot: auto
+init: false
+ports:
+  8090/tcp: 8090
+ports_description:
+  8090/tcp: Harbourline POS (cashier screen, /forecourt, /app)
+options: {}
+schema: {}
