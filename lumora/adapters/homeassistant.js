@@ -4,6 +4,8 @@
 
 const LIGHT_ID = /^light\.[a-z0-9_]{1,100}$/;
 const CAMERA_ID = /^camera\.[a-z0-9_]{1,100}$/;
+const OTHER_ID = /^(switch|binary_sensor|climate|lock)\.[a-z0-9_]{1,100}$/;
+const SENSOR_CLASSES = { motion: 'Motion', occupancy: 'Occupancy', presence: 'Presence', door: 'Door', window: 'Window', garage_door: 'Garage door', opening: 'Opening', smoke: 'Smoke', moisture: 'Water leak', gas: 'Gas', carbon_monoxide: 'Carbon monoxide', vibration: 'Vibration', tamper: 'Tamper', safety: 'Safety', sound: 'Sound' };
 const NOTIFY_ID = /^notify\.[a-z0-9_]{1,100}$/;
 
 function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, probes = () => ({}) }) {
@@ -60,8 +62,57 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, pr
     });
   }
 
+  const cleanName = (s, id) => (String(((s.attributes || {}).friendly_name) || id).replace(/[<>&"']/g, '').trim() || id).slice(0, 40);
+  let unit = null;
+  async function tempUnit() {
+    if (unit) return unit;
+    try { const c = await req('/api/config'); unit = (c && c.unit_system && /F/i.test(c.unit_system.temperature)) ? '°F' : '°C'; } catch (e) { unit = '°C'; }
+    return unit;
+  }
+  const numOrNull = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  /* plugs, door/motion sensors, thermostats and locks */
+  function mapOther(s, u) {
+    const a = s.attributes || {}, dom = String(s.entity_id).split('.')[0];
+    const online = s.state !== 'unavailable' && s.state !== 'unknown';
+    const o = { id: s.entity_id, name: cleanName(s, s.entity_id), online };
+    if (dom === 'switch') { o.kind = 'plug'; o.on = s.state === 'on'; }
+    else if (dom === 'binary_sensor') { o.kind = 'sensor'; o.cls = String(a.device_class || ''); o.label = SENSOR_CLASSES[o.cls] || 'Sensor'; o.active = s.state === 'on'; }
+    else if (dom === 'lock') { o.kind = 'lock'; o.locked = s.state === 'locked'; o.state = String(s.state); }
+    else if (dom === 'climate') {
+      o.kind = 'thermostat'; o.temp = numOrNull(a.current_temperature); o.target = numOrNull(a.temperature); o.mode = String(s.state);
+      o.action = a.hvac_action ? String(a.hvac_action) : ''; o.modes = Array.isArray(a.hvac_modes) ? a.hvac_modes.map(String).slice(0, 8) : [];
+      o.min = numOrNull(a.min_temp) ?? 7; o.max = numOrNull(a.max_temp) ?? 35; o.step = numOrNull(a.target_temp_step) || (u === '°F' ? 1 : 0.5); o.unit = u;
+    }
+    o.changed = Date.parse(s.last_changed) || 0;
+    return o;
+  }
+  const wantOther = (s) => {
+    if (!s || !OTHER_ID.test(String(s.entity_id))) return false;
+    if (String(s.entity_id).startsWith('binary_sensor.')) return Object.prototype.hasOwnProperty.call(SENSOR_CLASSES, String((s.attributes || {}).device_class || ''));
+    return true;
+  };
+
   return {
     name: 'homeassistant',
+    isOtherId: (id) => OTHER_ID.test(String(id)),
+    mapOther,
+    async others(ids) {
+      const states = await req('/api/states');
+      if (!Array.isArray(states)) throw Object.assign(new Error('Unexpected reply from Home Assistant'), { status: 502 });
+      const u = await tempUnit(), want = Array.isArray(ids) ? new Set(ids) : null;
+      return states.filter((s) => (want ? want.has(s && s.entity_id) && OTHER_ID.test(String(s.entity_id)) : wantOther(s))).map((s) => mapOther(s, u));
+    },
+    async setOther(id, patch) {
+      if (!OTHER_ID.test(String(id))) throw Object.assign(new Error('Not a supported device'), { status: 400 });
+      const dom = String(id).split('.')[0], post = (svc, data) => req('/api/services/' + svc, { method: 'POST', body: JSON.stringify({ entity_id: id, ...data }) });
+      if (dom === 'switch' && typeof patch.on === 'boolean') return post(patch.on ? 'switch/turn_on' : 'switch/turn_off', {});
+      if (dom === 'lock' && typeof patch.locked === 'boolean') return post(patch.locked ? 'lock/lock' : 'lock/unlock', {});
+      if (dom === 'climate') {
+        if (Number.isFinite(patch.target)) return post('climate/set_temperature', { temperature: Math.max(5, Math.min(40, patch.target)) });
+        if (typeof patch.mode === 'string' && /^[a-z_]{2,20}$/.test(patch.mode)) return post('climate/set_hvac_mode', { hvac_mode: patch.mode });
+      }
+      throw Object.assign(new Error('That device can’t do that'), { status: 400 });
+    },
     isLightId: (id) => LIGHT_ID.test(String(id)),
     async ping() { await req('/api/'); return true; },
     isCameraId: (id) => CAMERA_ID.test(String(id)),

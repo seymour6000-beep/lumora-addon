@@ -26,3 +26,15 @@ Chrome's *Cast* only mirrors a screen; the TV remote can't control it. Use the a
 **Cameras.** Cameras that Home Assistant exposes as `camera.*` appear on the Devices tab with a picture refreshed every 2 seconds.
 
 **Screensaver.** On a TV the clock, weather and warnings show after 5 idle minutes (Settings to change).
+
+## Accounts, two-step sign-in and password reset
+
+- **Admin** sees everything. **Family** sees lights, devices and automations but not Money or phone numbers (an admin can allow Money per person). **Guest** sees lights and devices only.
+- Add people and choose their access in Settings, under Household.
+- Two-step sign-in uses any authenticator app. Turn it on under Settings, Account.
+- Forgot a password? An admin makes a one-time reset code under Household, Reset password.
+- Locked out as the only admin? Turn on the **admin_reset** option and restart the add-on. A reset code for the first admin is written to the add-on log (valid 15 minutes) and that admin's two-step sign-in is cleared. Turn the option off afterwards.
+
+## Other devices and history
+
+Smart plugs (switch), door/motion/smoke/leak sensors (binary_sensor with a device class), thermostats (climate) and locks that Home Assistant already has can be added on the Devices tab. Automations can lock a door but never unlock one. Automations run while a Lumora page is open in a browser. Usage history (light hours and offline events) is recorded by the add-on itself.

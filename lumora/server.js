@@ -28,6 +28,7 @@ function loadConfig(env = process.env) {
     haUrl: env.HA_URL || '',
     haToken: env.HA_TOKEN || '',
     quiet: truthy(env.QUIET),
+    adminReset: truthy(env.ADMIN_RESET),
     updateUrl: env.UPDATE_URL || '',
     weatherName: env.WEATHER_NAME || 'Amherst, NS',
     forecastUrl: env.FORECAST_URL || ('https://api.open-meteo.com/v1/forecast?latitude=' + (Number(env.WEATHER_LAT) || 45.8167) + '&longitude=' + (Number(env.WEATHER_LON) || -64.2167)
@@ -43,7 +44,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-others', 'hub-others',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -122,6 +123,17 @@ async function checkPassword(pw, stored) {
   const got = await scrypt(pw, Buffer.from(saltHex, 'hex'));
   return want.length === got.length && crypto.timingSafeEqual(want, got);
 }
+/* two-step sign-in (time-based one-time codes, RFC 6238) */
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32enc(buf) { let bits = '', out = ''; for (const b of buf) bits += b.toString(2).padStart(8, '0'); for (let i = 0; i < bits.length; i += 5) out += B32[parseInt(bits.slice(i, i + 5).padEnd(5, '0'), 2)]; return out; }
+function b32dec(str) { let bits = ''; for (const c of String(str).replace(/[\s=-]/g, '').toUpperCase()) { const v = B32.indexOf(c); if (v >= 0) bits += v.toString(2).padStart(5, '0'); } const out = []; for (let i = 0; i + 8 <= bits.length; i += 8) out.push(parseInt(bits.slice(i, i + 8), 2)); return Buffer.from(out); }
+function hotp(key, counter) { const b = Buffer.alloc(8); b.writeBigUInt64BE(BigInt(counter)); const h = crypto.createHmac('sha1', key).update(b).digest(); const o = h[19] & 15; const n = ((h[o] & 0x7f) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3]; return String(n % 1000000).padStart(6, '0'); }
+const timingEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+/* returns the matching 30-second counter, or null; a counter can only be used once (last) */
+function totpMatch(secret, code, last) { const key = b32dec(secret), c = Math.floor(Date.now() / 30000); const d6 = String(code || '').replace(/\s/g, ''); if (!/^\d{6}$/.test(d6)) return null; for (let d = -1; d <= 1; d++) { const cc = c + d; if (cc <= (last || 0)) continue; if (timingEq(hotp(key, cc), d6)) return cc; } return null; }
+const CODE_ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const randomCode = (n) => { let o = ''; const r = crypto.randomBytes(n); for (let i = 0; i < n; i++) o += CODE_ALPHA[r[i] % CODE_ALPHA.length]; return o; };
+const normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const cleanName = (s) => String(s || '').replace(/[<>&"']/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
 const cleanEmail = (s) => String(s || '').trim().toLowerCase();
@@ -362,6 +374,39 @@ function createApp(userConfig = {}) {
   if (notifyTimer) notifyTimer.unref();
 
   /* ---- a light that comes back online stays off (bulbs usually power up ON after a drop-out) ---- */
+  /* usage history: how long each light was on each day, and when lights dropped off or came back (kept on disk, so it keeps recording with no browser open) */
+  const histFile = path.join(cfg.dataDir, 'history.json');
+  const hist = store.read(histFile, { days: {}, names: {}, events: [], last: {} });
+  hist.days = hist.days || {}; hist.names = hist.names || {}; hist.events = Array.isArray(hist.events) ? hist.events : []; hist.last = hist.last || {};
+  let histDirty = false, histT = 0;
+  const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: cfg.timeZone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const dayKey = (t) => dayFmt.format(t);
+  function recordHistory(lights, now = Date.now()) {
+    const dt = histT ? Math.min(15000, Math.max(0, now - histT)) / 1000 : 0; histT = now;
+    const dk = dayKey(now), day = hist.days[dk] || (hist.days[dk] = {});
+    const gone = new Set(readJson2('hub-removed', []));
+    for (const l of lights) {
+      if (gone.has(l.id)) continue;
+      hist.names[l.id] = l.name;
+      const st = !l.online ? 'offline' : l.on ? 'on' : 'off', prev = hist.last[l.id];
+      if (l.online && l.on && dt) day[l.id] = Math.round(((day[l.id] || 0) + dt) * 10) / 10;
+      if (prev !== st) {
+        if (prev !== undefined || st === 'offline') hist.events.push({ t: now, id: l.id, name: l.name, type: st === 'offline' ? 'offline' : prev === 'offline' ? 'online' : st });
+        hist.last[l.id] = st;
+      }
+    }
+    if (hist.events.length > 1500) hist.events.splice(0, hist.events.length - 1500);
+    const keep = Object.keys(hist.days).sort().slice(-120); for (const k of Object.keys(hist.days)) if (!keep.includes(k)) delete hist.days[k];
+    histDirty = true;
+  }
+  function saveHistory() { if (!histDirty) return; histDirty = false; try { store.write(histFile, hist); } catch (e) { console.error('History save failed:', e.message); } }
+  const histTimer = setInterval(saveHistory, 60000); histTimer.unref();
+  function historyView(n) {
+    const out = [], now = Date.now();
+    for (let i = n - 1; i >= 0; i--) { const dk = dayKey(now - i * 86400000), by = hist.days[dk] || {}; out.push({ date: dk, sec: Math.round(Object.values(by).reduce((a, b) => a + b, 0)), by }); }
+    const cutoff = now - n * 86400000;
+    return { days: out, names: hist.names, events: hist.events.filter((e) => e.t >= cutoff).slice(-400), now, tz: cfg.timeZone };
+  }
   const rec = { prev: new Map(), recent: new Map(), busy: false };
   function wantKeepOff(id, outage) {
     const st = readJson2('hub-settings', {});
@@ -380,6 +425,7 @@ function createApp(userConfig = {}) {
     if (!ha || rec.busy) return; rec.busy = true;
     try {
       const lights = await ha.allLights();
+      try { recordHistory(lights); } catch (e) { /* never block the checks */ }
       const gone = new Set(readJson2('hub-removed', []));
       const offBefore = [...rec.prev.values()].filter((v) => v === false).length;
       const outage = lights.length > 1 && offBefore >= lights.length;
@@ -402,7 +448,12 @@ function createApp(userConfig = {}) {
     for (const r of sse) { try { r.write(msg); } catch (e) { sse.delete(r); } }
   }
   function onLiveEvent(evt) {
-    const d = evt && evt.data; if (!d || !ha || !ha.isLightId(d.entity_id)) return;
+    const d = evt && evt.data; if (!d || !ha) return;
+    if (ha.isOtherId(d.entity_id)) {
+      if (d.new_state && readJson2('hub-others', []).some((x) => x && x.id === d.entity_id)) { live.lastEvent = Date.now(); try { broadcast('other', ha.mapOther(d.new_state, null)); } catch (e) { /* ignore */ } }
+      return;
+    }
+    if (!ha.isLightId(d.entity_id)) return;
     live.lastEvent = Date.now();
     const st = d.new_state && d.new_state.state;
     const was = d.old_state && d.old_state.state;
@@ -554,6 +605,21 @@ function createApp(userConfig = {}) {
     return { key: sha(tok), s, user };
   }
   /* TV pairing: a TV shows a short code, a signed-in phone approves it, then only that TV (which holds a secret) gets a session */
+  const tickets = new Map(); // two-step sign-in tickets: sha(ticket) -> { uid, exp, tries, keep }
+  const sweepT = setInterval(() => { const n = Date.now(); for (const [k, v] of tickets) if (v.exp < n) tickets.delete(k); }, 60000); sweepT.unref();
+  function check2fa(u, raw) {
+    if (!u.totp || !u.totp.on) return false;
+    const code = String(raw || '').trim();
+    if (/^\d{3}\s?\d{3}$/.test(code)) { const c = totpMatch(u.totp.secret, code, u.totp.last); if (c === null) return false; u.totp.last = c; store.flush(); return true; }
+    const h = sha(normCode(code)), i = (u.totp.rec || []).indexOf(h);
+    if (i >= 0) { u.totp.rec.splice(i, 1); store.flush(); return true; }
+    return false;
+  }
+  if (cfg.adminReset) {
+    const admin = Object.values(store.db.users).filter((u) => u.role === 'admin').sort((a, b) => a.created - b.created)[0];
+    if (admin) { const code = randomCode(8); store.db.resets = store.db.resets || {}; store.db.resets[admin.id] = { h: sha(code), exp: Date.now() + 900000, clear2fa: true }; store.flush(); console.log('Lumora: password reset code for ' + admin.email + ' is ' + code.slice(0, 4) + '-' + code.slice(4) + ' (valid 15 minutes). On the sign-in page choose “Forgot password”. Turn the “admin_reset” option off again afterwards.'); }
+    else console.log('Lumora: admin_reset is on, but there is no account yet.');
+  }
   const tvPending = new Map(); // sha(secret) -> { code, exp, uid, ip }
   const tvSweep = () => { const n = Date.now(); for (const [k, v] of tvPending) if (v.exp < n) tvPending.delete(k); };
   const tvFind = (code) => { tvSweep(); for (const v of tvPending.values()) if (v.code === code) return v; return null; };
@@ -569,9 +635,14 @@ function createApp(userConfig = {}) {
     return 'lumora_sid=' + value + '; Path=/; HttpOnly; SameSite=Lax' + (maxAge ? '; Max-Age=' + maxAge : '') + (isHttps(req) ? '; Secure' : '');
   }
   const clearCookie = (req) => 'lumora_sid=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0' + (isHttps(req) ? '; Secure' : '');
-  const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role });
+  /* roles: admin (everything), family (everything except Money and phone numbers, unless the admin allows Money), guest (lights and devices only) */
+  const roleOf = (u) => (u.role === 'admin' ? 'admin' : u.role === 'guest' ? 'guest' : 'family');
+  const canMoney = (u) => roleOf(u) === 'admin' || (roleOf(u) === 'family' && u.money === true);
+  const keyRead = (u, k) => { const r = roleOf(u); if (k === 'hub-notify') return r === 'admin'; if (k === 'hub-money') return canMoney(u); if (r === 'guest' && k === 'hub-rules') return false; return true; };
+  const keyWrite = (u, k) => { const r = roleOf(u); if (r === 'admin') return true; if (k === 'hub-notify') return false; if (k === 'hub-money') return canMoney(u); if (r === 'guest') return k === 'hub-lights' || k === 'hub-activity'; return true; };
+  const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: roleOf(u), money: canMoney(u), twofa: !!(u.totp && u.totp.on) });
   const userCount = () => Object.keys(store.db.users).length;
-  const bootData = () => { const d = {}; for (const k of SYNC_KEYS) if (typeof store.db.data[k] === 'string') d[k] = store.db.data[k]; return d; };
+  const bootData = (u) => { const d = {}; for (const k of SYNC_KEYS) if (typeof store.db.data[k] === 'string' && (!u || keyRead(u, k))) d[k] = store.db.data[k]; return d; };
 
   function sameOrigin(req) {
     const origin = req.headers.origin;
@@ -601,7 +672,7 @@ function createApp(userConfig = {}) {
         latest,
         config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo' },
         user: sess ? publicUser(sess.user) : null,
-        data: sess ? bootData() : null,
+        data: sess ? bootData(sess.user) : null,
         rev: store.db.rev,
       });
     }
@@ -661,7 +732,7 @@ function createApp(userConfig = {}) {
       if (!validEmail(email)) return fail(req, res, 400, 'email', 'Enter a valid email address.');
       if (pw.length < 8 || pw.length > 200) return fail(req, res, 400, 'password', 'Use at least 8 characters for your password.');
       if (Object.values(store.db.users).some((u) => u.email === email)) return fail(req, res, 409, 'email_taken', 'That email already has an account. Sign in instead.');
-      const user = { id: crypto.randomUUID(), email, name, role: first ? 'admin' : 'member', pw: await hashPassword(pw), created: Date.now() };
+      const user = { id: crypto.randomUUID(), email, name, role: first ? 'admin' : 'family', pw: await hashPassword(pw), created: Date.now() };
       store.db.users[user.id] = user; store.flush();
       log('account created', user.role);
       return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, true) });
@@ -689,8 +760,50 @@ function createApp(userConfig = {}) {
         return fail(req, res, 401, 'invalid_credentials', 'Email or password is incorrect.');
       }
       fails.delete(key);
+      if (user.totp && user.totp.on) {
+        const t = crypto.randomBytes(24).toString('base64url');
+        tickets.set(sha(t), { uid: user.id, exp: Date.now() + 300000, tries: 0, keep: b.keep !== false });
+        return json(req, res, 200, { need2fa: true, ticket: t });
+      }
       const old = currentSession(req); if (old) { delete store.sessions[old.key]; }
       return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, b.keep !== false) });
+    }
+
+    if (p === '/api/login/2fa' && method === 'POST') {
+      const wait0 = bump(hits, 'auth|' + ip, 30, 60000);
+      if (wait0) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait0 + ' seconds.', { retryAfter: wait0 });
+      const b = await readJson(req);
+      const k = sha(String(b.ticket || '').slice(0, 100)), tk = tickets.get(k);
+      if (!tk || tk.exp < Date.now()) { tickets.delete(k); return fail(req, res, 410, 'expired', 'That took too long. Enter your password again.'); }
+      const user = store.db.users[tk.uid];
+      if (!user || !check2fa(user, b.code)) {
+        tk.tries++; if (tk.tries >= 5) tickets.delete(k);
+        return fail(req, res, 401, 'bad_code', tk.tries >= 5 ? 'Too many wrong codes. Enter your password again.' : 'That code isn’t right. Try the newest code from your authenticator app.');
+      }
+      tickets.delete(k);
+      const old = currentSession(req); if (old) { delete store.sessions[old.key]; }
+      return json(req, res, 200, { user: publicUser(user) }, { 'Set-Cookie': startSession(req, res, user, tk.keep) });
+    }
+
+    /* forgot password: the admin hands out a one-time code (there is no email service here) */
+    if (p === '/api/reset' && method === 'POST') {
+      const wait0 = bump(hits, 'auth|' + ip, 30, 60000);
+      if (wait0) return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + wait0 + ' seconds.', { retryAfter: wait0 });
+      const b = await readJson(req);
+      const email = cleanEmail(b.email), pw = String(b.password || ''), key = 'reset|' + ip + '|' + email;
+      const f = fails.get(key);
+      if (f && f.until > Date.now()) { const sec = Math.ceil((f.until - Date.now()) / 1000); return fail(req, res, 429, 'rate_limited', 'Too many attempts. Try again in ' + sec + ' seconds.', { retryAfter: sec }); }
+      const user = Object.values(store.db.users).find((u) => u.email === email);
+      const r = user && store.db.resets && store.db.resets[user.id];
+      const good = !!(r && r.exp > Date.now() && timingEq(r.h, sha(normCode(b.code))));
+      if (!good) { const e = f || { n: 0, until: 0 }; e.n++; if (e.n >= 5) { e.n = 0; e.until = Date.now() + 60000; } fails.set(key, e); return fail(req, res, 400, 'bad_reset', 'That email and code don’t match, or the code has expired. Ask the admin for a new one.'); }
+      if (pw.length < 8 || pw.length > 200) return fail(req, res, 400, 'password', 'Use at least 8 characters for your new password.');
+      user.pw = await hashPassword(pw);
+      if (r.clear2fa) delete user.totp;
+      delete store.db.resets[user.id];
+      for (const k of Object.keys(store.sessions)) if (store.sessions[k].uid === user.id) delete store.sessions[k];
+      fails.delete(key); store.flush(); log('password reset used');
+      return json(req, res, 200, { ok: true, twofa: !!(user.totp && user.totp.on) });
     }
 
     if (p === '/api/tv/start' && method === 'POST') {
@@ -762,11 +875,46 @@ function createApp(userConfig = {}) {
       return json(req, res, 200, { ok: true }, { 'Set-Cookie': clearCookie(req) });
     }
 
+    /* two-step sign-in setup */
+    if (p === '/api/2fa/setup' && method === 'POST') {
+      const b = await readJson(req);
+      if (!(await checkPassword(String(b.password || ''), me.pw))) return fail(req, res, 403, 'wrong_password', 'Password is incorrect.');
+      const secret = b32enc(crypto.randomBytes(20));
+      me.totpPending = { secret, exp: Date.now() + 900000 };
+      return json(req, res, 200, { secret: secret.match(/.{1,4}/g).join(' '), uri: 'otpauth://totp/Lumora:' + encodeURIComponent(me.email) + '?secret=' + secret + '&issuer=Lumora&digits=6&period=30' });
+    }
+    if (p === '/api/2fa/enable' && method === 'POST') {
+      const b = await readJson(req), pend = me.totpPending;
+      if (!pend || pend.exp < Date.now()) return fail(req, res, 400, 'no_setup', 'Start the setup again.');
+      const c = totpMatch(pend.secret, b.code, 0);
+      if (c === null) return fail(req, res, 400, 'bad_code', 'That code isn’t right. Check the time on your phone and try the newest code.');
+      const codes = Array.from({ length: 8 }, () => randomCode(8));
+      me.totp = { secret: pend.secret, on: true, last: c, rec: codes.map((x) => sha(x)) }; delete me.totpPending;
+      for (const k of Object.keys(store.sessions)) if (store.sessions[k].uid === me.id && k !== sess.key) delete store.sessions[k];
+      store.flush();
+      return json(req, res, 200, { ok: true, recovery: codes.map((x) => x.slice(0, 4) + '-' + x.slice(4)) });
+    }
+    if (p === '/api/2fa/disable' && method === 'POST') {
+      const b = await readJson(req);
+      if (!(await checkPassword(String(b.password || ''), me.pw))) return fail(req, res, 403, 'wrong_password', 'Password is incorrect.');
+      if (me.totp && me.totp.on && !check2fa(me, b.code)) return fail(req, res, 400, 'bad_code', 'Enter a current code or a recovery code to turn this off.');
+      delete me.totp; delete me.totpPending; store.flush();
+      return json(req, res, 200, { ok: true });
+    }
+
+    /* usage history */
+    if (p === '/api/history' && method === 'GET') {
+      if (roleOf(me) === 'guest') return fail(req, res, 403, 'forbidden', 'Your account can’t see history.');
+      const n = Math.max(1, Math.min(60, Number(url.searchParams.get('days')) || 14));
+      return json(req, res, 200, historyView(n));
+    }
+
     /* saved data */
     let m;
     if ((m = p.match(/^\/api\/data\/([a-z-]{3,30})$/))) {
       const key = m[1];
       if (!SYNC_KEYS.has(key)) return fail(req, res, 400, 'bad_key', 'Unknown key.');
+      if (method !== 'GET' && !keyWrite(me, key)) return fail(req, res, 403, 'forbidden', 'Your account can’t change that.');
       if (method === 'PUT') {
         const b = await readJson(req);
         if (typeof b.value !== 'string' || b.value.length > MAX_VALUE) return fail(req, res, 400, 'bad_value', 'Value must be text under 512 KB.');
@@ -794,9 +942,34 @@ function createApp(userConfig = {}) {
         if (pw.length < 8 || pw.length > 200) return fail(req, res, 400, 'password', 'Use at least 8 characters for the password.');
         if (Object.values(store.db.users).some((u) => u.email === email)) return fail(req, res, 409, 'email_taken', 'That email already has an account.');
         if (userCount() >= 20) return fail(req, res, 400, 'limit', 'A household can have up to 20 members.');
-        const user = { id: crypto.randomUUID(), email, name, role: 'member', pw: await hashPassword(pw), created: Date.now() };
+        const role = ['admin', 'family', 'guest'].includes(b.role) ? b.role : 'family';
+        const user = { id: crypto.randomUUID(), email, name, role, pw: await hashPassword(pw), created: Date.now() };
+        if (role === 'family' && b.money === true) user.money = true;
         store.db.users[user.id] = user; store.flush();
         return json(req, res, 200, { user: publicUser(user) });
+      }
+      if ((m = p.match(/^\/api\/admin\/users\/([0-9a-f-]{36})$/)) && method === 'PATCH') {
+        const u = store.db.users[m[1]]; if (!u) return fail(req, res, 404, 'not_found', 'No such member.');
+        const b = await readJson(req);
+        if (b.role !== undefined) {
+          if (!['admin', 'family', 'guest'].includes(b.role)) return fail(req, res, 400, 'role', 'Choose admin, family or guest.');
+          if (roleOf(u) === 'admin' && b.role !== 'admin' && !Object.values(store.db.users).some((x) => x.id !== u.id && roleOf(x) === 'admin')) return fail(req, res, 409, 'last_admin', 'There has to be at least one admin.');
+          u.role = b.role;
+        }
+        if (typeof b.money === 'boolean') u.money = b.money;
+        store.flush();
+        return json(req, res, 200, { user: publicUser(u) });
+      }
+      if ((m = p.match(/^\/api\/admin\/users\/([0-9a-f-]{36})\/reset$/)) && method === 'POST') {
+        const u = store.db.users[m[1]]; if (!u) return fail(req, res, 404, 'not_found', 'No such member.');
+        const code = randomCode(8); store.db.resets = store.db.resets || {};
+        store.db.resets[u.id] = { h: sha(code), exp: Date.now() + 3600000, clear2fa: false }; store.flush();
+        return json(req, res, 200, { code: code.slice(0, 4) + '-' + code.slice(4), minutes: 60 });
+      }
+      if ((m = p.match(/^\/api\/admin\/users\/([0-9a-f-]{36})\/twofa-off$/)) && method === 'POST') {
+        const u = store.db.users[m[1]]; if (!u) return fail(req, res, 404, 'not_found', 'No such member.');
+        delete u.totp; delete u.totpPending; store.flush();
+        return json(req, res, 200, { ok: true });
       }
       if ((m = p.match(/^\/api\/admin\/users\/([0-9a-f-]{36})$/)) && method === 'DELETE') {
         const u = store.db.users[m[1]];
@@ -811,11 +984,33 @@ function createApp(userConfig = {}) {
     }
 
     /* real lights */
-    if (p.startsWith('/api/devices/') || p.startsWith('/api/notify/') || p.startsWith('/api/cameras')) {
+    if (p.startsWith('/api/devices/') || p.startsWith('/api/notify/') || p.startsWith('/api/cameras') || p.startsWith('/api/others/')) {
       if (!ha) return fail(req, res, 404, 'no_adapter', 'No device connection is set up on this server.');
       const wait = p.startsWith('/api/cameras/') ? bump(hits, 'cam|' + me.id, 1800, 60000) : bump(hits, 'dev|' + me.id, 600, 60000);
       if (wait) return fail(req, res, 429, 'rate_limited', 'Slow down a little.', { retryAfter: wait });
+      const role = roleOf(me);
+      if ((p.startsWith('/api/notify/') || p === '/api/devices/diagnose') && role !== 'admin') return fail(req, res, 403, 'admin_only', 'Only the admin can do that.');
+      if ((p.startsWith('/api/cameras') || p === '/api/devices/discover' || p === '/api/others/discover') && role === 'guest') return fail(req, res, 403, 'forbidden', 'Your account can’t do that.');
       try {
+      if (p === '/api/others/discover' && method === 'GET') return json(req, res, 200, { others: (await ha.others()).slice(0, 200) });
+      if (p === '/api/others/state' && method === 'POST') {
+        const b = await readJson(req);
+        const ids = Array.isArray(b.ids) ? b.ids.filter((x) => ha.isOtherId(x)).slice(0, 100) : [];
+        return json(req, res, 200, { states: Object.fromEntries((await ha.others(ids)).map((o) => [o.id, o])) });
+      }
+      if ((m = p.match(/^\/api\/others\/([a-z0-9_.]{1,110})\/set$/)) && method === 'POST') {
+        const id = m[1];
+        if (!ha.isOtherId(id)) return fail(req, res, 400, 'bad_id', 'That is not a supported device.');
+        if (id.startsWith('lock.') && role === 'guest') return fail(req, res, 403, 'forbidden', 'Guests can’t use locks.');
+        const b = await readJson(req), patch = {};
+        if (typeof b.on === 'boolean') patch.on = b.on;
+        if (typeof b.locked === 'boolean') patch.locked = b.locked;
+        if (Number.isFinite(b.target)) patch.target = b.target;
+        if (typeof b.mode === 'string') patch.mode = b.mode;
+        if (!Object.keys(patch).length) return fail(req, res, 400, 'empty', 'Nothing to change.');
+        await ha.setOther(id, patch);
+        return json(req, res, 200, { ok: true });
+      }
       if (p === '/api/devices/diagnose' && method === 'GET') return json(req, res, 200, await ha.diagnose());
       if (p === '/api/notify/services' && method === 'GET') {
         return json(req, res, 200, { services: await ha.notifyServices() });
@@ -904,8 +1099,8 @@ function createApp(userConfig = {}) {
 
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
-    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live,
-    close() { clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
+    parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live, recordHistory, historyView, saveHistory,
+    close() { saveHistory(); clearInterval(histTimer); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 

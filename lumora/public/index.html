@@ -19,7 +19,7 @@ window.__errs=[];addEventListener('error',function(e){var m=String(e.message||''
    none of this runs and the app stays a self-contained demo. */
 (function(){
   window.__SRV=null;
-  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify'];
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others'];
   try{
     if(!/^https?:$/.test(location.protocol)) return;
     var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
@@ -30,6 +30,7 @@ window.__errs=[];addEventListener('error',function(e){var m=String(e.message||''
     if(b.user){ var u={}; u[b.user.email]={name:b.user.name,salt:'',hash:''}; ls.setItem('hub-users',JSON.stringify(u)); ls.setItem('hub-session',b.user.email); }
     else { ls.setItem('hub-users','{}'); ls.removeItem('hub-session'); try{ sessionStorage.removeItem('hub-session'); }catch(e){} }
     if(!b.user) return;
+    var __rl=b.user.role; SYNC=SYNC.filter(function(k){ if(__rl==='admin') return true; if(k==='hub-notify') return false; if(k==='hub-money') return b.user.money===true; if(__rl==='guest') return k==='hub-lights'||k==='hub-activity'; return true; });
     /* from here on, writes to the shared keys also go to the server */
     var pending={}, timer=null, fails=0, inflight=0, setI=Storage.prototype.setItem, remI=Storage.prototype.removeItem;
     function queue(k,v){ pending[k]=v; clearTimeout(timer); timer=setTimeout(flush,500); }
@@ -82,7 +83,7 @@ window.__errs=[];addEventListener('error',function(e){var m=String(e.message||''
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--fb);padding:0 0 calc(var(--dockh) + 44px + env(safe-area-inset-bottom,0px));overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:400 1rem/1.5 var(--fb);padding:0 0 calc(var(--dockh) + 44px + env(safe-area-inset-bottom,0px));overflow-x:hidden;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 h1,h2,h3,h4{margin:0;font-family:var(--fd);font-weight:500;letter-spacing:-.01em;line-height:1.15}
@@ -104,7 +105,7 @@ a{color:var(--accent)}
 .waves,#field{display:none!important}
 
 /* ---- shell ---- */
-main{max-width:1180px;margin:0 auto;padding:max(18px,env(safe-area-inset-top,0px)) 20px 0}
+main{max-width:2100px;margin:0 auto;padding:max(18px,env(safe-area-inset-top,0px)) clamp(16px,3vw,56px) 0}
 .dock{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:6px;padding:8px;border-radius:var(--rp);
   background:color-mix(in srgb,var(--surface) 80%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
   box-shadow:0 18px 50px -10px #0009,0 2px 0 color-mix(in srgb,var(--ink) 7%,transparent) inset;max-width:calc(100vw - 20px)}
@@ -631,6 +632,53 @@ html[data-bg="fx"] .tbwx{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur
 .bgx-city svg{height:70%}
 .sfilt{display:none!important}
 
+/* wider screens: everything scales up with the screen, and grids use the extra room */
+@media (min-width:1700px){html:not([data-tv="1"]){zoom:1.15}}
+@media (min-width:2200px){html:not([data-tv="1"]){zoom:1.35}}
+@media (min-width:2800px){html:not([data-tv="1"]){zoom:1.7}}
+@media (min-width:3600px){html:not([data-tv="1"]){zoom:2.1}}
+@media (min-width:1100px){
+  .list{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+  .hero{grid-template-columns:minmax(0,1.5fr) minmax(300px,.7fr)}
+}
+@media (min-width:1500px){
+  .sgrid{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+  .cams,.grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+  .mncols{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+}
+
+/* ---- clock card: at-a-glance chips and daylight bar ---- */
+.hmeta{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+.hchip{display:inline-flex;align-items:baseline;gap:7px;padding:6px 12px;border-radius:var(--rp);background:color-mix(in srgb,var(--ink) 6%,transparent);border:1px solid color-mix(in srgb,var(--ink) 9%,transparent);font-weight:600;font-size:.88rem;white-space:nowrap}
+.hchip em{font-style:normal;color:var(--muted);font-weight:600;font-size:.8rem}
+.dayarc{position:relative;height:6px;border-radius:6px;margin:18px 4px 0;background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.dayarc i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 35%,transparent),var(--accent))}
+.dayarc b{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent),0 0 18px var(--accent)}
+.dayarc.night b{background:var(--muted);box-shadow:none}
+.dayarc.night i{background:color-mix(in srgb,var(--muted) 40%,transparent)}
+.dayarcl{margin-top:10px;color:var(--muted);font-size:.82rem;font-weight:600}
+@media (max-width:520px){.hchip{font-size:.82rem;padding:5px 10px}}
+
+/* ---- cleaner control area on Devices ---- */
+.actbar{--ctl:40px;gap:10px 12px;margin:4px 0 14px;padding:10px 12px;border-radius:calc(var(--r) + 6px);background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.actbar .strip{padding:0;margin:0;gap:8px;flex:0 1 auto;max-width:100%}
+.actbar .strip .btn,.actbar .alloff,.actbar #scan,.actbar #addFound{height:var(--ctl);padding:0 16px;font-size:.88rem}
+.actbar .alloff{font-weight:600}
+.actbar .seg{height:var(--ctl)}
+.actbar .seg .btn,.actbar .seg button{height:calc(var(--ctl) - 8px);padding:0 14px;font-size:.88rem}
+.vsep{width:1px;height:24px;background:color-mix(in srgb,var(--ink) 14%,transparent);flex:none}
+.actbar .grow{flex:1 1 0;min-width:0}
+.roomchips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:2px 0 10px;padding:2px}
+.roomchips::-webkit-scrollbar{display:none}
+.roomchips>*{flex:none;font-size:.82rem;padding:6px 14px}
+.toolbar{margin-bottom:22px;gap:10px}
+.toolbar .in{height:var(--ctl,40px);flex:1 1 260px;font-size:.9rem}
+#roomSel{display:none}
+.toolbar .chips{gap:6px;flex-wrap:wrap}
+.toolbar .chips .chip,.toolbar #grpBtn{font-size:.8rem;padding:6px 13px}
+@media (max-width:760px){.vsep{display:none}.actbar .strip{flex:1 1 100%}.actbar .grow{display:none}.actbar #scan{margin-left:auto}}
+:root[data-tv="1"] .actbar{--ctl:60px}
+
 
 /* ---- backgrounds ---- */
 #bgfx{position:fixed;inset:0;z-index:-3;pointer-events:none;display:none;overflow:hidden}
@@ -714,6 +762,65 @@ html[data-bg]:not([data-bg="waves"]) #bgfx{display:block!important}
 html[data-fx="off"] #bgfx *,html[data-fx="off"] #bgfx::before{animation:none!important}
 html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
 @media (prefers-reduced-motion:reduce){#bgfx *{animation:none!important}}
+/* ---- 3.2: other devices, history, roles, sign-in steps ---- */
+.rolehide,.lvhide{display:none!important}
+body[data-money="0"] #tabs [data-go="Money"],body[data-role="guest"] #tabs [data-go="Money"],body[data-role="guest"] #tabs [data-go="Automations"],body[data-role="guest"] #tabs [data-go="Activity"]{display:none!important}
+body[data-role="guest"] #scan,body[data-role="guest"] #addFound,body[data-role="guest"] #cams,body[data-role="guest"] #ccount,body[data-role="guest"] #ccount ~ *{display:none!important}
+body[data-role="guest"] h2:has(#ccount){display:none}
+#othBox{margin-top:30px}
+.others{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.ot{position:relative;display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:calc(var(--r) + 4px);background:color-mix(in srgb,var(--surface) 78%,transparent);border:1px solid color-mix(in srgb,var(--ink) 9%,transparent);min-width:0}
+.ot[data-on="1"]{border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.ot[data-alert="1"]{border-color:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}
+.ot[data-off="1"]{opacity:.6}
+.oth{display:flex;align-items:center;gap:10px}
+.oi{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted);flex:none}
+.ot[data-on="1"] .oi{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.oi svg{width:19px;height:19px}
+.on{flex:1;min-width:0}.on b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orm{border:0;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;padding:2px 6px;border-radius:8px}
+.orm:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.oact{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.oact .btn{height:36px;padding:0 14px;font-size:.85rem}
+.ostep{display:flex;align-items:center;gap:8px}.ostep .btn{width:36px;padding:0;font-size:1.1rem}.ostep b{min-width:3.4em;text-align:center;font-variant-numeric:tabular-nums}
+.ofinds{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-width:560px}
+.ofind{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.ofind span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.ofind em{font-style:normal;color:var(--muted);font-size:.8rem}
+#othBox .nrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+/* history */
+.histhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:6px}
+.histhead h2{margin:20px 0 10px}
+.histsum{margin:4px 0 14px;font-weight:600}
+.hbars{display:flex;align-items:flex-end;gap:6px;height:150px;padding:6px 4px 0;border-bottom:1px solid var(--line)}
+.hcol{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
+.hcol i{display:block;width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 45%,transparent));min-height:0}
+.hcol span{font-size:.72rem;color:var(--muted);height:1.2em;position:absolute;transform:translateY(130%)}
+.hbars{margin-bottom:30px}
+.hcol{position:relative}
+.hh{margin:22px 0 8px;font-size:1rem}
+.hlist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.hlist li{display:grid;grid-template-columns:minmax(90px,1fr) 2fr auto;gap:12px;align-items:center}
+.hb{height:8px;border-radius:6px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}.hb i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.hlist b{font-variant-numeric:tabular-nums;font-size:.9rem}
+/* sign-in steps, household, two-step */
+.lstep{display:flex;flex-direction:column;gap:12px}.lstep h3{margin:0}
+.linkish{background:transparent;border-color:transparent;color:var(--muted);text-decoration:underline;font-weight:500;width:100%}
+.tfkey{font:600 1.05rem/1.4 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--ink) 7%,transparent);word-break:break-all;margin:8px 0;user-select:all}
+.tfcodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:10px 0}
+.tfcodes code{padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--ink) 7%,transparent);font-size:.95rem;text-align:center;user-select:all}
+.hhrow{padding:10px 0;border-bottom:1px solid var(--line)}.hhrow:last-child{border:0}
+.hhctl{flex-wrap:wrap;gap:8px}.hhctl .btn{height:36px;padding:0 14px;font-size:.85rem}
+#tfBox .srow{flex-wrap:wrap;gap:8px}
+
+/* click-origin button animation */
+.hasripple{position:relative;overflow:hidden;isolation:isolate}
+#tabs .tab.hasripple{overflow:hidden}
+.ripple{position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,color-mix(in srgb,currentColor 38%,transparent) 0,color-mix(in srgb,currentColor 18%,transparent) 45%,transparent 70%);animation:rip .62s cubic-bezier(.2,.7,.2,1) forwards;z-index:0}
+@keyframes rip{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
+.ripple{opacity:1}
+.pressfx{transform:perspective(500px) translate(var(--tx,0),var(--ty,0)) rotateX(var(--rx,0)) rotateY(var(--ry,0)) scale(.965);transform-origin:var(--ox,50%) var(--oy,50%);transition:transform .12s ease-out}
+:root[data-fx="off"] .ripple{display:none}
+@media (prefers-reduced-motion:reduce){.ripple{display:none}.pressfx{transform:none}}
 </style>
 </head>
 <body data-auth="out">
@@ -745,6 +852,9 @@ html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
     <p id="summary">Loading lights…</p>
     <div class="hclock" id="hClock" role="timer" aria-live="off"></div>
     <div class="hdate" id="hDate"></div>
+    <div class="hmeta" id="hMeta" aria-label="Today at a glance"></div>
+    <div class="dayarc" id="dayArc" aria-hidden="true"><i id="dayArcFill"></i><b id="dayArcSun"></b></div>
+    <div class="dayarcl" id="dayArcL"></div>
   </div>
   <div class="statuscard">
     <div class="ring" id="ring" role="img" aria-label="Lights on"><b id="ringN">0<small>/0</small></b></div>
@@ -753,11 +863,12 @@ html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
   </div>
 </div>
 <div class="banner" id="powerBanner" hidden role="status"></div>
-<div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
 <div class="devsplit">
 <div class="devmain">
 <div class="stats" id="stats"></div>
 <div class="actbar" role="group" aria-label="Quick actions">
+  <div class="strip" id="scenes" role="group" aria-label="Scenes"></div>
+  <span class="vsep" aria-hidden="true"></span>
   <button class="alloff" id="alloff">All lights off</button>
   <div class="seg presbox" role="group" aria-label="Home or away"></div>
   <div class="roombtns" id="roombtns" hidden><button class="btn" id="roomOn">Room on</button><button class="btn" id="roomOff">Room off</button><span class="roomscenes" id="roomScenes"></span></div>
@@ -1071,7 +1182,7 @@ html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
   <p class="sub">Accounts and settings are stored only in this browser.</p>
 </div>
 <div class="panel" id="hhPanel" hidden><h3>Household</h3>
-  <p class="sub">People who can sign in to this Lumora server. They all see and control the same lights.</p>
+  <p class="sub">People who can sign in to this Lumora server. Choose what each person can see.</p>
   <div id="hhList"></div>
   <div class="srow stackrow"><label for="hhName">Name</label><input class="in" id="hhName" maxlength="30" autocomplete="off"></div>
   <div class="srow stackrow"><label for="hhEmail">Email</label><input class="in" id="hhEmail" type="email" autocomplete="off"></div>
@@ -1469,6 +1580,7 @@ function trigText(t){
     case 'home': return 'I arrive home';
     case 'away': return 'I leave home';
     case 'manual': return 'I tap its button';
+    case 'sensor': case 'lockev': case 'temp': return window.__othText(t.type,t);
   }
   return 'something happens';
 }
@@ -1484,6 +1596,7 @@ function actText(a){
     case 'fadedown': return 'slowly dim '+L+' over '+a.mins+' min, then turn off';
     case 'notify': return 'show “'+a.text+'”';
     case 'wait': return 'wait '+a.n+(a.unit==='m'?' min':' sec');
+    case 'plug': case 'therm': case 'lock': return window.__othText(a.k,a);
   }
   return 'do something';
 }
@@ -1493,6 +1606,7 @@ function condText(c){
     case 'presence': return 'I am '+(c.v==='away'?'away':'home');
     case 'between': return 'the time is between '+fmt(c.from)+' and '+fmt(c.to);
     case 'lighton': return lightName(c.id)+' is '+(c.v==='on'?'on':'off');
+    case 'othstate': return window.__othText('othstate',c);
   }
   return 'a condition is met';
 }
@@ -1707,6 +1821,7 @@ async function doAct(a,ctx){
     case 'fadeup': targetsFor(a.id,ctx).forEach(d=>startFade(d,'up',a.mins,a.bri)); break;
     case 'fadedown': targetsFor(a.id,ctx).forEach(d=>startFade(d,'down',a.mins)); break;
     case 'notify': toast(a.text||'Automation'); break;
+    case 'plug': case 'therm': case 'lock': await window.__othAct(a.k==='plug'?Object.assign({k2:'plug'},a):a.k==='lock'?Object.assign({k2:'lock'},a):a); break;
     case 'wait': await waitMs((a.unit==='m'?60000:1000)*a.n); break;
   }
   state=await adapter.list(); save(); render();
@@ -1719,6 +1834,7 @@ function condOK(c){
     case 'dark': return isDark()===true;
     case 'presence': return presence===c.v;
     case 'between': return inRange(minNow(),c.from,c.to);
+    case 'othstate': return window.__othCond(c);
     case 'lighton': { const d=state.find(x=>x.id===c.id); return !!d&&d.online!==false&&(!!d.on===(c.v==='on')); }
   }
   return true;
@@ -1941,6 +2057,32 @@ function chime(up){
     if(up){ voice(659.25,0,.2,.55,true); voice(987.77,.075,.2,.7,true); voice(1318.5,.16,.07,.5,false); }
     else{ voice(783.99,0,.17,.5,false); voice(523.25,.09,.17,.75,false); }
   }catch(e){}
+}
+/* soft start-up swell: a slow, warm rising chord with a long echo (plays once per page load) */
+let bootPlayed=false;
+function bootSound(){
+  if(bootPlayed||!soundOn) return true;
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended'){ actx.resume(); if(actx.state==='suspended') return false; }
+    bootPlayed=true;
+    const c=actx, bus=soundBus(), t=c.currentTime+.03, vol=Math.max(.0002,settings.volume/100);
+    const note=(f,start,peak,hold,decay)=>{
+      [[1,'sine',1],[2.002,'sine',.18],[.5,'sine',.25]].forEach(([m,type,lv])=>{
+        const o=c.createOscillator(), g=c.createGain(), s=t+start, p=Math.max(.0002,peak*lv*vol);
+        o.type=type; o.frequency.setValueAtTime(f*m,s);
+        g.gain.setValueAtTime(.0001,s); g.gain.exponentialRampToValueAtTime(p,s+.35); g.gain.setValueAtTime(p,s+.35+hold); g.gain.exponentialRampToValueAtTime(.0001,s+.35+hold+decay);
+        o.connect(g); g.connect(bus); o.start(s); o.stop(s+.4+hold+decay);
+      });
+    };
+    note(329.63,0,.13,.15,1.3); note(493.88,.16,.12,.15,1.4); note(659.25,.34,.11,.2,1.6); note(830.61,.56,.08,.2,2.1);
+    return true;
+  }catch(e){ return true; }
+}
+function bootSoundWhenAllowed(){
+  if(bootSound()) return;
+  const go=()=>{ removeEventListener('pointerdown',go,true); removeEventListener('keydown',go,true); bootSound(); };
+  addEventListener('pointerdown',go,true); addEventListener('keydown',go,true);
 }
 function setSound(on){
   soundOn=on; $('snd').textContent='Sounds: '+(on?'on':'off'); $('snd').setAttribute('aria-pressed',String(on));
@@ -2720,7 +2862,7 @@ function boot(){
 }
 function endSplash(){
   if(splashDone) return; splashDone=true;
-  $('splash').classList.add('out'); setTimeout(()=>$('splash').remove(),600); boot();
+  $('splash').classList.add('out'); setTimeout(()=>$('splash').remove(),600); boot(); setTimeout(bootSoundWhenAllowed,250);
 }
 
 /* ---- sign-in through the server ---- */
@@ -2738,6 +2880,7 @@ if(SRV){
       if(pw!==$('lPw2').value) return err('The passwords don’t match.');
       r=await srvApi('POST','/api/signup',{name,email,password:pw});
     }else r=await srvApi('POST','/api/login',{email,password:pw,keep:$('lKeep').checked});
+    if(r.ok&&r.json&&r.json.need2fa){ $('lPw').value=''; return window.__ask2fa(r.json.ticket,$('lKeep').checked); }
     if(!r.ok) return err(say(r));
     $('lPw').value=''; $('lPw2').value=''; location.reload();
   };
@@ -2817,19 +2960,10 @@ if(SRV){
     $('hhPanel').hidden=false;
     const renderHH=async()=>{
       const r=await srvApi('GET','/api/admin/users'), box=$('hhList'); box.innerHTML=''; if(!r.ok) return;
-      (r.json.users||[]).forEach(u=>{
-        const row=document.createElement('div'); row.className='srow';
-        const sp=document.createElement('span'); sp.textContent=u.name+' · '+u.email+(u.role==='admin'?' (admin)':''); row.appendChild(sp);
-        if(u.email!==SRV.user.email){
-          const b=document.createElement('button'); b.className='btn danger'; b.textContent='Remove'; b.setAttribute('aria-label','Remove '+u.name);
-          confirmBtn(b,async()=>{ const d=await srvApi('DELETE','/api/admin/users/'+u.id); $('hhMsg').textContent=d.ok?'Removed '+u.name+'.':say(d); renderHH(); });
-          row.appendChild(b);
-        }
-        box.appendChild(row);
-      });
+      (r.json.users||[]).forEach(u=>box.appendChild(window.__hhRow(u,renderHH,$('hhMsg'))));
     };
     $('hhAdd').onclick=async()=>{
-      const r=await srvApi('POST','/api/admin/users',{name:$('hhName').value,email:$('hhEmail').value,password:$('hhPw').value});
+      const r=await srvApi('POST','/api/admin/users',{name:$('hhName').value,email:$('hhEmail').value,password:$('hhPw').value,role:($('hhRole')||{}).value||'family'});
       if(r.ok){ $('hhMsg').textContent='Added '+r.json.user.name+'. Tell them the password you chose.'; $('hhName').value=''; $('hhEmail').value=''; $('hhPw').value=''; renderHH(); }
       else $('hhMsg').textContent=say(r);
     };
@@ -2851,7 +2985,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='3.1.1';
+const APP_VERSION='3.2.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3139,6 +3273,32 @@ const HEALTH={server:true,ha:null};
     const gr=$('greet'); const who=(typeof user!=='undefined'&&user&&user.name)?', '+String(user.name).split(' ')[0]:'';
     const gt=g+who; if(gr.textContent!==gt) gr.textContent=gt;
   }
+  /* extra "at a glance" chips under the clock: weather, sun countdown, week/day, lights */
+  const txt=id=>{ const e=$(id); return e?e.textContent.trim():''; };
+  function chip(k,v){ return '<span class="hchip"><em>'+k+'</em>'+v+'</span>'; }
+  function meta(d){
+    const out=[];
+    const t=txt('wxTemp'), c=txt('wxCond');
+    if(t&&t!=='…'&&t!=='—') out.push(chip('Outside',t+(c&&c!=='Loading weather…'&&c!=='Weather unavailable'?' · '+c.split(' · ')[0]:'')));
+    const nm=d.getHours()*60+d.getMinutes()+d.getSeconds()/60, s=(typeof sunMinutes==='function')?sunMinutes(d,true):null;
+    let arc=null, arcL='';
+    if(s&&!s.none){
+      const f=m=>(typeof fmt==='function')?fmt(minToHM(m)):minToHM(m), dur=m=>{ m=Math.round(m); return Math.floor(m/60)+' h '+pad(m%60)+' min'; };
+      if(nm<s.rise){ out.push(chip('Sunrise','in '+dur(s.rise-nm)+' · '+f(s.rise))); arc=0; arcL='Sunrise '+f(s.rise)+'  ·  Sunset '+f(s.set); }
+      else if(nm<s.set){ out.push(chip('Sunset','in '+dur(s.set-nm)+' · '+f(s.set))); arc=(nm-s.rise)/(s.set-s.rise); arcL=dur(s.set-s.rise)+' of daylight today'; }
+      else{ const tm=sunMinutes(new Date(d.getTime()+864e5),true); out.push(chip('Sunrise','tomorrow '+(tm&&!tm.none?f(tm.rise):'')));  arc=1; arcL='Sunset was '+f(s.set); }
+    }
+    const jan1=new Date(d.getFullYear(),0,1), doy=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-jan1)/864e5)+1;
+    const wk=Math.ceil((doy+((jan1.getDay()+6)%7))/7);
+    out.push(chip('Day',doy+' · week '+wk));
+    const on=(typeof state!=='undefined'&&state)?state.filter(x=>x.online!==false&&x.on).length:0;
+    out.push(chip('Lights',on?on+' on':'all off'));
+    const m=$('hMeta'); const h=out.join(''); if(m&&m.dataset.k!==h){ m.dataset.k=h; m.innerHTML=h; }
+    const fill=$('dayArcFill'), sun=$('dayArcSun'), al=$('dayArcL'), box=$('dayArc');
+    if(box){ box.style.display=arc===null?'none':''; if(al) al.style.display=arc===null?'none':''; }
+    if(arc!==null){ const p=(Math.max(0,Math.min(1,arc))*100).toFixed(1)+'%'; fill.style.width=p; sun.style.left=p; box.classList.toggle('night',arc===0||arc===1); if(al&&al.textContent!==arcL) al.textContent=arcL; }
+  }
+  const hero0=hero; hero=function(){ hero0(); try{ meta(new Date()); }catch(e){} };
   hero(); setInterval(hero,1000);
 
   /* the room takes on the colour of the lights that are on */
@@ -3178,8 +3338,352 @@ const HEALTH={server:true,ha:null};
   document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&root.classList.contains('today-open')){ set(false); $('todayBtn').focus(); } });
   window.tvBackOld=window.tvBack;
 })();
+
+
+/* ---- buttons react where you press them: a ripple spreads from the click point and the button leans toward it ---- */
+(function(){
+  const SEL='button,.btn,.chip,.alloff,#tabs .tab,.vtag,[role="button"]';
+  const SKIP='input,select,textarea,.sl,[type="range"],.bulb';
+  document.addEventListener('pointerdown',e=>{
+    if(e.button>0||e.pointerType==='') return;
+    const b=e.target.closest&&e.target.closest(SEL); if(!b||b.disabled||b.matches(SKIP)) return;
+    const root=document.documentElement;
+    if(root.dataset.fx==='off'||root.dataset.motion==='reduced'||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)) return;
+    const r=b.getBoundingClientRect(); if(!r.width||!r.height) return;
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    /* lean: the button dips slightly toward the point you pressed */
+    const nx=(x/r.width-.5)*2, ny=(y/r.height-.5)*2;
+    b.style.setProperty('--ox',x+'px'); b.style.setProperty('--oy',y+'px');
+    b.style.setProperty('--tx',(nx*2).toFixed(1)+'px'); b.style.setProperty('--ty',(ny*2).toFixed(1)+'px');
+    b.style.setProperty('--rx',(-ny*5).toFixed(1)+'deg'); b.style.setProperty('--ry',(nx*5).toFixed(1)+'deg');
+    b.classList.add('pressfx');
+    const rel=()=>{ b.classList.remove('pressfx'); removeEventListener('pointerup',rel,true); removeEventListener('pointercancel',rel,true); };
+    addEventListener('pointerup',rel,true); addEventListener('pointercancel',rel,true);
+    /* ripple */
+    const rp=document.createElement('span'); rp.className='ripple'; rp.setAttribute('aria-hidden','true');
+    const d=Math.hypot(Math.max(x,r.width-x),Math.max(y,r.height-y))*2;
+    rp.style.cssText='left:'+x+'px;top:'+y+'px;width:'+d+'px;height:'+d+'px';
+    b.classList.add('hasripple'); b.appendChild(rp);
+    setTimeout(()=>{ rp.remove(); if(!b.querySelector('.ripple')) b.classList.remove('hasripple'); },650);
+  },true);
+})();
+
+/* ---- Lumora 3.2: other devices, roles, two-step sign-in, usage history ---- */
+(function(){
+  const ROLE=(SRV&&SRV.user&&SRV.user.role)||'admin';
+  const CAN_MONEY=!SRV||!SRV.user||SRV.user.money!==false;
+  const body=document.body;
+  body.dataset.role=ROLE; body.dataset.money=CAN_MONEY?'1':'0';
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const el=(tag,cls,txt)=>{ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; };
+  const say=r=>(r.json&&r.json.message)||'Something went wrong. Try again.';
+  const hasTab=n=>!(n==='Money'&&!CAN_MONEY)&&!(ROLE==='guest'&&(n==='Money'||n==='Automations'||n==='Activity'));
+
+  /* ---------- roles: hide what an account should not see ---------- */
+  const _show=showTab; showTab=function(n){ if(!hasTab(n)) n='Devices'; return _show(n); };
+  if(!hasTab(localStorage.getItem('hub-tab')||'Devices')) try{ localStorage.setItem('hub-tab','Devices'); }catch(e){}
+  function applyRole(){
+    document.querySelectorAll('section[data-tab="Settings"] .sgrid > .panel').forEach(p=>{
+      let hide=false;
+      if(ROLE==='guest') hide=!p.querySelector('#pwSave');
+      else if(ROLE!=='admin') hide=p.id==='notifyPanel'||p.id==='healthPanel'||p.id==='hhPanel';
+      p.classList.toggle('rolehide',hide);
+    });
+  }
+  /* ---------- usage history ---------- */
+  const HK='hub-history';
+  let hist={days:{},events:[],names:{},last:{}}; try{ const h=JSON.parse(localStorage.getItem(HK)||'null'); if(h&&h.days) hist=h; }catch(e){}
+  const dayKey=t=>{ const d=new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  let hT=0;
+  function recordLocal(){
+    if(REMOTE||!state.length) return; const now=Date.now(), dt=hT?Math.min(15,(now-hT)/1000):0; hT=now;
+    const day=hist.days[dayKey(now)]||(hist.days[dayKey(now)]={});
+    state.forEach(l=>{
+      hist.names[l.id]=l.name; const st=l.online===false?'offline':l.on?'on':'off', prev=hist.last[l.id];
+      if(l.online!==false&&l.on&&dt) day[l.id]=Math.round(((day[l.id]||0)+dt)*10)/10;
+      if(prev!==st){ if(prev!==undefined||st==='offline') hist.events.push({t:now,id:l.id,name:l.name,type:st==='offline'?'offline':prev==='offline'?'online':st}); hist.last[l.id]=st; }
+    });
+    if(hist.events.length>600) hist.events.splice(0,hist.events.length-600);
+    Object.keys(hist.days).sort().slice(0,-60).forEach(k=>delete hist.days[k]);
+    try{ localStorage.setItem(HK,JSON.stringify(hist)); }catch(e){}
+  }
+  setInterval(()=>{ if(!document.hidden) try{ recordLocal(); }catch(e){} },15000);
+  const hrs=s=>{ s=Math.round(s); if(s<60) return s?'<1 min':'0 min'; const m=Math.round(s/60); return m<60?m+' min':(Math.floor(m/60)+' h'+(m%60?' '+(m%60)+' min':'')); };
+  const dur=ms=>hrs(ms/1000);
+  let histDays=7;
+  async function loadHist(n){
+    if(REMOTE){ const r=await srvApi('GET','/api/history?days='+n); return r.ok?r.json:null; }
+    const out=[], now=Date.now();
+    for(let i=n-1;i>=0;i--){ const dk=dayKey(now-i*864e5), by=hist.days[dk]||{}; out.push({date:dk,sec:Math.round(Object.values(by).reduce((a,b)=>a+b,0)),by}); }
+    return {days:out,names:hist.names,events:hist.events.filter(e=>e.t>=now-n*864e5).slice(-400),now};
+  }
+  async function renderHist(){
+    const box=$('histBox'); if(!box) return;
+    const h=await loadHist(histDays); const out=$('histOut'); out.innerHTML='';
+    if(!h){ out.appendChild(el('p','sub','History isn’t available right now.')); return; }
+    const total=h.days.reduce((a,d)=>a+d.sec,0), max=Math.max(1,...h.days.map(d=>d.sec));
+    if(!total&&!h.events.length){ out.appendChild(el('p','note','Nothing recorded yet. Lumora starts counting the moment a light is on, so check back after a day or two.')); return; }
+    const best=h.days.reduce((a,d)=>d.sec>a.sec?d:a,h.days[0]);
+    out.appendChild(el('p','histsum','Lights were on for '+hrs(total)+' in the last '+histDays+' days'+(total?', most on '+new Date(best.date+'T12:00:00').toLocaleDateString([], {weekday:'long'})+' ('+hrs(best.sec)+').':'.')));
+    const chart=el('div','hbars'); chart.setAttribute('role','img'); chart.setAttribute('aria-label','Hours the lights were on, per day');
+    h.days.forEach(d=>{ const c=el('div','hcol'); const bar=el('i'); bar.style.height=Math.max(d.sec?3:0,d.sec/max*100)+'%'; bar.title=new Date(d.date+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'})+': '+hrs(d.sec); c.appendChild(bar); const l=el('span',null,histDays>14?(+d.date.slice(8)%5===0?String(+d.date.slice(8)):''):new Date(d.date+'T12:00:00').toLocaleDateString([], {weekday:'narrow'})); c.appendChild(l); chart.appendChild(c); });
+    out.appendChild(chart);
+    const per={}; h.days.forEach(d=>Object.entries(d.by||{}).forEach(([id,s])=>per[id]=(per[id]||0)+s));
+    const rows=Object.entries(per).sort((a,b)=>b[1]-a[1]), top=rows.length?rows[0][1]:1;
+    if(rows.length){ out.appendChild(el('h3','hh','By light')); const ul=el('ul','hlist'); rows.forEach(([id,s])=>{ const li=el('li'); li.appendChild(el('span',null,h.names[id]||id)); const b=el('span','hb'); const i=el('i'); i.style.width=Math.max(2,s/top*100)+'%'; b.appendChild(i); li.appendChild(b); li.appendChild(el('b',null,hrs(s))); ul.appendChild(li); }); out.appendChild(ul); }
+    const offs=[]; const ev=h.events.slice().sort((a,b)=>a.t-b.t); const openAt={};
+    ev.forEach(e=>{ if(e.type==='offline') openAt[e.id]=e; else if(e.type==='online'&&openAt[e.id]){ offs.push({name:e.name,t:openAt[e.id].t,end:e.t}); delete openAt[e.id]; } });
+    Object.values(openAt).forEach(e=>offs.push({name:e.name,t:e.t,end:null}));
+    offs.sort((a,b)=>b.t-a.t);
+    out.appendChild(el('h3','hh','Offline events'));
+    if(!offs.length) out.appendChild(el('p','sub','No lights went offline in this time.'));
+    else{ const ul=el('ul','log'); offs.slice(0,30).forEach(o=>{ const li=el('li'); li.textContent=new Date(o.t).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:settings.timeFormat!=='24'})+'  '+o.name+' went offline'+(o.end?' for '+dur(o.end-o.t):' and has not come back'); ul.appendChild(li); }); out.appendChild(ul); }
+  }
+  window.__renderHist=renderHist;
+
+  /* ---------- other devices ---------- */
+  let others=[]; try{ const o=JSON.parse(localStorage.getItem('hub-others')||'[]'); if(Array.isArray(o)) others=o.filter(x=>x&&typeof x.id==='string'&&x.kind); }catch(e){}
+  const saveOthers=()=>{ try{ localStorage.setItem('hub-others',JSON.stringify(others)); }catch(e){} };
+  let live={};          /* id -> latest state */
+  const KIND={plug:'Smart plug',sensor:'Sensor',lock:'Lock',thermostat:'Thermostat'};
+  const DEMO={
+    'switch.desk_lamp':{id:'switch.desk_lamp',name:'Desk lamp plug',kind:'plug',on:false,online:true},
+    'binary_sensor.front_door':{id:'binary_sensor.front_door',name:'Front door',kind:'sensor',cls:'door',label:'Door',active:false,online:true},
+    'binary_sensor.hall_motion':{id:'binary_sensor.hall_motion',name:'Hall motion',kind:'sensor',cls:'motion',label:'Motion',active:false,online:true},
+    'climate.hall':{id:'climate.hall',name:'Hall thermostat',kind:'thermostat',temp:19.5,target:21,mode:'heat',action:'heating',modes:['off','heat'],min:5,max:30,step:.5,unit:'°C',online:true},
+    'lock.front':{id:'lock.front',name:'Front door lock',kind:'lock',locked:true,state:'locked',online:true}
+  };
+  const sensorWords=cls=>/^(door|window|garage_door|opening)$/.test(cls)?['Open','Closed']:/^(motion|occupancy|presence|vibration|sound)$/.test(cls)?['Motion','Clear']:/^(smoke|gas|carbon_monoxide|moisture|safety|tamper)$/.test(cls)?['Detected','Clear']:['Active','Normal'];
+  const nameOfO=id=>{ const o=others.find(x=>x.id===id); return o?o.name:(live[id]&&live[id].name)||id; };
+  async function othFetch(ids){
+    if(REMOTE){ const r=await srvApi('POST','/api/others/state',{ids}); return r.ok?(r.json.states||{}):null; }
+    const t=DEMO['climate.hall']; if(t.mode==='heat'&&t.temp<t.target) t.temp=Math.min(t.target,Math.round((t.temp+.1)*10)/10); else if(t.temp>t.target+.3) t.temp=Math.round((t.temp-.1)*10)/10;
+    const o={}; ids.forEach(i=>{ if(DEMO[i]) o[i]=JSON.parse(JSON.stringify(DEMO[i])); }); return o;
+  }
+  async function othSet(id,patch){
+    if(REMOTE){ const r=await srvApi('POST','/api/others/'+encodeURIComponent(id)+'/set',patch); if(!r.ok){ toast(say(r)); return false; } return true; }
+    const d=DEMO[id]; if(!d) return false; if('on' in patch) d.on=patch.on; if('locked' in patch){ d.locked=patch.locked; d.state=patch.locked?'locked':'unlocked'; } if('target' in patch) d.target=patch.target; if('mode' in patch) d.mode=patch.mode; return true;
+  }
+  async function othPoll(){
+    if(!others.length) return; const ids=others.map(o=>o.id), s=await othFetch(ids); if(!s) return;
+    const old=live; live={}; ids.forEach(i=>{ if(s[i]) live[i]=s[i]; });
+    ids.forEach(i=>{ if(old[i]&&live[i]) transition(old[i],live[i]); });
+    drawOthers();
+  }
+  window.__pollOthers=othPoll;
+  function transition(a,b){
+    const nm=nameOfO(b.id);
+    if(b.kind==='sensor'&&a.active!==b.active){ const w=sensorWords(b.cls); log(nm+': '+(b.active?w[0]:w[1])); if(b.active&&settings.popups&&ROLE!=='guest') toast(nm+': '+w[0].toLowerCase()); fireOth('sensor',{id:b.id,ev:b.active?'on':'off'}); }
+    if(b.kind==='lock'&&a.locked!==b.locked){ log(nm+(b.locked?' locked':' unlocked')); fireOth('lockev',{id:b.id,ev:b.locked?'locked':'unlocked'}); }
+    if(b.kind==='plug'&&a.on!==b.on) log(nm+(b.on?' turned on':' turned off'));
+    if(b.kind==='thermostat'&&a.temp!=null&&b.temp!=null&&a.temp!==b.temp){
+      rules.filter(r=>r.on&&r.t.type==='temp'&&(r.t.id==='any'||r.t.id===b.id)).forEach(r=>{ const lim=+r.t.deg, hit=v=>r.t.dir==='above'?v>lim:v<lim; if(!hit(a.temp)&&hit(b.temp)) runRule(r,{ctx:{dev:b.id}}); });
+    }
+  }
+  function fireOth(type,ctx){ rules.filter(r=>r.on&&r.t.type===type&&(r.t.id==='any'||r.t.id===ctx.id)&&r.t.ev===ctx.ev).forEach(r=>runRule(r,{ctx})); }
+  window.__othCond=c=>{ const s=live[c.id]; if(!s) return false; return (!!s.active)===(c.v==='active'); };
+  window.__othAct=async a=>{
+    const ids=a.id==='all'?others.filter(o=>o.kind===a.k2).map(o=>o.id):[a.id];
+    for(const id of ids){
+      const cur=live[id]||{};
+      if(a.k==='plug') await othSet(id,{on:a.op==='toggle'?!cur.on:a.op==='on'});
+      else if(a.k==='therm') await othSet(id,{target:+a.target});
+      else if(a.k==='lock') await othSet(id,{locked:true});   /* automations can lock, never unlock */
+    }
+    await othPoll();
+  };
+  const optsOf=(kind,any)=>()=>(any?[['any','Any of them']]:[]).concat(others.filter(o=>o.kind===kind).map(o=>[o.id,o.name]));
+  const sensorsOpt=()=>[['any','Any sensor']].concat(others.filter(o=>o.kind==='sensor').map(o=>[o.id,o.name]));
+  Object.assign(TRIG,{
+    sensor:{l:'A door or motion sensor changes',f:[{n:'id',t:'sel',l:'Sensor',o:sensorsOpt,d:'any'},{n:'ev',t:'sel',l:'When it',o:[['on','Opens or detects something'],['off','Closes or clears']],d:'on'}]},
+    lockev:{l:'A lock is locked or unlocked',f:[{n:'id',t:'sel',l:'Lock',o:optsOf('lock',true),d:'any'},{n:'ev',t:'sel',l:'When it is',o:[['unlocked','Unlocked'],['locked','Locked']],d:'unlocked'}]},
+    temp:{l:'A room gets too warm or too cold',f:[{n:'id',t:'sel',l:'Thermostat',o:optsOf('thermostat',true),d:'any'},{n:'dir',t:'sel',l:'When it goes',o:[['above','Above'],['below','Below']],d:'above'},{n:'deg',t:'num',l:'Degrees',d:24,min:-30,max:60}]}
+  });
+  Object.assign(ACT,{
+    plug:{l:'Turn a smart plug on or off',f:[{n:'id',t:'sel',l:'Plug',o:()=>[['all','All plugs']].concat(others.filter(o=>o.kind==='plug').map(o=>[o.id,o.name])),d:'all'},{n:'op',t:'sel',l:'Do',o:[['on','Turn on'],['off','Turn off'],['toggle','Toggle']],d:'on'}]},
+    therm:{l:'Set a thermostat',f:[{n:'id',t:'sel',l:'Thermostat',o:()=>others.filter(o=>o.kind==='thermostat').map(o=>[o.id,o.name])},{n:'target',t:'num',l:'Target temperature',d:21,min:5,max:30}]},
+    lock:{l:'Lock a door',f:[{n:'id',t:'sel',l:'Lock',o:()=>[['all','All locks']].concat(others.filter(o=>o.kind==='lock').map(o=>[o.id,o.name])),d:'all'}]}
+  });
+  Object.assign(COND,{othstate:{l:'A door or sensor is open or closed',f:[{n:'id',t:'sel',l:'Sensor',o:()=>others.filter(o=>o.kind==='sensor').map(o=>[o.id,o.name])},{n:'v',t:'sel',l:'Is',o:[['active','Open or detecting'],['inactive','Closed or clear']],d:'inactive'}]}});
+  window.__othText=(k,x)=>{
+    const n=x.id==='any'||x.id==='all'?null:nameOfO(x.id);
+    if(k==='sensor'){ const s=live[x.id]; const w=sensorWords(s?s.cls:'door'); return (n||'any sensor')+(x.ev==='on'?' ('+w[0].toLowerCase()+')':' ('+w[1].toLowerCase()+')')+' changes'; }
+    if(k==='lockev') return (n||'any lock')+' is '+x.ev;
+    if(k==='temp') return (n||'a thermostat')+' goes '+x.dir+' '+x.deg+'°';
+    if(k==='plug') return (x.op==='toggle'?'toggle ':x.op==='off'?'turn off ':'turn on ')+(n||'all plugs');
+    if(k==='therm') return 'set '+n+' to '+x.target+'°';
+    if(k==='lock') return 'lock '+(n||'all locks');
+    if(k==='othstate') return n+' is '+(x.v==='active'?'open or detecting':'closed or clear');
+    return '';
+  };
+
+  const ICON={
+    plug:'<path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0V8zM12 16v5"/>',
+    sensor:'<circle cx="12" cy="12" r="3"/><path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/>',
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    thermostat:'<path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"/>'
+  };
+  const svg=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[k]+'</svg>';
+  const fmtT=(v,u)=>v==null?'—':(Math.round(v*10)/10)+(u||'°');
+  function card(o){
+    const s=live[o.id], c=el('div','ot'); c.dataset.kind=o.kind;
+    const head=el('div','oth'); const ic=el('span','oi'); ic.innerHTML=svg(o.kind); head.appendChild(ic);
+    const nm=el('div','on'); nm.appendChild(el('b',null,o.name)); head.appendChild(nm);
+    if(ROLE!=='guest'){ const rm=el('button','orm','×'); rm.type='button'; rm.setAttribute('aria-label','Remove '+o.name); rm.title='Remove from Lumora'; rm.onclick=()=>{ others=others.filter(x=>x.id!==o.id); delete live[o.id]; saveOthers(); drawOthers(); }; head.appendChild(rm); }
+    c.appendChild(head);
+    const sub=el('div','sub'); const act=el('div','oact');
+    if(!s){ sub.textContent='Waiting for Home Assistant…'; c.dataset.off='1'; }
+    else if(s.online===false){ sub.textContent='Offline'; c.dataset.off='1'; }
+    else if(o.kind==='plug'){ sub.textContent=s.on?'On':'Off'; c.dataset.on=s.on?'1':'0'; const b=el('button','btn',s.on?'Turn off':'Turn on'); b.type='button'; b.onclick=async()=>{ if(await othSet(o.id,{on:!s.on})) othPoll(); }; act.appendChild(b); }
+    else if(o.kind==='sensor'){ const w=sensorWords(s.cls); sub.textContent=(s.active?w[0]:w[1])+(s.changed?' · since '+new Date(s.changed).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',hour12:settings.timeFormat!=='24'}):''); c.dataset.on=s.active?'1':'0'; c.dataset.alert=s.active?'1':'0';
+      if(!REMOTE){ const b=el('button','btn',s.active?'Test: '+w[1].toLowerCase():'Test: '+w[0].toLowerCase()); b.type='button'; b.title='Practice mode: change this sensor to test an automation'; b.onclick=()=>{ DEMO[o.id].active=!DEMO[o.id].active; DEMO[o.id].changed=Date.now(); othPoll(); }; act.appendChild(b); } }
+    else if(o.kind==='lock'){ sub.textContent=s.locked?'Locked':(s.state==='unlocked'?'Unlocked':s.state||'Unknown'); c.dataset.on=s.locked?'0':'1'; c.dataset.alert=s.locked?'0':'1';
+      if(ROLE==='guest') sub.textContent+=' · view only'; else{
+        const b=el('button','btn',s.locked?'Unlock':'Lock'); b.type='button';
+        if(s.locked) confirmBtn(b,async()=>{ if(await othSet(o.id,{locked:false})) othPoll(); }); else b.onclick=async()=>{ if(await othSet(o.id,{locked:true})) othPoll(); };
+        act.appendChild(b);
+      } }
+    else if(o.kind==='thermostat'){
+      sub.textContent='Now '+fmtT(s.temp,s.unit)+(s.action&&s.action!=='idle'&&s.action!=='off'?' · '+s.action:'')+(s.mode==='off'?' · off':''); c.dataset.on=s.mode&&s.mode!=='off'?'1':'0';
+      const st=el('div','ostep'); const dn=el('button','btn','−'), up=el('button','btn','+'), val=el('b',null,s.target==null?'—':fmtT(s.target,s.unit)); dn.type=up.type='button'; dn.setAttribute('aria-label','Lower target'); up.setAttribute('aria-label','Raise target');
+      const step=async d=>{ if(s.target==null) return; const t=Math.max(s.min,Math.min(s.max,Math.round((s.target+d*(s.step||.5))*10)/10)); if(t===s.target) return; s.target=t; val.textContent=fmtT(t,s.unit); clearTimeout(step.t); step.t=setTimeout(async()=>{ if(await othSet(o.id,{target:t})) othPoll(); },700); };
+      dn.onclick=()=>step(-1); up.onclick=()=>step(1); st.append(dn,val,up); act.appendChild(st);
+      if((s.modes||[]).length>1){ const sel=el('select'); sel.setAttribute('aria-label','Mode for '+o.name); s.modes.forEach(m=>{ const op=el('option',null,m.replace(/_/g,' ')); op.value=m; sel.appendChild(op); }); sel.value=s.mode; sel.onchange=async()=>{ if(await othSet(o.id,{mode:sel.value})) othPoll(); }; act.appendChild(sel); }
+    }
+    c.appendChild(sub); c.appendChild(act); return c;
+  }
+  let finding=false;
+  function drawOthers(){
+    const host=$('othList'); if(!host) return; host.innerHTML='';
+    $('ocount').textContent=others.length?'('+others.length+')':'';
+    others.forEach(o=>host.appendChild(card(o)));
+    $('othEmpty').hidden=others.length>0||finding;
+    $('othBox').dataset.n=String(others.length);
+  }
+  async function find(){
+    const panel=$('othFind'), msg=$('othMsg'); panel.innerHTML=''; msg.textContent='Looking…'; finding=true;
+    let list;
+    if(REMOTE){ const r=await srvApi('GET','/api/others/discover'); if(!r.ok){ msg.textContent=say(r); finding=false; return; } list=r.json.others||[]; }
+    else list=Object.values(DEMO);
+    const have=new Set(others.map(o=>o.id)); list=list.filter(x=>!have.has(x.id));
+    msg.textContent=list.length?'Choose what to add.':(REMOTE?'Nothing new found. Plugs, door and motion sensors, thermostats and locks that Home Assistant has will show up here.':'Nothing new to add.');
+    const picks=[];
+    list.forEach(x=>{ const l=el('label','ofind'); const cb=el('input'); cb.type='checkbox'; cb.onchange=()=>{ if(cb.checked) picks.push(x); else picks.splice(picks.indexOf(x),1); add.disabled=!picks.length; }; l.appendChild(cb); l.appendChild(el('span',null,x.name)); l.appendChild(el('em',null,KIND[x.kind]||x.kind)); panel.appendChild(l); });
+    const add=el('button','btn primary','Add selected'); add.type='button'; add.disabled=true;
+    add.onclick=()=>{ picks.forEach(x=>{ if(others.length<40&&!others.some(o=>o.id===x.id)) others.push({id:x.id,name:x.name,kind:x.kind}); }); saveOthers(); panel.innerHTML=''; msg.textContent=''; finding=false; othPoll(); drawOthers(); };
+    if(list.length){ const row=el('div','nrow'); row.appendChild(add); const cancel=el('button','btn','Cancel'); cancel.type='button'; cancel.onclick=()=>{ panel.innerHTML=''; msg.textContent=''; finding=false; drawOthers(); }; row.appendChild(cancel); panel.appendChild(row); }
+    else finding=false;
+  }
+  function buildOthers(){
+    const lights=$('lights'); if(!lights||$('othBox')) return;
+    const box=el('div'); box.id='othBox';
+    const h=el('h2',null,'Other devices '); const cnt=el('span','sub'); cnt.id='ocount'; h.appendChild(cnt); box.appendChild(h);
+    const list=el('div','list others'); list.id='othList'; box.appendChild(list);
+    const empty=el('p','note','No other devices yet. Add plugs, door and motion sensors, thermostats and locks that Home Assistant already knows about.'); empty.id='othEmpty'; box.appendChild(empty);
+    if(ROLE!=='guest'){ const row=el('div','nrow'); const b=el('button','btn','Find devices'); b.type='button'; b.id='othFindBtn'; b.onclick=find; row.appendChild(b); const m=el('span','sub'); m.id='othMsg'; m.setAttribute('role','status'); row.appendChild(m); box.appendChild(row); const f=el('div','ofinds'); f.id='othFind'; box.appendChild(f); }
+    else { const m=el('span','sub'); m.id='othMsg'; box.appendChild(m); const f=el('div'); f.id='othFind'; box.appendChild(f); }
+    const anchor=$('empty'); anchor.parentNode.insertBefore(box,anchor.nextSibling);
+    drawOthers();
+  }
+  /* ---------- history box in Activity ---------- */
+  function buildHist(){
+    const sec=document.querySelector('section[data-tab="Activity"]'); if(!sec||$('histBox')||ROLE==='guest') return;
+    const box=el('div'); box.id='histBox'; const h2=sec.querySelector('h2');
+    const hd=el('div','histhead'); hd.appendChild(el('h2',null,'Usage history'));
+    const seg=el('div','seg'); [7,14,30].forEach(n=>{ const b=el('button','btn',n+' days'); b.type='button'; b.setAttribute('aria-pressed',String(n===histDays)); b.onclick=()=>{ histDays=n; seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderHist(); }; seg.appendChild(b); });
+    hd.appendChild(seg); box.appendChild(hd); const out=el('div'); out.id='histOut'; box.appendChild(out);
+    sec.insertBefore(box,h2); h2.textContent='Activity log';
+    const o=new MutationObserver(()=>{ if(!sec.hidden) renderHist(); }); o.observe(sec,{attributes:true,attributeFilter:['hidden']});
+  }
+  /* ---------- sign-in: two-step code, forgot password ---------- */
+  function loginViews(){
+    const card=document.querySelector('#login .card'); if(!card||$('tfStep')) return;
+    const mainEls=()=>document.querySelectorAll('#login .card>.seg,#login .card>.f,#login .card>.chk,#lGo,#lTv,#lForgot');
+    const view=v=>{ mainEls().forEach(e=>e.classList.toggle('lvhide',v!=='main')); $('tfStep').hidden=v!=='tf'; $('rsStep').hidden=v!=='rs'; err(''); };
+    window.__loginView=view;
+    const forgot=el('button','btn linkish','Forgot password?'); forgot.type='button'; forgot.id='lForgot'; forgot.hidden=!SRV; $('lGo').after(forgot);
+    const tf=el('div','lstep'); tf.id='tfStep'; tf.hidden=true;
+    tf.innerHTML='<h3>Enter your code</h3><p class="sub">Open your authenticator app and type the 6-digit code for Lumora. You can also use one of your recovery codes.</p><label class="f">Code<input class="in" id="lCode" inputmode="numeric" autocomplete="one-time-code" maxlength="12"></label><button class="btn primary" id="lCodeGo" type="button">Verify</button> <button class="btn" id="lCodeBack" type="button">Back</button>';
+    const rs=el('div','lstep'); rs.id='rsStep'; rs.hidden=true;
+    rs.innerHTML='<h3>Reset your password</h3><p class="sub">Ask the person who runs Lumora (the admin) for a reset code. They make one in Settings, under Household. Enter your email above, then the code and a new password here.</p><label class="f">Reset code<input class="in" id="rsCode" autocomplete="off" maxlength="12" placeholder="ABCD-1234"></label><label class="f">New password<input class="in" id="rsPw" type="password" autocomplete="new-password"></label><button class="btn primary" id="rsGo" type="button">Set new password</button> <button class="btn" id="rsBack" type="button">Back</button>';
+    card.insertBefore(tf,$('lGo')); card.insertBefore(rs,$('lGo'));
+    let ticket='', keep=true;
+    window.__ask2fa=(t,k)=>{ ticket=t; keep=k; view('tf'); $('lCode').value=''; $('lCode').focus(); };
+    const verify=async()=>{ const r=await srvApi('POST','/api/login/2fa',{ticket,code:$('lCode').value}); if(r.ok) location.reload(); else{ err(say(r)); if(r.status===410) view('main'); } };
+    $('lCodeGo').onclick=verify; $('lCode').addEventListener('keydown',e=>{ if(e.key==='Enter') verify(); });
+    $('lCodeBack').onclick=()=>{ ticket=''; view('main'); };
+    forgot.onclick=()=>{ view('rs'); $('lEmail').closest('.f').classList.remove('lvhide'); $('rsCode').focus(); };
+    $('rsBack').onclick=()=>view('main');
+    $('rsGo').onclick=async()=>{ const email=$('lEmail').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(email)) return err('Enter your email address first.'); const r=await srvApi('POST','/api/reset',{email,code:$('rsCode').value,password:$('rsPw').value}); if(!r.ok) return err(say(r)); view('main'); $('rsCode').value=''; $('rsPw').value=''; $('lPw').value=''; err(''); $('gateNote').textContent='Password changed. Sign in with your new password.'; };
+    const oldSet=setMode; setMode=function(m){ oldSet(m); forgot.hidden=!SRV||m!=='in'; };
+  }
+  /* ---------- Settings: two-step panel + household roles ---------- */
+  function buildTwoStep(){
+    if(!SRV||!SRV.user||$('tfBox')) return; const acct=$('pwSave')&&$('pwSave').closest('.panel'); if(!acct) return;
+    const box=el('div'); box.id='tfBox'; box.appendChild(el('h4','gap','Two-step sign-in'));
+    const msg=el('p','sub'); msg.id='tfMsg'; msg.setAttribute('role','status'); const body_=el('div'); box.append(body_,msg); acct.insertBefore(box,acct.lastElementChild);
+    let on=!!SRV.user.twofa;
+    const draw=()=>{
+      body_.innerHTML=''; msg.textContent='';
+      body_.appendChild(el('p','sub',on?'On. Signing in needs a code from your authenticator app after your password.':'Off. Add an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password and others) for a second check at sign-in.'));
+      const pw=el('input','in'); pw.type='password'; pw.placeholder='Your password'; pw.setAttribute('aria-label','Your password'); pw.autocomplete='current-password';
+      const code=el('input','in'); code.placeholder='Current code'; code.setAttribute('aria-label','Current code or recovery code'); code.inputMode='numeric'; code.maxLength=12;
+      if(!on){ const b=el('button','btn','Turn on'); b.type='button'; const row=el('div','srow'); row.append(pw,b); body_.appendChild(row);
+        b.onclick=async()=>{ const r=await srvApi('POST','/api/2fa/setup',{password:pw.value}); if(!r.ok){ msg.textContent=say(r); return; } setup(r.json); }; }
+      else{ const b=el('button','btn danger','Turn off'); b.type='button'; const row=el('div','srow'); row.append(pw,code,b); body_.appendChild(row);
+        b.onclick=async()=>{ const r=await srvApi('POST','/api/2fa/disable',{password:pw.value,code:code.value}); if(!r.ok){ msg.textContent=say(r); return; } on=false; draw(); msg.textContent='Two-step sign-in is off.'; }; }
+    };
+    const setup=j=>{
+      body_.innerHTML='';
+      body_.appendChild(el('p','sub','In your authenticator app choose “Enter a setup key” (or open the link on this phone) and add this key. Lumora can’t draw a QR code here, so the key is the way in.'));
+      const k=el('div','tfkey',j.secret); body_.appendChild(k);
+      const a=el('a',null,'Open in an authenticator app on this device'); a.href=j.uri; a.className='sub'; body_.appendChild(a);
+      const code=el('input','in'); code.placeholder='6-digit code'; code.inputMode='numeric'; code.maxLength=7; code.setAttribute('aria-label','6-digit code from the app');
+      const go=el('button','btn primary','Confirm and turn on'); go.type='button'; const row=el('div','srow'); row.append(code,go); body_.appendChild(row);
+      go.onclick=async()=>{ const r=await srvApi('POST','/api/2fa/enable',{code:code.value}); if(!r.ok){ msg.textContent=say(r); return; } on=true; showCodes(r.json.recovery); };
+    };
+    const showCodes=list=>{
+      body_.innerHTML=''; body_.appendChild(el('p','sub','Two-step sign-in is on. Save these recovery codes somewhere safe. Each one works once if you lose your phone. They won’t be shown again.'));
+      const g=el('div','tfcodes'); list.forEach(c=>g.appendChild(el('code',null,c))); body_.appendChild(g);
+      const cp=el('button','btn','Copy codes'); cp.type='button'; cp.onclick=async()=>{ try{ await navigator.clipboard.writeText(list.join('\n')); msg.textContent='Copied.'; }catch(e){ msg.textContent='Select the codes and copy them by hand.'; } };
+      const dn=el('button','btn primary','I’ve saved them'); dn.type='button'; dn.onclick=draw; const row=el('div','srow'); row.append(cp,dn); body_.appendChild(row);
+    };
+    draw();
+  }
+  function buildRoleSelect(){
+    const add=$('hhAdd'); if(!add||$('hhRole')) return;
+    const row=el('div','srow stackrow'); const l=el('label',null,'Access'); l.htmlFor='hhRole'; const sel=el('select'); sel.id='hhRole';
+    [['family','Family: lights, devices, automations'],['guest','Guest: lights and devices only'],['admin','Admin: everything']].forEach(([v,t])=>{ const o=el('option',null,t); o.value=v; sel.appendChild(o); });
+    row.append(l,sel); add.closest('.srow').before(row);
+    const note=el('p','sub','Money and phone numbers are admin-only. Tick “Money” on a family member to let them see it.'); add.closest('.srow').before(note);
+  }
+  function buildAll(){ buildOthers(); buildHist(); buildTwoStep(); buildRoleSelect(); applyRole(); loginViews(); }
+  loginViews();
+  /* Household list (called from the rewritten renderHH) */
+  window.__hhRow=(u,refresh,msgEl)=>{
+    const wrap=el('div','hhrow');
+    const top=el('div','srow'); top.appendChild(el('span',null,u.name+' · '+u.email+(u.twofa?' · two-step on':''))); wrap.appendChild(top);
+    const ctl=el('div','srow hhctl'); const me=u.email===SRV.user.email;
+    const sel=el('select'); sel.setAttribute('aria-label','Access for '+u.name); [['admin','Admin'],['family','Family'],['guest','Guest']].forEach(([v,t])=>{ const o=el('option',null,t); o.value=v; sel.appendChild(o); }); sel.value=u.role; sel.disabled=me;
+    sel.onchange=async()=>{ const r=await srvApi('PATCH','/api/admin/users/'+u.id,{role:sel.value}); msgEl.textContent=r.ok?u.name+' is now '+sel.value+'.':say(r); refresh(); };
+    ctl.appendChild(sel);
+    if(u.role==='family'){ const l=el('label','chk'); const cb=el('input'); cb.type='checkbox'; cb.checked=!!u.money; cb.onchange=async()=>{ const r=await srvApi('PATCH','/api/admin/users/'+u.id,{money:cb.checked}); msgEl.textContent=r.ok?(cb.checked?u.name+' can see Money.':u.name+' can no longer see Money.'):say(r); refresh(); }; l.append(cb,document.createTextNode('Money')); ctl.appendChild(l); }
+    if(!me){
+      const rs=el('button','btn','Reset password'); rs.type='button'; rs.onclick=async()=>{ const r=await srvApi('POST','/api/admin/users/'+u.id+'/reset'); msgEl.textContent=r.ok?'Reset code for '+u.name+': '+r.json.code+' (works for '+r.json.minutes+' minutes, once). Tell them to choose “Forgot password?” on the sign-in page.':say(r); }; ctl.appendChild(rs);
+      if(u.twofa){ const t=el('button','btn','Turn off two-step'); t.type='button'; t.onclick=async()=>{ const r=await srvApi('POST','/api/admin/users/'+u.id+'/twofa-off'); msgEl.textContent=r.ok?'Two-step sign-in is off for '+u.name+'.':say(r); refresh(); }; ctl.appendChild(t); }
+      const rm=el('button','btn danger','Remove'); rm.type='button'; rm.setAttribute('aria-label','Remove '+u.name); confirmBtn(rm,async()=>{ const d=await srvApi('DELETE','/api/admin/users/'+u.id); msgEl.textContent=d.ok?'Removed '+u.name+'.':say(d); refresh(); }); ctl.appendChild(rm);
+    }
+    wrap.appendChild(ctl); return wrap;
+  };
+  window.__buildOthersUI=buildAll;
+  const kick=()=>{ buildAll(); othPoll(); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',kick); else kick();
+  setInterval(()=>{ if(!document.hidden) othPoll(); },5000);
+  if(REMOTE&&window.EventSource){ try{ const es=new EventSource('/api/events'); let t=0; es.addEventListener('other',()=>{ clearTimeout(t); t=setTimeout(othPoll,200); }); }catch(e){} }
+})();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '3.2.0':{t:'Lumora 3.2',items:['Other devices: add smart plugs, door and motion sensors, thermostats and locks that Home Assistant already has. New automations such as “when the front door opens and it is dark, turn on the hallway”. Automations can lock a door but never unlock one.','Accounts with different access: admin, family and guest. Money and phone numbers are admin-only (an admin can allow Money for a family member). Guests only see lights and devices.','Two-step sign-in with an authenticator app, recovery codes, and a password reset code from the admin.','Usage history in Activity: hours each light was on, per day and per light, and a list of offline events with how long they lasted.','A soft start-up sound, a tidier control area on Devices, more on the clock card, and the whole app now scales up on wide screens and TVs.']},
   '3.1.1':{t:'New sounds',items:['The chimes are new: soft, glassy two-note tones with a little echo. A rising pair when a light turns on, a falling pair when it turns off. Volume is still in Settings.']},
   '3.1.0':{t:'24 new backgrounds',items:['Settings, Background now has 38 choices: Nebula, Ocean waves, Synthwave, Bokeh, Lava lamp, Spotlight (follows your pointer), Plasma, Prism, City at night, Fireflies, Embers, Digital rain, Bubbles, Star warp, and still ones like Mesh gradient, Sunset, Honeycomb, Circuit board, Blueprint, Film grain, Mountains, Stripes, Checkerboard and Glass grid.','Cards turn slightly see-through so the background shows. Moving backgrounds pause when Effects is Off and slow down in Subtle.']},
   '3.0.0':{t:'Lumora 3',items:['A completely new design, built from scratch. The home screen is now a calm “Now” view with a live clock, a ring showing how many lights are on, and tall light cards that fill up like a glass as you turn them up.','The whole room glows in the colour of the lights you have on.','A floating menu at the bottom, and a Today panel (calendar, notifications, account) that slides in from the right.','Six new looks: Nocturne, Daylight, Ember, Lagoon, Porcelain and Mono. Effects can be turned down or off in Settings, and slow screens drop to a lighter mode on their own.','Sturdier: a bar appears if the server can’t be reached, a recovery screen replaces a blank page, Settings shows a health report, and you can download and restore a backup.']},
