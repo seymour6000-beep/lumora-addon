@@ -13,7 +13,7 @@ body[data-role="guest"] h2:has(#ccount){display:none}
 .oi{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted);flex:none}
 .ot[data-on="1"] .oi{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
 .oi svg{width:19px;height:19px}
-.on{flex:1;min-width:0}.on b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+div.on{flex:1;min-width:0}div.on b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .orm{border:0;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;padding:2px 6px;border-radius:8px}
 .orm:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 8%,transparent)}
 .oact{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}

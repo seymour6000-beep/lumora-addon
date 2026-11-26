@@ -762,7 +762,7 @@ body[data-role="guest"] h2:has(#ccount){display:none}
 .oi{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted);flex:none}
 .ot[data-on="1"] .oi{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
 .oi svg{width:19px;height:19px}
-.on{flex:1;min-width:0}.on b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+div.on{flex:1;min-width:0}div.on b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .orm{border:0;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;padding:2px 6px;border-radius:8px}
 .orm:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 8%,transparent)}
 .oact{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
@@ -1187,6 +1187,32 @@ html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s eas
 .muhead>*,.munow>*,.muvol>*,.mulink>*{min-width:0}
 .sgrid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
 
+/* nine tabs on a phone */
+@media (max-width:700px){ .tab{min-width:34px;padding:0 6px;height:46px} .tab[aria-current=true]{padding:0 11px;gap:0} .tab[aria-current=true]>span{max-width:0;opacity:0} }
+#moreBox{display:grid;gap:0}
+
+/* settings rows: toggles stay toggles, labels keep room */
+.srow>.sw{flex:0 0 auto;width:56px}
+.srow>label,.srow>span:first-child{min-width:min(5em,100%)}
+.srow .in{flex:0 1 200px}
+
+/* camera cards: name and room sit apart */
+.cam .row2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+/* Spotify steps match the other help text */
+#spotPanel .tvsteps{font-size:.92rem;line-height:1.5}
+/* room cards: Sleep sits beside Show lights, so every card is the same height */
+.rfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:6px}
+.rfoot .rsleep,.rfoot .rshow{margin:0}
+
+/* power outage and other two-block panels: two real columns, not four thin ones */
+.pgrid{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:18px 28px}
+.pgrid>*{min-width:0}
+.pgrid select,.pgrid .in{max-width:100%}
+
+/* wide panels stay a readable width on big screens */
+.sgrid>.panel.wide{max-width:980px}
+.sgrid>.panel.wide .pgrid{max-width:100%}
+
 /* ---- 6.1: bluetooth ---- */
 .btlist{display:grid;gap:8px;margin-top:10px}
 .btrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
@@ -1320,6 +1346,10 @@ section[data-tab="Settings"][data-search="1"] .sgtitle,section[data-tab="Setting
 </div>
 </section>
 
+<section data-tab="More" hidden>
+<h2>More</h2>
+<div id="moreBox"></div>
+</section>
 <section data-tab="Automations" hidden>
 <h2>Automations</h2>
 <p class="note">Rules that run on their own: when something happens, and any conditions are met, do one or more steps. Camera motion would reach the hub through Alexa or Google Home, so use the test button at the bottom to try it here.</p>
@@ -1729,12 +1759,22 @@ if(REMOTE){
   document.documentElement.setAttribute('data-remote','1');
   mockAdapter.devices=[]; mockAdapter.pool=[]; mockAdapter.camPool=[];
   const DEVICE_FIELDS=['on','bri','color','temp'];
+  /* what you just asked a light to do is kept on screen for a few seconds, because bulbs and Home Assistant take a moment to report it back */
+  const HOLDS=new Map(), HOLD_MS=8000;
+  const hexRgb=x=>{ const m=/^#?([0-9a-f]{6})$/i.exec(String(x||'')); if(!m) return null; const n=parseInt(m[1],16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+  const colorNear=(a,b)=>{ const x=hexRgb(a), y=hexRgb(b); return !!(x&&y)&&Math.max(Math.abs(x[0]-y[0]),Math.abs(x[1]-y[1]),Math.abs(x[2]-y[2]))<=40; };
+  window.__holds=HOLDS;
   mockAdapter.list=async function(){
     const ids=this.devices.map(d=>d.id); let st=null;
     if(ids.length){ const r=await srvApi('POST','/api/devices/state',{ids}); if(r.ok){ st=r.json.states||{}; if(window.__devDown){ window.__devDown=false; if(window.__renderNotes) window.__renderNotes(); } } else deviceProblem(r); }
     return this.devices.map(d=>{
       const s=st&&st[d.id];
-      if(s){ d.on=s.on; d.bri=s.bri; d.color=s.color; if(s.temp) d.temp=s.temp; }
+      if(s){
+        const h=HOLDS.get(d.id), live=h&&Date.now()<h.until, c=(live&&h.c)||{};
+        if(!('on' in c)) d.on=s.on; if(!('bri' in c)) d.bri=s.bri;
+        if(!('color' in c)&&s.color){ if(h&&h.color&&colorNear(h.color,s.color)){ /* rounding by the bulb: keep the colour that was picked */ } else { d.color=s.color; if(h) h.color=null; } }
+        if(!('temp' in c)&&s.temp) d.temp=s.temp;
+      }
       const o={online:true,room:'Home',...d};
       if(st) o.online=!!s&&s.online!==false;
       if(!o.name||o.name===o.id) o.name=(s&&s.name)||o.id;
@@ -1747,7 +1787,11 @@ if(REMOTE){
     const cmd={};
     DEVICE_FIELDS.forEach(k=>{ if(k in patch) cmd[k]=patch[k]; });
     for(const k in patch) if(!DEVICE_FIELDS.includes(k)&&k!=='online') d[k]=patch[k];   /* names, favourites and timers stay in the app */
-    if(Object.keys(cmd).length){ const r=await srvApi('POST','/api/devices/'+encodeURIComponent(id)+'/set',cmd); if(!r.ok) deviceProblem(r); else Object.assign(d,cmd); }
+    if(Object.keys(cmd).length){
+      const prev=HOLDS.get(id); HOLDS.set(id,{c:cmd,until:Date.now()+HOLD_MS,color:cmd.color||(prev&&prev.color)||null});
+      const r=await srvApi('POST','/api/devices/'+encodeURIComponent(id)+'/set',cmd);
+      if(!r.ok){ deviceProblem(r); if(prev) HOLDS.set(id,prev); else HOLDS.delete(id); } else { Object.assign(d,cmd); const h=HOLDS.get(id); if(h) h.until=Date.now()+HOLD_MS; }
+    }
   };
   mockAdapter.scan=async function(){
     const known=this.devices.map(d=>d.id);
@@ -2606,7 +2650,7 @@ function fillOffSim(){
   state.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; offSel.appendChild(o); });
   if(v) offSel.value=v;
 }
-const TABS=['Devices','Automations','Activity','Clock','Sky','Money','Apps','Settings'];
+const TABS=['Devices','More','Automations','Activity','Clock','Sky','Money','Apps','Settings'];
 let tabTok=0;
 function showTab(n){
   const cur=document.querySelector('[data-tab]:not([hidden])');
@@ -2674,6 +2718,7 @@ Object.assign(ICODEF,{
   away:{d:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z'],s:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z','m9.5 13.5 5 4M14.5 13.5l-5 4']}
 });
 Object.assign(ICODEF,{
+  more:{d:[],s:['M4 9h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z','M8 12h.01M12 12h.01M16 12h.01']},
   bluetooth:{d:[],s:['m7 7.5 10 9-5 4.5v-17l5 4.5-10 9']},
   music:{d:['M9 17.5a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 17.5zM20 15.5a2.5 2.5 0 1 1-2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z'],s:['M9 17.5V6l11-2v11.5','M9 9.5l11-2']},
   moon:{d:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z'],s:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z']},
@@ -2688,7 +2733,7 @@ const icoInner=n=>{ const i=ICODEF[n]; if(!i) return ''; return i.d.map(p=>'<pat
 const ICO=(n,cls)=>'<svg class="ico'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icoInner(n)+'</svg>';
 
 const LOGO='<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="l3t" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#7a66ff"/><stop offset=".45" stop-color="#3a2bb8"/><stop offset="1" stop-color="#150e45"/></linearGradient><linearGradient id="l3e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".4" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient><radialGradient id="l3g" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd27a" stop-opacity=".75"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient><radialGradient id="l3b" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fffbe6"/><stop offset=".3" stop-color="#ffd872"/><stop offset=".65" stop-color="#ff9448"/><stop offset="1" stop-color="#d63b4e"/></radialGradient><linearGradient id="l3m" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7b7f93"/><stop offset=".35" stop-color="#e9ebf5"/><stop offset=".7" stop-color="#9a9eb4"/><stop offset="1" stop-color="#555970"/></linearGradient><linearGradient id="l3r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#ff9a6a"/><stop offset="1" stop-color="#ff5fa2"/></linearGradient><filter id="l3s" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6"/></filter></defs><rect x="1" y="3.5" width="62" height="60" rx="18" fill="#08051c"/><rect x="1" y="1" width="62" height="60" rx="18" fill="url(#l3t)"/><rect x="1.8" y="1.8" width="60.4" height="58.4" rx="17.3" fill="none" stroke="url(#l3e)" stroke-width="1.6"/><path d="M6 20C8 8 18 4 32 4s24 4 26 16C46 14 18 14 6 20z" fill="#fff" fill-opacity=".16"/><circle cx="32" cy="30" r="25" fill="url(#l3g)"/><circle cx="32" cy="31" r="21.5" fill="none" stroke="#08051c" stroke-opacity=".55" stroke-width="4.4" stroke-dasharray="34 12.2" stroke-linecap="round" transform="rotate(-100 32 33)"/><circle cx="32" cy="30" r="21.5" fill="none" stroke="url(#l3r)" stroke-width="3.6" stroke-dasharray="34 12.2" stroke-linecap="round" transform="rotate(-100 32 30)"/><ellipse cx="32" cy="50.6" rx="9" ry="2.2" fill="#000" fill-opacity=".5" filter="url(#l3s)"/><path d="M32 15.5a10.5 10.5 0 0 0-6.4 18.8c1 .8 1.6 2 1.6 3.2v1.8h9.6v-1.8c0-1.2.6-2.4 1.6-3.2A10.5 10.5 0 0 0 32 15.5z" fill="url(#l3b)"/><path d="M32 15.5a10.5 10.5 0 0 0-6.4 18.8c1 .8 1.6 2 1.6 3.2v1.8h9.6v-1.8c0-1.2.6-2.4 1.6-3.2A10.5 10.5 0 0 0 32 15.5z" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"/><rect x="27.2" y="39.6" width="9.6" height="3.4" rx="1" fill="url(#l3m)"/><rect x="27.6" y="43.2" width="8.8" height="3" rx="1" fill="url(#l3m)"/><rect x="29" y="46.4" width="6" height="2.6" rx="1.3" fill="url(#l3m)"/><ellipse cx="27.6" cy="23" rx="3.2" ry="5.2" fill="#fff" fill-opacity=".75" transform="rotate(24 27.6 23)"/><circle cx="36.8" cy="19.4" r="1.2" fill="#fff" fill-opacity=".8"/></svg>';
-const TAB_ICONS={Devices:icoInner('home'),Automations:icoInner('bolt'),Activity:icoInner('pulse'),Clock:icoInner('clock'),Sky:icoInner('sky'),Money:icoInner('wallet'),Apps:icoInner('apps'),Settings:icoInner('sliders')};
+const TAB_ICONS={Devices:icoInner('home'),More:icoInner('more'),Automations:icoInner('bolt'),Activity:icoInner('pulse'),Clock:icoInner('clock'),Sky:icoInner('sky'),Money:icoInner('wallet'),Apps:icoInner('apps'),Settings:icoInner('sliders')};
 for(const n of TABS){
   const b=document.createElement('button'); b.className='tab'; b.innerHTML='<svg class="ti" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(TAB_ICONS[n]||'')+'</svg><span></span>'; b.querySelector('span').textContent=n; b.dataset.go=n; b.onclick=()=>showTab(n); $('tabs').appendChild(b);
 }
@@ -3468,7 +3513,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='6.1.0';
+const APP_VERSION='6.1.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4092,7 +4137,7 @@ const HEALTH={server:true,ha:null};
     const empty=el('p','note','No other devices yet. Add plugs, door and motion sensors, thermostats and locks that Home Assistant already knows about.'); empty.id='othEmpty'; box.appendChild(empty);
     if(ROLE!=='guest'){ const row=el('div','nrow'); const b=el('button','btn','Find devices'); b.type='button'; b.id='othFindBtn'; b.onclick=find; row.appendChild(b); const m=el('span','sub'); m.id='othMsg'; m.setAttribute('role','status'); row.appendChild(m); box.appendChild(row); const f=el('div','ofinds'); f.id='othFind'; box.appendChild(f); }
     else { const m=el('span','sub'); m.id='othMsg'; box.appendChild(m); const f=el('div'); f.id='othFind'; box.appendChild(f); }
-    const anchor=$('empty'); anchor.parentNode.insertBefore(box,anchor.nextSibling);
+    const mb=$('moreBox'); if(mb) mb.appendChild(box); else { const anchor=$('empty'); anchor.parentNode.insertBefore(box,anchor.nextSibling); }
     drawOthers();
   }
   /* ---------- history box in Activity ---------- */
@@ -4203,18 +4248,18 @@ const HEALTH={server:true,ha:null};
   if(document.documentElement.dataset.popout==='1') return;
   const I={bluetooth:'bluetooth',shield:'shield',bulb:'bulb',off:'bulboff',door:'door',lock:'lock',motion:'sensor',power:'boltoff',link:'link',away:'away',heat:'flame',batt:'battery',alert:'alert'};
   const LAMPS=[
-    {k:'alarm',ic:'alert',l:'Smoke, gas or leak',go:'Devices'},
+    {k:'alarm',ic:'alert',l:'Smoke, gas or leak',go:'More'},
     {k:'power',ic:'power',l:'Power cut',go:'Activity'},
     {k:'offline',ic:'off',l:'Lights reachable',go:'Devices'},
     {k:'link',ic:'link',l:'Server link',go:'Settings',g:'connections'},
-    {k:'security',ic:'shield',l:'Alarm',go:'Devices'},
-    {k:'doors',ic:'door',l:'Doors and windows',go:'Devices'},
-    {k:'locks',ic:'lock',l:'Locks',go:'Devices'},
+    {k:'security',ic:'shield',l:'Alarm',go:'More'},
+    {k:'doors',ic:'door',l:'Doors and windows',go:'More'},
+    {k:'locks',ic:'lock',l:'Locks',go:'More'},
     {k:'batt',ic:'batt',l:'Camera batteries',go:'Devices'},
     {k:'motion',ic:'motion',l:'Motion',go:'Activity'},
     {k:'bt',ic:'bluetooth',l:'Bluetooth',go:'Settings',g:'connections'},
     {k:'lights',ic:'bulb',l:'Lights',go:'Devices'},
-    {k:'heat',ic:'heat',l:'Heating',go:'Devices'},
+    {k:'heat',ic:'heat',l:'Heating',go:'More'},
     {k:'away',ic:'away',l:'Home or away',go:'Devices'}
   ];
   const tab=document.createElement('aside'); tab.id='sidetab'; tab.setAttribute('aria-label','Home status lights');
@@ -4384,7 +4429,7 @@ const HEALTH={server:true,ha:null};
   btn.onclick=open;
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); ov.hidden?open():close(); return; }
-    if(e.altKey&&!e.ctrlKey&&!e.metaKey&&/^[1-8]$/.test(e.key)){ const n=TABS[+e.key-1]; if(n){ e.preventDefault(); showTab(n); } return; }
+    if(e.altKey&&!e.ctrlKey&&!e.metaKey&&/^[1-9]$/.test(e.key)){ const n=TABS[+e.key-1]; if(n){ e.preventDefault(); showTab(n); } return; }
     if(e.key==='/'&&!/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName||'')&&!document.activeElement.isContentEditable&&ov.hidden&&document.body.dataset.auth==='in'){ e.preventDefault(); open(); }
   },true);
 })();
@@ -4801,14 +4846,14 @@ window.__claudeSplash=function(){
   const kind={motion:'camera',sensor:'sensor',lock:'lock',alarm:'alert',pending:'alert',mode:'shield'};
   function card(){
     let c=document.getElementById('secCard'); if(c) return c;
-    const anchor=document.getElementById('ovStrip')||document.querySelector('section[data-tab="Devices"] .hero'); if(!anchor) return null;
+    const anchor=document.getElementById('moreBox')||document.getElementById('othBox')||document.getElementById('lights'); if(!anchor) return null;
     c=el('section','seccard'); c.id='secCard'; c.setAttribute('aria-label','Security');
     c.innerHTML='<div class="sechead"><span class="secic"></span><div><h3>Security</h3><p class="sub" id="secStat"></p></div></div>'+
       '<div class="secmodes" role="radiogroup" aria-label="Alarm mode"></div><div id="secAlarm" aria-live="assertive"></div>'+
       '<details class="secd" id="secTl"><summary>Timeline</summary><div id="secEv" class="secev"></div></details>'+
       '<details class="secd" id="secSn"><summary>Snapshots</summary><p class="sub" id="secSnNote"></p><div class="secsnaps" id="secSnaps"></div></details>'+
       '<details class="secd" id="secSet"><summary>Alarm settings</summary><div class="srow"><label for="secDelay">Entry and exit delay</label><select id="secDelay"></select></div><div class="srow"><span>Flash the lights red when the alarm sounds</span><button class="sw" role="switch" id="secFlash" aria-label="Flash the lights red when the alarm sounds"><i></i></button></div><p class="sub">Home watches doors, windows and cameras. Away watches everything, including motion sensors and unlocked locks. Phone alerts use your Phone alerts settings. Camera motion is only seen while a Lumora page is open.</p><div id="secDemo"></div></details>';
-    c.querySelector('.secic').innerHTML=ICO('shield'); anchor.insertAdjacentElement('afterend',c);
+    c.querySelector('.secic').innerHTML=ICO('shield'); if(anchor.id==='moreBox') anchor.prepend(c); else anchor.insertAdjacentElement('afterend',c);
     const modes=c.querySelector('.secmodes'); [['off','Off'],['home','Home'],['away','Away']].forEach(([m,l])=>{ const b=el('button','secmode',l); b.type='button'; b.dataset.m=m; b.setAttribute('role','radio'); b.onclick=()=>setMode(m); modes.appendChild(b); });
     const sel=c.querySelector('#secDelay'); [0,10,20,30,60].forEach(v=>{ const o=el('option','',v?v+' seconds':'None'); o.value=v; sel.appendChild(o); }); sel.value=String(CFG.delay); sel.onchange=()=>{ CFG.delay=Number(sel.value); cfgSave(); };
     const fl=c.querySelector('#secFlash'); const pf=()=>{ fl.classList.toggle('on',!!CFG.flash); fl.setAttribute('aria-checked',String(!!CFG.flash)); }; pf(); fl.onclick=()=>{ CFG.flash=!CFG.flash; cfgSave(); pf(); };
@@ -4966,7 +5011,7 @@ window.__claudeSplash=function(){
   function bar(){
     let c=document.getElementById('sleepCard'); const v=view();
     if(!v.active){ if(c) c.remove(); return; }
-    if(!c){ const a=document.getElementById('secCard')||document.getElementById('ovStrip'); if(!a) return; c=el('section','sleepcard'); c.id='sleepCard'; c.setAttribute('role','status'); a.insertAdjacentElement('afterend',c); }
+    if(!c){ const a=document.getElementById('secCard')||document.getElementById('moreBox')||document.getElementById('lights'); if(!a) return; c=el('section','sleepcard'); c.id='sleepCard'; c.setAttribute('role','status'); if(a.id==='moreBox') a.prepend(c); else a.insertAdjacentElement('afterend',c); }
     c.replaceChildren(); const ic=el('span','slic'); ic.innerHTML=ICO('moon'); const tx=el('div','sltx'); tx.append(el('b','','Sleep mode in '+v.room),el('span','',left(v)+' until the lights are off'));
     const prog=el('div','slprog'); const f=el('i'); f.style.width=Math.min(100,Math.max(2,((Date.now()-v.startedAt)/(v.endsAt-v.startedAt))*100))+'%'; prog.appendChild(f);
     const b=el('button','btn sm','Stop'); b.type='button'; b.onclick=cancel; c.append(ic,tx,b,prog);
@@ -4976,7 +5021,7 @@ window.__claudeSplash=function(){
       const rn=card.querySelector('.rn'); if(!rn||rn.textContent!==CFG.room){ const o=card.querySelector('.rsleep'); if(o) o.remove(); return; }
       if(card.querySelector('.rsleep')) return;
       const b=el('button','rsleep'); b.type='button'; b.setAttribute('aria-label','Start sleep mode in '+CFG.room); b.innerHTML=ICO('moon')+'<span>Sleep</span>'; b.onclick=()=>{ view().active?cancel():start(); };
-      card.append(b);
+      let ft=card.querySelector('.rfoot'); if(!ft){ ft=el('div','rfoot'); const sh=card.querySelector('.rshow'); if(sh){ card.insertBefore(ft,sh); ft.append(b,sh); } else { ft.append(b); card.append(ft); } } else ft.prepend(b);
     });
     document.querySelectorAll('#roomChips .rsleep span').forEach(s=>s.textContent=view().active?'Stop sleep':'Sleep');
   }
@@ -5037,8 +5082,8 @@ window.__claudeSplash=function(){
   const mmss=s=>{ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
   function card(){
     let c=document.getElementById('musicCard'); if(c) return c;
-    const a=document.getElementById('sleepCard')||document.getElementById('secCard')||document.getElementById('ovStrip'); if(!a) return null;
-    c=el('section','musiccard'); c.id='musicCard'; c.setAttribute('aria-label','Music'); (document.getElementById('secCard')||a).insertAdjacentElement('afterend',c); return c;
+    const a=document.getElementById('secCard')||document.getElementById('moreBox')||document.getElementById('lights'); if(!a) return null;
+    c=el('section','musiccard'); c.id='musicCard'; c.setAttribute('aria-label','Music'); if(a.id==='moreBox') a.prepend(c); else a.insertAdjacentElement('afterend',c); return c;
   }
   function draw(){
     const c=card(); if(!c) return; const p=cur(); const keep=document.activeElement&&c.contains(document.activeElement)?document.activeElement.id:'';
@@ -5172,6 +5217,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '6.1.1':{t:'Lumora 6.1.1',items:["Colour changes now stick: Lumora keeps the colour you picked while the bulb catches up, ignores a bulb that briefly reports no colour, and no longer drifts to a slightly rounded colour.", "The main page is now just your lights and cameras. A new More page holds the alarm, music, sleep mode and your other devices (plugs, sensors, locks and thermostats).", "Cleaner layout: switches keep their proper size everywhere, Settings panels no longer overlap or stretch on very wide screens, and the camera, sleep and Spotify cards fit on phones."]},
   '6.1.0':{t:'Lumora 6.1',items:["Sleep mode: a Sleep button on the Bedroom card fades the room to a dim warm glow and then off. Choose the room, the fade time and an optional bedtime in Settings. On the add-on it carries on with the page closed.", "Spotify and music: a Music card with play, skip, volume, shuffle, where to play, and a paste-a-link box. It uses Home Assistant's Spotify integration, and Settings has the steps.", "Bluetooth: a Bluetooth light on the left, and a Settings page to find and connect nearby devices from Chrome, Edge or the Windows app. A browser cannot make Lumora discoverable to other devices.", "The left lights now follow one rule: green is good, yellow is a warning, red is an issue. A red light beeps for 5 seconds, and you can turn that off.", "A new dock with labels, a new look for the left lights, and Settings sorted into eight topics: account, home, lights, devices, alerts, connections, screens and system."]},
   '6.0.1':{t:'Lumora 6.0.1',items:["Fixes: silencing the alarm while the lights are still flashing now always restores them, and they are restored even if the add-on restarted during an alarm.", "The automation builder no longer scrolls sideways on a phone, small buttons are easier to tap, and the logo no longer repeats internal ids."]},
   '6.0.0':{t:'Welcome to Lumora 6',items:["Lumora 6 is the biggest overhaul so far, built in four parts.", "Home screen: rooms are cards. Tap one to switch every light in it, see how many are on and how bright, and use Show lights to look at just that room. A strip under the clock shows lights on, power in use, cameras and home or away.", "Automations: every automation shows as a flow of trigger, conditions and steps. Check now tells you whether it would run right now and why, History lists its recent runs and skips, and the builder shows what you are making in plain words.", "Security: a new card on the home screen with an alarm that has Off, Home and Away modes. Doors and windows get an entry delay with a countdown, motion counts when you are away, and when it sounds the server sends a phone alert and flashes the lights red until you silence it. A timeline lists camera motion, doors, locks and alarms, and cameras with a picture can save snapshots.", "Faster and sturdier: Lumora opens instantly from a saved copy and refreshes it in the background, shows a notice when you are offline, and the source is now kept in the add-on repository as separate files with a build script."]},

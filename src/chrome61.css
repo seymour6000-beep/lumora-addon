@@ -49,3 +49,29 @@ html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s eas
 .sleepcard{grid-template-columns:auto minmax(0,1fr) auto}
 .muhead>*,.munow>*,.muvol>*,.mulink>*{min-width:0}
 .sgrid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+
+/* nine tabs on a phone */
+@media (max-width:700px){ .tab{min-width:34px;padding:0 6px;height:46px} .tab[aria-current=true]{padding:0 11px;gap:0} .tab[aria-current=true]>span{max-width:0;opacity:0} }
+#moreBox{display:grid;gap:0}
+
+/* settings rows: toggles stay toggles, labels keep room */
+.srow>.sw{flex:0 0 auto;width:56px}
+.srow>label,.srow>span:first-child{min-width:min(5em,100%)}
+.srow .in{flex:0 1 200px}
+
+/* camera cards: name and room sit apart */
+.cam .row2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+/* Spotify steps match the other help text */
+#spotPanel .tvsteps{font-size:.92rem;line-height:1.5}
+/* room cards: Sleep sits beside Show lights, so every card is the same height */
+.rfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:6px}
+.rfoot .rsleep,.rfoot .rshow{margin:0}
+
+/* power outage and other two-block panels: two real columns, not four thin ones */
+.pgrid{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:18px 28px}
+.pgrid>*{min-width:0}
+.pgrid select,.pgrid .in{max-width:100%}
+
+/* wide panels stay a readable width on big screens */
+.sgrid>.panel.wide{max-width:980px}
+.sgrid>.panel.wide .pgrid{max-width:100%}

@@ -27,8 +27,8 @@
   const mmss=s=>{ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
   function card(){
     let c=document.getElementById('musicCard'); if(c) return c;
-    const a=document.getElementById('sleepCard')||document.getElementById('secCard')||document.getElementById('ovStrip'); if(!a) return null;
-    c=el('section','musiccard'); c.id='musicCard'; c.setAttribute('aria-label','Music'); (document.getElementById('secCard')||a).insertAdjacentElement('afterend',c); return c;
+    const a=document.getElementById('secCard')||document.getElementById('moreBox')||document.getElementById('lights'); if(!a) return null;
+    c=el('section','musiccard'); c.id='musicCard'; c.setAttribute('aria-label','Music'); if(a.id==='moreBox') a.prepend(c); else a.insertAdjacentElement('afterend',c); return c;
   }
   function draw(){
     const c=card(); if(!c) return; const p=cur(); const keep=document.activeElement&&c.contains(document.activeElement)?document.activeElement.id:'';

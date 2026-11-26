@@ -45,14 +45,14 @@
   const kind={motion:'camera',sensor:'sensor',lock:'lock',alarm:'alert',pending:'alert',mode:'shield'};
   function card(){
     let c=document.getElementById('secCard'); if(c) return c;
-    const anchor=document.getElementById('ovStrip')||document.querySelector('section[data-tab="Devices"] .hero'); if(!anchor) return null;
+    const anchor=document.getElementById('moreBox')||document.getElementById('othBox')||document.getElementById('lights'); if(!anchor) return null;
     c=el('section','seccard'); c.id='secCard'; c.setAttribute('aria-label','Security');
     c.innerHTML='<div class="sechead"><span class="secic"></span><div><h3>Security</h3><p class="sub" id="secStat"></p></div></div>'+
       '<div class="secmodes" role="radiogroup" aria-label="Alarm mode"></div><div id="secAlarm" aria-live="assertive"></div>'+
       '<details class="secd" id="secTl"><summary>Timeline</summary><div id="secEv" class="secev"></div></details>'+
       '<details class="secd" id="secSn"><summary>Snapshots</summary><p class="sub" id="secSnNote"></p><div class="secsnaps" id="secSnaps"></div></details>'+
       '<details class="secd" id="secSet"><summary>Alarm settings</summary><div class="srow"><label for="secDelay">Entry and exit delay</label><select id="secDelay"></select></div><div class="srow"><span>Flash the lights red when the alarm sounds</span><button class="sw" role="switch" id="secFlash" aria-label="Flash the lights red when the alarm sounds"><i></i></button></div><p class="sub">Home watches doors, windows and cameras. Away watches everything, including motion sensors and unlocked locks. Phone alerts use your Phone alerts settings. Camera motion is only seen while a Lumora page is open.</p><div id="secDemo"></div></details>';
-    c.querySelector('.secic').innerHTML=ICO('shield'); anchor.insertAdjacentElement('afterend',c);
+    c.querySelector('.secic').innerHTML=ICO('shield'); if(anchor.id==='moreBox') anchor.prepend(c); else anchor.insertAdjacentElement('afterend',c);
     const modes=c.querySelector('.secmodes'); [['off','Off'],['home','Home'],['away','Away']].forEach(([m,l])=>{ const b=el('button','secmode',l); b.type='button'; b.dataset.m=m; b.setAttribute('role','radio'); b.onclick=()=>setMode(m); modes.appendChild(b); });
     const sel=c.querySelector('#secDelay'); [0,10,20,30,60].forEach(v=>{ const o=el('option','',v?v+' seconds':'None'); o.value=v; sel.appendChild(o); }); sel.value=String(CFG.delay); sel.onchange=()=>{ CFG.delay=Number(sel.value); cfgSave(); };
     const fl=c.querySelector('#secFlash'); const pf=()=>{ fl.classList.toggle('on',!!CFG.flash); fl.setAttribute('aria-checked',String(!!CFG.flash)); }; pf(); fl.onclick=()=>{ CFG.flash=!CFG.flash; cfgSave(); pf(); };

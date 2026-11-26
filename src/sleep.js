@@ -34,7 +34,7 @@
   function bar(){
     let c=document.getElementById('sleepCard'); const v=view();
     if(!v.active){ if(c) c.remove(); return; }
-    if(!c){ const a=document.getElementById('secCard')||document.getElementById('ovStrip'); if(!a) return; c=el('section','sleepcard'); c.id='sleepCard'; c.setAttribute('role','status'); a.insertAdjacentElement('afterend',c); }
+    if(!c){ const a=document.getElementById('secCard')||document.getElementById('moreBox')||document.getElementById('lights'); if(!a) return; c=el('section','sleepcard'); c.id='sleepCard'; c.setAttribute('role','status'); if(a.id==='moreBox') a.prepend(c); else a.insertAdjacentElement('afterend',c); }
     c.replaceChildren(); const ic=el('span','slic'); ic.innerHTML=ICO('moon'); const tx=el('div','sltx'); tx.append(el('b','','Sleep mode in '+v.room),el('span','',left(v)+' until the lights are off'));
     const prog=el('div','slprog'); const f=el('i'); f.style.width=Math.min(100,Math.max(2,((Date.now()-v.startedAt)/(v.endsAt-v.startedAt))*100))+'%'; prog.appendChild(f);
     const b=el('button','btn sm','Stop'); b.type='button'; b.onclick=cancel; c.append(ic,tx,b,prog);
@@ -44,7 +44,7 @@
       const rn=card.querySelector('.rn'); if(!rn||rn.textContent!==CFG.room){ const o=card.querySelector('.rsleep'); if(o) o.remove(); return; }
       if(card.querySelector('.rsleep')) return;
       const b=el('button','rsleep'); b.type='button'; b.setAttribute('aria-label','Start sleep mode in '+CFG.room); b.innerHTML=ICO('moon')+'<span>Sleep</span>'; b.onclick=()=>{ view().active?cancel():start(); };
-      card.append(b);
+      let ft=card.querySelector('.rfoot'); if(!ft){ ft=el('div','rfoot'); const sh=card.querySelector('.rshow'); if(sh){ card.insertBefore(ft,sh); ft.append(b,sh); } else { ft.append(b); card.append(ft); } } else ft.prepend(b);
     });
     document.querySelectorAll('#roomChips .rsleep span').forEach(s=>s.textContent=view().active?'Stop sleep':'Sleep');
   }

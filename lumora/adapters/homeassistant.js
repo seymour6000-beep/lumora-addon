@@ -29,6 +29,13 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, pr
     return res.json();
   }
 
+  const kelvinToHex = (k) => {
+    const t = Math.max(1000, Math.min(40000, k)) / 100; let r, g, b;
+    r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592);
+    g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+    b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+    return hex([r, g, b]);
+  };
   const hex = (rgb) => '#' + rgb.map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')).join('');
 
   function mapLight(s) {
@@ -42,7 +49,8 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, pr
       on,
       online,
       bri: a.brightness != null ? Math.max(1, Math.min(100, Math.round((a.brightness / 255) * 100))) : 100,
-      color: Array.isArray(a.rgb_color) && a.rgb_color.length === 3 ? hex(a.rgb_color) : '#fff1d6',
+      /* no colour reported (a bulb switching mode, or a white-only bulb): say so, and the app keeps what it had */
+      color: Array.isArray(a.rgb_color) && a.rgb_color.length === 3 ? hex(a.rgb_color) : a.color_temp_kelvin ? kelvinToHex(a.color_temp_kelvin) : null,
     };
     if (a.color_temp_kelvin) out.temp = a.color_temp_kelvin;
     return out;

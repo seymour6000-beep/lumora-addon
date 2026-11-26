@@ -225,7 +225,7 @@
     const empty=el('p','note','No other devices yet. Add plugs, door and motion sensors, thermostats and locks that Home Assistant already knows about.'); empty.id='othEmpty'; box.appendChild(empty);
     if(ROLE!=='guest'){ const row=el('div','nrow'); const b=el('button','btn','Find devices'); b.type='button'; b.id='othFindBtn'; b.onclick=find; row.appendChild(b); const m=el('span','sub'); m.id='othMsg'; m.setAttribute('role','status'); row.appendChild(m); box.appendChild(row); const f=el('div','ofinds'); f.id='othFind'; box.appendChild(f); }
     else { const m=el('span','sub'); m.id='othMsg'; box.appendChild(m); const f=el('div'); f.id='othFind'; box.appendChild(f); }
-    const anchor=$('empty'); anchor.parentNode.insertBefore(box,anchor.nextSibling);
+    const mb=$('moreBox'); if(mb) mb.appendChild(box); else { const anchor=$('empty'); anchor.parentNode.insertBefore(box,anchor.nextSibling); }
     drawOthers();
   }
   /* ---------- history box in Activity ---------- */
@@ -336,18 +336,18 @@
   if(document.documentElement.dataset.popout==='1') return;
   const I={bluetooth:'bluetooth',shield:'shield',bulb:'bulb',off:'bulboff',door:'door',lock:'lock',motion:'sensor',power:'boltoff',link:'link',away:'away',heat:'flame',batt:'battery',alert:'alert'};
   const LAMPS=[
-    {k:'alarm',ic:'alert',l:'Smoke, gas or leak',go:'Devices'},
+    {k:'alarm',ic:'alert',l:'Smoke, gas or leak',go:'More'},
     {k:'power',ic:'power',l:'Power cut',go:'Activity'},
     {k:'offline',ic:'off',l:'Lights reachable',go:'Devices'},
     {k:'link',ic:'link',l:'Server link',go:'Settings',g:'connections'},
-    {k:'security',ic:'shield',l:'Alarm',go:'Devices'},
-    {k:'doors',ic:'door',l:'Doors and windows',go:'Devices'},
-    {k:'locks',ic:'lock',l:'Locks',go:'Devices'},
+    {k:'security',ic:'shield',l:'Alarm',go:'More'},
+    {k:'doors',ic:'door',l:'Doors and windows',go:'More'},
+    {k:'locks',ic:'lock',l:'Locks',go:'More'},
     {k:'batt',ic:'batt',l:'Camera batteries',go:'Devices'},
     {k:'motion',ic:'motion',l:'Motion',go:'Activity'},
     {k:'bt',ic:'bluetooth',l:'Bluetooth',go:'Settings',g:'connections'},
     {k:'lights',ic:'bulb',l:'Lights',go:'Devices'},
-    {k:'heat',ic:'heat',l:'Heating',go:'Devices'},
+    {k:'heat',ic:'heat',l:'Heating',go:'More'},
     {k:'away',ic:'away',l:'Home or away',go:'Devices'}
   ];
   const tab=document.createElement('aside'); tab.id='sidetab'; tab.setAttribute('aria-label','Home status lights');

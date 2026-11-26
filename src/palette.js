@@ -51,7 +51,7 @@
   btn.onclick=open;
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); ov.hidden?open():close(); return; }
-    if(e.altKey&&!e.ctrlKey&&!e.metaKey&&/^[1-8]$/.test(e.key)){ const n=TABS[+e.key-1]; if(n){ e.preventDefault(); showTab(n); } return; }
+    if(e.altKey&&!e.ctrlKey&&!e.metaKey&&/^[1-9]$/.test(e.key)){ const n=TABS[+e.key-1]; if(n){ e.preventDefault(); showTab(n); } return; }
     if(e.key==='/'&&!/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName||'')&&!document.activeElement.isContentEditable&&ov.hidden&&document.body.dataset.auth==='in'){ e.preventDefault(); open(); }
   },true);
 })();

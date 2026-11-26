@@ -105,3 +105,9 @@ Open the app and choose *Find my server automatically*, or type your server addr
 - **Bluetooth**: Settings, Connections, Bluetooth finds and connects to nearby devices from Chrome, Edge or the Windows app (the page must be on HTTPS or this computer). A web page cannot announce itself over Bluetooth, so other devices will not see Lumora in their lists. Making Lumora discoverable would need Bluetooth access on the Home Assistant computer, which Lumora does not have.
 - **Status lights**: green is good, yellow is a warning, red is an issue. A light turning red beeps for 5 seconds (browsers only allow sound after you have tapped the page once). Turn it off in Settings, Alerts and sound, Status lights.
 - **Settings** are now in eight topics: Account and people, Home and look, Lights and rooms, Devices and cameras, Alerts and sound, Connections, Screens and apps, System and backup. Searching looks across all of them.
+
+## Lumora 6.1.1
+
+- **Colours stick**: the colour you pick is held while the bulb catches up, and a brief "no colour" report from Home Assistant is ignored.
+- **New More page**: the main page is now just lights and cameras. The alarm, music, sleep mode and other devices (plugs, sensors, locks, thermostats) are on the More tab.
+- **Layout fixes**: switches no longer stretch, Settings panels keep a readable width on wide screens, and the camera, sleep and Spotify cards fit on phones.
