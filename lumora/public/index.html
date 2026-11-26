@@ -984,6 +984,50 @@ summary.hic{display:flex}
 .mark svg{filter:drop-shadow(0 6px 0 rgb(0 0 0/.25)) drop-shadow(0 12px 14px color-mix(in srgb,var(--accent) 40%,transparent))}
 :root[data-fx="off"] .ico,:root[data-fx="off"] .ti{filter:none}
 @media print{.ico,.ti{filter:none}}
+
+/* ---- Lumora 4.7: Today drawer, calendar and notifications redesign ---- */
+aside.today{border-radius:30px 0 0 30px;border-left:1px solid color-mix(in srgb,var(--ink) 16%,transparent);gap:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 12%,var(--bg)),color-mix(in srgb,var(--bg) 92%,#000) 70%);box-shadow:-34px 0 70px -24px rgb(0 0 0/.55),inset 1px 0 0 rgb(255 255 255/.12)}
+.sidetop{position:relative;padding:18px 18px 16px;border-radius:26px;background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 26%,var(--surface)),color-mix(in srgb,var(--accent2,var(--accent)) 12%,var(--surface)) 70%,var(--surface));border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);box-shadow:inset 0 1px 0 rgb(255 255 255/.4),inset 0 -3px 0 rgb(0 0 0/.12),0 14px 28px -14px rgb(0 0 0/.55);overflow:hidden}
+.sidetop::after{content:"";position:absolute;right:-40px;top:-50px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent2,var(--accent)) 45%,transparent),transparent 70%);pointer-events:none}
+.sclock{position:relative;z-index:1;font-size:3.1rem;line-height:1;text-shadow:0 2px 0 rgb(0 0 0/.12),0 8px 18px rgb(0 0 0/.25)}
+.sdate{position:relative;z-index:1;color:var(--ink);opacity:.8;margin-top:2px}
+.sidetop .sunrow{position:relative;z-index:1;margin-top:6px}
+.sidewidget{padding:14px 14px 12px;border-radius:26px;background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);box-shadow:inset 0 1px 0 rgb(255 255 255/.35),0 12px 26px -16px rgb(0 0 0/.55)}
+.calnav{margin-bottom:10px}
+.calnav #calTitle{font:600 1rem var(--fd,var(--fb));letter-spacing:-.01em}
+.calnav button{width:34px;height:34px;border-radius:12px;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 80%,#fff 20%),var(--raise,var(--surface)));box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 18%,transparent),0 5px 8px -4px rgb(0 0 0/.4);transition:transform .12s,box-shadow .12s}
+.calnav button:active{transform:translateY(2px);box-shadow:0 0 0 transparent}
+.mcal{border-collapse:separate;border-spacing:3px}
+.mcal th{font-size:.7rem;letter-spacing:.04em;color:var(--accent);opacity:.85}
+.mcal td{height:34px;padding:0;border-radius:11px;font-weight:600;font-variant-numeric:tabular-nums;transition:background .15s,transform .15s}
+.mcal td:not(.out):not(.today):hover{background:color-mix(in srgb,var(--accent) 18%,transparent);transform:translateY(-1px)}
+.mcal td:nth-child(1):not(.today):not(.out),.mcal td:nth-child(7):not(.today):not(.out){color:color-mix(in srgb,var(--accent) 70%,var(--ink))}
+.mcal td.today,.mcal .tdy{background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent) 60%,color-mix(in srgb,var(--accent) 70%,#000));color:var(--onaccent);box-shadow:inset 0 1px 0 rgb(255 255 255/.5),0 3px 0 color-mix(in srgb,var(--accent) 50%,#000),0 9px 14px -5px var(--accent);transform:translateY(-1px)}
+.mcal td.out{opacity:.35}
+/* notifications */
+.notes,.notem{gap:10px}
+.nh{font:600 1rem var(--fd,var(--fb));letter-spacing:-.01em;margin:2px 0 4px}
+.nlive{background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--ink)}
+.nlive:empty{display:none}
+.nitem{position:relative;padding:14px 16px 14px 20px;border-radius:20px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 90%,#fff 10%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 10px 22px -14px rgb(0 0 0/.55);overflow:hidden}
+.nitem::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--info);box-shadow:2px 0 10px -1px var(--info)}
+.nitem.warn::before{background:var(--warn);box-shadow:2px 0 10px -1px var(--warn)}
+.nitem.bad::before,.nitem.off::before,.nitem.crit::before{background:var(--bad);box-shadow:2px 0 10px -1px var(--bad)}
+.nitem .nt{letter-spacing:-.005em}
+.nitem .chip,.nitem .btn{border-radius:12px;box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 16%,transparent)}
+.nclear{display:flex;align-items:center;gap:10px;border:1px solid color-mix(in srgb,var(--ok) 35%,transparent);border-style:solid;border-radius:20px;background:color-mix(in srgb,var(--ok) 10%,var(--surface));color:var(--ink)}
+.nclear::before{content:"";width:22px;height:22px;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff8,var(--ok) 50%,color-mix(in srgb,var(--ok) 60%,#000));box-shadow:0 3px 6px -2px var(--ok);-webkit-mask:none}
+/* account */
+.acct{padding:14px;border-radius:22px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:color-mix(in srgb,var(--surface) 85%,transparent);box-shadow:inset 0 1px 0 rgb(255 255 255/.25)}
+.acct .btn{border-radius:14px;box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 18%,transparent),0 8px 12px -8px rgb(0 0 0/.5)}
+/* the open button and toasts */
+#todayBtn{border-radius:16px;box-shadow:inset 0 1px 0 rgb(255 255 255/.45),0 3px 0 color-mix(in srgb,var(--ink) 20%,transparent),0 10px 18px -8px rgb(0 0 0/.5)}
+.toast{border-radius:22px;box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 18px 36px -14px rgb(0 0 0/.6)}
+:root[data-season="xmas"] aside.today{background:linear-gradient(180deg,#143a28,#0a1812 70%)}
+@media (max-width:640px){aside.today{border-radius:26px 0 0 26px}.sclock{font-size:2.6rem}}
+
+.sidetop .sverrow{position:absolute;right:14px;top:14px;z-index:2}
+.sidetop .updic{width:34px;height:34px;border-radius:12px;color:var(--ink);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 70%,#fff 30%),color-mix(in srgb,var(--surface) 90%,transparent));border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 18%,transparent),0 6px 10px -5px rgb(0 0 0/.4)}
 </style>
 </head>
 <body data-auth="out">
@@ -3200,7 +3244,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.6.0';
+const APP_VERSION='4.7.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4177,6 +4221,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '4.7.0':{t:'New Today panel',items:['The calendar, clock and notifications panel was redesigned to match the new look: a raised clock card, a calendar with rounded days and a glowing today, and notification cards with a coloured edge.']},
   '4.6.0':{t:'3D logos and a new splash',items:['After the Lumora splash, a short Made by Claude AI screen plays.','The Lumora logo and every icon were redrawn with a 3D look: raised edges, depth and soft shadows.','The version number moved to Settings (About Lumora). It only appears on the main screen when an update is waiting.']},
   '4.5.0':{t:'Christmas season',items:['From December 1 to January 5 Lumora turns festive by itself: green and red colours, falling snow and a twinkling garland.','It adds three Christmas lighting automations (lights on at sunset, green at 8 pm, off at 11 pm). Edit or delete them any time; they switch themselves off after January 5.','New scenes: Christmas, Christmas tree and Christmas gold.','Press Ctrl+K and type Christmas to turn the theme off or on.']},
   '4.4.0':{t:'Polish and docs',items:['Quick commands now accept typing the moment they open.','Documentation updated for quick commands, energy, pop-out and status lamps.']},
