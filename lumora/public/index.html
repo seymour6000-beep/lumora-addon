@@ -1127,6 +1127,14 @@ body[data-role="guest"] #deskPanel{display:none!important}
 body[data-role="guest"] .secmodes,body[data-role="guest"] #secDemo{pointer-events:none;opacity:.5}
 
 #offBar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9000;max-width:min(92vw,520px);padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--surface);font:600 .88rem var(--fb);box-shadow:0 10px 24px -8px rgb(0 0 0/.5)}
+
+/* ---- 6.0.1 fixes: no sideways scroll in the builder, bigger touch areas ---- */
+.panel.builder,.builder *{box-sizing:border-box;max-width:100%}
+.builder input,.builder select{min-width:0}
+.dot,.x,.rshow,.sw,.tl,.stgrip{position:relative}
+.dot::after,.x::after,.rshow::after,.sw::after,.tl::after,.stgrip::after{content:"";position:absolute;inset:-8px}
+.builder{grid-template-columns:minmax(0,1fr)}.builder>*{min-width:0}
+.bstep select,.bstep input:not([type=checkbox]):not([type=radio]){width:100%;min-width:0}
 </style>
 </head>
 <body data-auth="out">
@@ -2579,7 +2587,7 @@ showTab(TABS.includes(startTab)?startTab:'Devices');
 let started=false, user=null, idleT=null, fails=0, lockUntil=0, mode='in', splashDone=false;
 const MARKSVG_OLD='<span class="mark"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="#0f2f33"/><circle cx="32" cy="32" r="17" fill="none" stroke="#ffc233" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="80 27" transform="rotate(135 32 32)"/><circle cx="32" cy="32" r="6" fill="#ffc233"/><circle cx="32" cy="32" r="10" fill="#ffc233" opacity=".18"/></svg></span><span>Lumora</span>';
 const MARK='<span class="mark">'+LOGO+'</span><span>Lumora</span>';
-document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);
+let _bn=0;document.querySelectorAll('[data-brand]').forEach(e=>{ const k='_'+(_bn++); e.innerHTML=MARK.replace(/id="(l3\w)"/g,'id="$1'+k+'"').replace(/url\(#(l3\w)\)/g,'url(#$1'+k+')'); });
 const store={get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
 const DEFAULTS={homeName:'Home',timeFormat:'12',sideClock:true,showWeather:true,showAlerts:true,showSchool:true,haUrl:'',popups:true,popupSecs:6,volume:70,reduceMotion:false,autoLock:0,hubUrl:'',lepro:'',autoAdd:true,outageOn:true,afterPower:'keepOff',powerMin:0,powerNotify:true,powerSound:true,powerPause:true,powerBri:60,powerWait:0,powerGap:0,powerNight:false,powerFrom:'22:00',powerTo:'07:00',powerOn:[],mimic:false,mimicFrom:'18:00',mimicTo:'23:00',pauseAll:false,lat:'',lon:'',tvMode:'auto',fxMode:'auto',serverAuto:true,probes:{},keepOffReturn:true,saverMin:'auto',shotBlur:true,remoteKeys:true,tvLegend:true};
 let settings={...DEFAULTS,...store.get('hub-settings',{})};
@@ -3346,7 +3354,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='6.0.0';
+const APP_VERSION='6.0.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4616,7 +4624,7 @@ window.__claudeSplash=function(){
   let S={mode:'off',alarm:{state:'idle'},events:[],armedAt:0,cfg:CFG}; let dTimer=null, prevLights=null;
   const isRemote=()=>typeof REMOTE!=='undefined'&&REMOTE;
   const dEvent=(k,m)=>{ D.events.unshift({t:Date.now(),k,m}); if(D.events.length>100) D.events.length=100; dSave(); };
-  async function dFlashOn(){ if(!CFG.flash) return; try{ prevLights=state.filter(d=>d.online!==false).map(d=>({id:d.id,on:d.on,bri:d.bri,color:d.color})); for(const l of prevLights) await adapter.set(l.id,{on:true,bri:100,color:'#ff1f1f'}); state=await adapter.list(); render(); }catch(e){} }
+  async function dFlashOn(){ if(!CFG.flash) return; try{ prevLights=state.filter(d=>d.online!==false).map(d=>({id:d.id,on:d.on,bri:d.bri,color:d.color})); for(const l of prevLights){ if(D.alarm.state!=='sounding') break; await adapter.set(l.id,{on:true,bri:100,color:'#ff1f1f'}); } state=await adapter.list(); render(); if(D.alarm.state!=='sounding') dFlashOff(); }catch(e){} }
   async function dFlashOff(){ const p=prevLights; prevLights=null; if(!p) return; try{ for(const l of p) await adapter.set(l.id,l.on?{on:true,bri:l.bri,color:l.color}:{on:false}); state=await adapter.list(); render(); }catch(e){} }
   function dSound(reason){ if(D.alarm.state==='sounding') return; D.alarm={state:'sounding',since:Date.now(),reason}; dEvent('alarm','ALARM: '+reason); dSave(); dFlashOn(); try{ toast('Alarm: '+reason); }catch(e){} }
   function dTrigger(reason,entry){
@@ -4733,6 +4741,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '6.0.1':{t:'Lumora 6.0.1',items:["Fixes: silencing the alarm while the lights are still flashing now always restores them, and they are restored even if the add-on restarted during an alarm.", "The automation builder no longer scrolls sideways on a phone, small buttons are easier to tap, and the logo no longer repeats internal ids."]},
   '6.0.0':{t:'Welcome to Lumora 6',items:["Lumora 6 is the biggest overhaul so far, built in four parts.", "Home screen: rooms are cards. Tap one to switch every light in it, see how many are on and how bright, and use Show lights to look at just that room. A strip under the clock shows lights on, power in use, cameras and home or away.", "Automations: every automation shows as a flow of trigger, conditions and steps. Check now tells you whether it would run right now and why, History lists its recent runs and skips, and the builder shows what you are making in plain words.", "Security: a new card on the home screen with an alarm that has Off, Home and Away modes. Doors and windows get an entry delay with a countdown, motion counts when you are away, and when it sounds the server sends a phone alert and flashes the lights red until you silence it. A timeline lists camera motion, doors, locks and alarms, and cameras with a picture can save snapshots.", "Faster and sturdier: Lumora opens instantly from a saved copy and refreshes it in the background, shows a notice when you are offline, and the source is now kept in the add-on repository as separate files with a build script."]},
   '5.0.0':{t:'Welcome to Lumora 5',items:['A new look: 3D logo and icons, a redesigned Today panel, and a festive Christmas theme from December 1 to January 5 with its own lighting automations.','Automations now run on the server, so they work with every browser closed.','Light watch: delayed and repeat alerts, drop-out and router-problem detection, quiet hours and a health report for every light.','Command palette (Ctrl+K), an energy estimate with CSV export, a status-lamp side tab and a pop-out window that stays on top.','Google Home and Alexa through Home Assistant, a Windows desktop app, and an easier Android TV install.','The server address is at the bottom of Settings, and the version number is in Settings, About Lumora.']},
   '4.11.0':{t:'Lumora for Windows',items:['There is now a Windows desktop app: a system tray icon, Windows alerts for new warnings, an always-on-top pop-out, and automatic updates. Download it from Settings, Lumora for Windows.']},

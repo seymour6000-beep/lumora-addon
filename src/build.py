@@ -173,7 +173,7 @@ j=s.index("        box.appendChild(row);\n      });",i)+len("        box.appendC
 s=s[:i]+"      (r.json.users||[]).forEach(u=>box.appendChild(window.__hhRow(u,renderHH,$('hhMsg'))));"+s[j:]
 rep("password:$('hhPw').value});\n      if(r.ok){ $('hhMsg').textContent='Added","password:$('hhPw').value,role:($('hhRole')||{}).value||'family'});\n      if(r.ok){ $('hhMsg').textContent='Added")
 rep("People who can sign in to this Lumora server. They all see and control the same lights.","People who can sign in to this Lumora server. Choose what each person can see.")
-rep("</style>",open('/tmp/v3/others.css').read()+open('/tmp/v3/gfx.css').read()+open('/tmp/v3/xmas.css').read()+open('/tmp/v3/splash2.css').read()+open('/tmp/v3/today.css').read()+open('/tmp/v3/watch.css').read()+open('/tmp/v3/voice.css').read()+open('/tmp/v3/home.css').read()+open('/tmp/v3/auto6.css').read()+open('/tmp/v3/security.css').read()+open('/tmp/v3/offline.css').read()+"</style>")
+rep("</style>",open('/tmp/v3/others.css').read()+open('/tmp/v3/gfx.css').read()+open('/tmp/v3/xmas.css').read()+open('/tmp/v3/splash2.css').read()+open('/tmp/v3/today.css').read()+open('/tmp/v3/watch.css').read()+open('/tmp/v3/voice.css').read()+open('/tmp/v3/home.css').read()+open('/tmp/v3/auto6.css').read()+open('/tmp/v3/security.css').read()+open('/tmp/v3/offline.css').read()+open('/tmp/v3/fix601.css').read()+"</style>")
 
 # ---- close button for the colour panel ----
 rep("""'<div class="pal" hidden><div class="swatches">'""","""'<div class="pal" hidden><div class="palhead"><b>Colour</b><button class="palx" type="button" aria-label="Close">Done</button></div><div class="swatches">'""")
@@ -228,7 +228,7 @@ rep("st.textContent = d.fav ? '★' : '☆'; ","")
 # today button icon
 s,n=_re.subn(r'(<button id="todayBtn"[^>]*>)<svg.*?</svg>',lambda m:m.group(1)+"<span class=\"icw\" data-ico=\"cal\"></span>",s,count=1,flags=_re.S); assert n==1
 rep("const MARK='<span class=\"mark\">","const MARKSVG_OLD='<span class=\"mark\">")
-rep("document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);","const MARK='<span class=\"mark\">'+LOGO+'</span><span>Lumora</span>';\ndocument.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);")
+rep("document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);","const MARK='<span class=\"mark\">'+LOGO+'</span><span>Lumora</span>';\nlet _bn=0;document.querySelectorAll('[data-brand]').forEach(e=>{ const k='_'+(_bn++); e.innerHTML=MARK.replace(/id=\"(l3\\w)\"/g,'id=\"$1'+k+'\"').replace(/url\\(#(l3\\w)\\)/g,'url(#$1'+k+')'); });")
 
 fav=open('/tmp/v3/fav.txt').read()
 import re as _r2

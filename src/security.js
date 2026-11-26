@@ -12,7 +12,7 @@
   let S={mode:'off',alarm:{state:'idle'},events:[],armedAt:0,cfg:CFG}; let dTimer=null, prevLights=null;
   const isRemote=()=>typeof REMOTE!=='undefined'&&REMOTE;
   const dEvent=(k,m)=>{ D.events.unshift({t:Date.now(),k,m}); if(D.events.length>100) D.events.length=100; dSave(); };
-  async function dFlashOn(){ if(!CFG.flash) return; try{ prevLights=state.filter(d=>d.online!==false).map(d=>({id:d.id,on:d.on,bri:d.bri,color:d.color})); for(const l of prevLights) await adapter.set(l.id,{on:true,bri:100,color:'#ff1f1f'}); state=await adapter.list(); render(); }catch(e){} }
+  async function dFlashOn(){ if(!CFG.flash) return; try{ prevLights=state.filter(d=>d.online!==false).map(d=>({id:d.id,on:d.on,bri:d.bri,color:d.color})); for(const l of prevLights){ if(D.alarm.state!=='sounding') break; await adapter.set(l.id,{on:true,bri:100,color:'#ff1f1f'}); } state=await adapter.list(); render(); if(D.alarm.state!=='sounding') dFlashOff(); }catch(e){} }
   async function dFlashOff(){ const p=prevLights; prevLights=null; if(!p) return; try{ for(const l of p) await adapter.set(l.id,l.on?{on:true,bri:l.bri,color:l.color}:{on:false}); state=await adapter.list(); render(); }catch(e){} }
   function dSound(reason){ if(D.alarm.state==='sounding') return; D.alarm={state:'sounding',since:Date.now(),reason}; dEvent('alarm','ALARM: '+reason); dSave(); dFlashOn(); try{ toast('Alarm: '+reason); }catch(e){} }
   function dTrigger(reason,entry){

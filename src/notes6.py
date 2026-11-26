@@ -7,3 +7,6 @@ N6=[
 ]
 import json as _j
 rep("'5.0.0':{t:'Welcome to Lumora 5'","'6.0.0':{t:'Welcome to Lumora 6',items:"+_j.dumps(N6)+"},\n  '5.0.0':{t:'Welcome to Lumora 5'")
+N601=["Fixes: silencing the alarm while the lights are still flashing now always restores them, and they are restored even if the add-on restarted during an alarm.","The automation builder no longer scrolls sideways on a phone, small buttons are easier to tap, and the logo no longer repeats internal ids."]
+rep("'6.0.0':{t:'Welcome to Lumora 6'","'6.0.1':{t:'Lumora 6.0.1',items:"+_j.dumps(N601)+"},\n  '6.0.0':{t:'Welcome to Lumora 6'")
+rep("APP_VERSION='6.0.0'","APP_VERSION='6.0.1'")

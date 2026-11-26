@@ -510,12 +510,13 @@ function createApp(userConfig = {}) {
     try {
       const mine = new Set(readJson2('hub-lights', []).map((d) => d && d.id)); const gone = new Set(readJson2('hub-removed', []));
       const ls = (await ha.allLights()).filter((l) => !gone.has(l.id) && (mine.size === 0 || mine.has(l.id)) && l.online);
-      secPrevLights = ls.map((l) => ({ id: l.id, on: l.on, bri: l.bri, color: l.color }));
-      for (const l of ls) await ha.setLight(l.id, { on: true, bri: 100, color: '#ff1f1f' });
+      secPrevLights = ls.map((l) => ({ id: l.id, on: l.on, bri: l.bri, color: l.color })); sec.prev = secPrevLights; secSave();
+      for (const l of ls) { if (sec.alarm.state !== 'sounding') break; await ha.setLight(l.id, { on: true, bri: 100, color: '#ff1f1f' }); }
+      if (sec.alarm.state !== 'sounding') secFlashOff();          // silenced while the lights were still changing
     } catch (e) { /* lights unreachable */ }
   }
   async function secFlashOff() {
-    const prev = secPrevLights; secPrevLights = null; if (!ha || !prev) return;
+    const prev = secPrevLights || sec.prev; secPrevLights = null; delete sec.prev; secSave(); if (!ha || !prev) return;
     for (const l of prev) { try { await ha.setLight(l.id, l.on ? { on: true, bri: l.bri, color: l.color } : { on: false }); } catch (e) { /* ignore */ } }
   }
   function secSound(reason) {
@@ -547,9 +548,9 @@ function createApp(userConfig = {}) {
     clearTimeout(secTimer); const was = sec.alarm.state;
     sec.mode = mode; sec.armedAt = mode === 'off' ? 0 : Date.now(); sec.alarm = { state: 'idle' }; secSave();
     secEvent('mode', mode === 'off' ? 'Disarmed' : 'Armed: ' + (mode === 'home' ? 'Home' : 'Away'));
-    if (was === 'sounding' || secPrevLights) secFlashOff();
+    if (was === 'sounding' || secPrevLights || sec.prev) secFlashOff();
   }
-  function secAck() { clearTimeout(secTimer); const was = sec.alarm.state; sec.alarm = { state: 'idle' }; secSave(); if (was !== 'idle') secEvent('mode', 'Alarm silenced'); secFlashOff(); }
+  function secAck() { clearTimeout(secTimer); const was = sec.alarm.state; sec.alarm = { state: 'idle' }; secSave(); if (was !== 'idle') secEvent('mode', 'Alarm silenced'); if (was === 'sounding' || secPrevLights || sec.prev) secFlashOff(); }
   function saveSecurityNow() { try { store.write(secFile, sec); } catch (e) { /* ignore */ } }
   function secView() { return { mode: sec.mode, alarm: sec.alarm, armedAt: sec.armedAt || 0, events: sec.events.slice(0, 80), cfg: secCfg(), now: Date.now() }; }
 

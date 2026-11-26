@@ -1,0 +1,8 @@
+
+/* ---- 6.0.1 fixes: no sideways scroll in the builder, bigger touch areas ---- */
+.panel.builder,.builder *{box-sizing:border-box;max-width:100%}
+.builder input,.builder select{min-width:0}
+.dot,.x,.rshow,.sw,.tl,.stgrip{position:relative}
+.dot::after,.x::after,.rshow::after,.sw::after,.tl::after,.stgrip::after{content:"";position:absolute;inset:-8px}
+.builder{grid-template-columns:minmax(0,1fr)}.builder>*{min-width:0}
+.bstep select,.bstep input:not([type=checkbox]):not([type=radio]){width:100%;min-width:0}
