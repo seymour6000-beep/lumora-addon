@@ -832,6 +832,43 @@ html[data-popout="1"] .nclear{font-size:.9rem}
 a.btn{text-decoration:none;color:inherit;display:inline-flex;align-items:center}
 html[data-popout="1"] #toasts{display:none!important}
 html[data-popout="1"] #popHead .brand{display:inline-flex;align-items:center}
+
+/* ---- side tab with status lamps ---- */
+#sidetab{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:28;display:flex;align-items:stretch;gap:0}
+.stlamps{display:flex;flex-direction:column;gap:2px;padding:10px 6px 10px 8px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);border-left:0;border-radius:0 22px 22px 0;background:color-mix(in srgb,var(--surface) 82%,transparent);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);box-shadow:0 10px 36px rgba(0,0,0,.22);order:1;max-width:56px;overflow:hidden;transition:max-width .28s cubic-bezier(.2,.8,.2,1)}
+#sidetab.open .stlamps{max-width:290px}
+.stgrip{order:2;align-self:center;width:20px;height:54px;margin-left:-1px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);border-left:0;border-radius:0 12px 12px 0;background:color-mix(in srgb,var(--surface) 82%,transparent);color:var(--muted);display:grid;place-items:center;padding:0;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.stgrip svg{width:14px;height:14px;transition:transform .25s}
+#sidetab.open .stgrip svg{transform:rotate(180deg)}
+.tl{display:flex;align-items:center;gap:12px;padding:6px 8px;border:0;border-radius:14px;background:transparent;color:var(--muted);text-align:left;white-space:nowrap;min-height:34px}
+.tl svg{width:22px;height:22px;flex:none;opacity:.32;transition:opacity .25s,filter .25s,color .25s}
+.tl .tll{display:flex;flex-direction:column;line-height:1.2;font-size:.82rem;min-width:150px;opacity:0;transition:opacity .2s}
+#sidetab.open .tl .tll{opacity:1;transition-delay:.08s}
+.tl .tll b{font-weight:600;color:var(--ink)}.tl .tll em{font-style:normal;color:var(--muted);font-size:.74rem;max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.tl:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.tl[data-on="1"] svg{opacity:1}
+.tl[data-on="1"][data-c="bad"]{color:var(--bad)}
+.tl[data-on="1"][data-c="warn"]{color:var(--warn)}
+.tl[data-on="1"][data-c="amber"]{color:#ffa84a}
+.tl[data-on="1"][data-c="info"]{color:var(--info)}
+.tl[data-on="1"] svg{filter:drop-shadow(0 0 6px currentColor)}
+.tl[data-k="link"][data-on="0"]{color:var(--ok,#3ecf8e)}.tl[data-k="link"][data-on="0"] svg{opacity:.85}
+html:not([data-fx="off"]) .tl[data-on="1"][data-c="bad"] svg{animation:tlp 1.4s ease-in-out infinite}
+@keyframes tlp{50%{opacity:.35}}
+.tl.flash svg{animation:tlf .9s ease-out}
+@keyframes tlf{0%{transform:scale(1.7)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.tl svg,.tl.flash svg{animation:none!important}}
+html[data-popout="1"] #sidetab,html[data-tv="1"] #sidetab{display:none}
+@media (max-width:700px){#sidetab{top:38%}.stlamps{max-width:46px;padding:8px 4px 8px 6px}.tl{padding:5px 6px;min-height:30px}.tl svg{width:20px;height:20px}#sidetab.open .stlamps{max-width:260px}}
+@media (min-width:701px){html:not([data-popout="1"]):not([data-tv="1"]) main{padding-left:76px}}
+
+@media (max-width:700px){
+  .stlamps{max-width:0;padding:8px 0;border:0;box-shadow:none}
+  #sidetab.open .stlamps{max-width:260px;padding:8px 6px 8px 8px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);border-left:0;box-shadow:0 10px 36px rgba(0,0,0,.28)}
+  .stgrip{margin-left:0;width:22px}
+  #sidetab[data-alert="1"] .stgrip{color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+  #sidetab[data-lit="1"]:not([data-alert="1"]) .stgrip{color:#ffa84a}
+}
 </style>
 </head>
 <body data-auth="out">
@@ -2998,7 +3035,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='3.3.0';
+const APP_VERSION='3.4.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -3287,6 +3324,19 @@ const HEALTH={server:true,ha:null};
     const gt=g+who; if(gr.textContent!==gt) gr.textContent=gt;
   }
   /* extra "at a glance" chips under the clock: weather, sun countdown, week/day, lights */
+  /* Canadian (Nova Scotia) holidays, worked out here so no lookup is needed */
+  function nthDow(y,m,dow,n){ const f=new Date(y,m,1).getDay(); return new Date(y,m,1+((dow-f+7)%7)+7*(n-1)); }
+  function easter(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1; return new Date(y,mo-1,da); }
+  function holidays(y){
+    const E=easter(y), vic=new Date(y,4,24); while(vic.getDay()!==1) vic.setDate(vic.getDate()-1);
+    return [['New Year’s Day',new Date(y,0,1)],['Heritage Day',nthDow(y,1,1,3)],['Valentine’s Day',new Date(y,1,14)],['Good Friday',new Date(+E-2*864e5)],['Easter Sunday',E],['Mother’s Day',nthDow(y,4,0,2)],['Victoria Day',vic],['Father’s Day',nthDow(y,5,0,3)],['Canada Day',new Date(y,6,1)],['Labour Day',nthDow(y,8,1,1)],['Truth and Reconciliation Day',new Date(y,8,30)],['Thanksgiving',nthDow(y,9,1,2)],['Halloween',new Date(y,9,31)],['Remembrance Day',new Date(y,10,11)],['Christmas Day',new Date(y,11,25)],['Boxing Day',new Date(y,11,26)]];
+  }
+  function nextHoliday(d){
+    const t0=new Date(d.getFullYear(),d.getMonth(),d.getDate()); let best=null;
+    [d.getFullYear(),d.getFullYear()+1].forEach(y=>holidays(y).forEach(([name,dt])=>{ const days=Math.round((dt-t0)/864e5); if(days>=0&&(!best||days<best.days)) best={name,days}; }));
+    return best;
+  }
+  window.__nextHoliday=nextHoliday;
   const txt=id=>{ const e=$(id); return e?e.textContent.trim():''; };
   function chip(k,v){ return '<span class="hchip"><em>'+k+'</em>'+v+'</span>'; }
   function meta(d){
@@ -3303,6 +3353,7 @@ const HEALTH={server:true,ha:null};
     }
     const jan1=new Date(d.getFullYear(),0,1), doy=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-jan1)/864e5)+1;
     const wk=Math.ceil((doy+((jan1.getDay()+6)%7))/7);
+    const hol=nextHoliday(d); if(hol) out.push(chip('Next holiday',hol.name+' · '+(hol.days===0?'today':hol.days===1?'tomorrow':'in '+hol.days+' days')));
     out.push(chip('Day',doy+' · week '+wk));
     const on=(typeof state!=='undefined'&&state)?state.filter(x=>x.online!==false&&x.on).length:0;
     out.push(chip('Lights',on?on+' on':'all off'));
@@ -3483,7 +3534,7 @@ const HEALTH={server:true,ha:null};
     ids.forEach(i=>{ if(old[i]&&live[i]) transition(old[i],live[i]); });
     drawOthers();
   }
-  window.__pollOthers=othPoll;
+  window.__pollOthers=othPoll; window.__othLive=()=>({others,live,sensorWords});
   function transition(a,b){
     const nm=nameOfO(b.id);
     if(b.kind==='sensor'&&a.active!==b.active){ const w=sensorWords(b.cls); log(nm+': '+(b.active?w[0]:w[1])); if(b.active&&settings.popups&&ROLE!=='guest') toast(nm+': '+w[0].toLowerCase()); fireOth('sensor',{id:b.id,ev:b.active?'on':'off'}); }
@@ -3694,6 +3745,83 @@ const HEALTH={server:true,ha:null};
   setInterval(()=>{ if(!document.hidden) othPoll(); },5000);
   if(REMOTE&&window.EventSource){ try{ const es=new EventSource('/api/events'); let t=0; es.addEventListener('other',()=>{ clearTimeout(t); t=setTimeout(othPoll,200); }); }catch(e){} }
 })();
+
+
+/* ---- status lamps: a floating side tab, like the warning lights on a car dashboard ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const I={
+    bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    off:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3zM4 4l16 16"/>',
+    door:'<path d="M6 21V4a1 1 0 0 1 1-1h8l3 2v16M3 21h18M13 12h.01"/>',
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
+    motion:'<circle cx="12" cy="12" r="2.2"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/>',
+    power:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8zM3 3l18 18"/>',
+    link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    away:'<path d="M4 11 12 4l8 7M6 10v10h12V10M10 20v-5h4v5"/>',
+    heat:'<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .2 1.2 1 2 2 2-1-3-.5-5 1-8z"/>',
+    batt:'<rect x="3" y="8" width="16" height="9" rx="2"/><path d="M21 11v3M7 11v3"/>',
+    alert:'<path d="M12 3 2 20h20L12 3zM12 10v4M12 17h.01"/>'
+  };
+  const LAMPS=[
+    {k:'alarm',ic:'alert',c:'bad',l:'Smoke, gas or leak',go:'Devices'},
+    {k:'power',ic:'power',c:'bad',l:'Power cut',go:'Activity'},
+    {k:'offline',ic:'off',c:'bad',l:'Light offline',go:'Devices'},
+    {k:'link',ic:'link',c:'bad',l:'Server link',inv:true,go:'Settings'},
+    {k:'doors',ic:'door',c:'warn',l:'Door or window open',go:'Devices'},
+    {k:'locks',ic:'lock',c:'warn',l:'Lock unlocked',go:'Devices'},
+    {k:'batt',ic:'batt',c:'warn',l:'Camera battery low',go:'Devices'},
+    {k:'lights',ic:'bulb',c:'amber',l:'Lights on',go:'Devices'},
+    {k:'heat',ic:'heat',c:'amber',l:'Heating',go:'Devices'},
+    {k:'motion',ic:'motion',c:'info',l:'Motion just now',go:'Activity'},
+    {k:'away',ic:'away',c:'info',l:'Away mode',go:'Devices'}
+  ];
+  const tab=document.createElement('aside'); tab.id='sidetab'; tab.setAttribute('aria-label','Home status lights');
+  tab.innerHTML='<button class="stgrip" type="button" aria-expanded="false" aria-label="Show home status lights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><div class="stlamps" role="list"></div>';
+  document.body.appendChild(tab);
+  const box=tab.querySelector('.stlamps'), grip=tab.querySelector('.stgrip');
+  const els={};
+  LAMPS.forEach(L=>{
+    const b=document.createElement('button'); b.type='button'; b.className='tl'; b.dataset.k=L.k; b.dataset.c=L.c; b.setAttribute('role','listitem');
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[L.ic]+'</svg><span class="tll"><b>'+L.l+'</b><em></em></span>';
+    b.onclick=()=>{ close(); try{ showTab(L.go); }catch(e){} };
+    box.appendChild(b); els[L.k]=b;
+  });
+  const set=(k,on,txt)=>{ const b=els[k]; const was=b.dataset.on==='1'; b.dataset.on=on?'1':'0'; b.querySelector('em').textContent=txt; b.setAttribute('aria-label',LAMPS.find(x=>x.k===k).l+': '+txt); if(on&&!was) b.classList.add('flash'),setTimeout(()=>b.classList.remove('flash'),1200); };
+  const plural=(n,a,b)=>n+' '+(n===1?a:b);
+  function refresh(){
+    try{
+      const lt=state||[], on=lt.filter(d=>d.online!==false&&d.on).length, off=lt.filter(d=>d.online===false).length;
+      const O=window.__othLive?window.__othLive():{others:[],live:{}}, ls=O.others.map(x=>O.live[x.id]).filter(Boolean);
+      const doors=ls.filter(s=>s.kind==='sensor'&&s.active&&/^(door|window|garage_door|opening)$/.test(s.cls));
+      const alarms=ls.filter(s=>s.kind==='sensor'&&s.active&&/^(smoke|gas|carbon_monoxide|moisture|safety)$/.test(s.cls));
+      const motion=ls.filter(s=>s.kind==='sensor'&&s.active&&/^(motion|occupancy|presence)$/.test(s.cls));
+      const unl=ls.filter(s=>s.kind==='lock'&&!s.locked);
+      const heat=ls.filter(s=>s.kind==='thermostat'&&/heat/i.test(s.action||''));
+      const camMotion=(cams||[]).filter(c=>c.last&&Date.now()-c.last<5*60000);
+      const lowb=(cams||[]).filter(c=>typeof c.battery==='number'&&c.battery<=20);
+      set('alarm',alarms.length>0,alarms.length?alarms.map(a=>a.name).join(', '):'All clear');
+      set('power',!!(power&&power.outage),power&&power.outage?'Running without mains':'Normal');
+      set('offline',off>0,off?plural(off,'light','lights')+' offline':'All reachable');
+      const down=!!window.__devDown||(document.getElementById('netbar')&&document.getElementById('netbar').classList.contains('on')); set('link',down,down?'Can’t reach it':'Connected');
+      set('doors',doors.length>0,doors.length?doors.map(a=>a.name).join(', '):'All closed');
+      set('locks',unl.length>0,unl.length?unl.map(a=>a.name).join(', '):'All locked');
+      set('batt',lowb.length>0,lowb.length?lowb.map(c=>c.name).join(', '):'Fine');
+      set('lights',on>0,on?plural(on,'light','lights')+' on':'All off');
+      set('heat',heat.length>0,heat.length?'Heating on':'Idle');
+      set('motion',motion.length+camMotion.length>0,(motion.concat(camMotion)).map(a=>a.name).join(', ')||'Quiet');
+      set('away',typeof presence!=='undefined'&&presence==='away',typeof presence!=='undefined'&&presence==='away'?'Nobody home':'Someone home');
+      const bad=tab.querySelectorAll('.tl[data-on="1"][data-c="bad"]').length; tab.dataset.alert=bad?'1':'0'; tab.dataset.lit=tab.querySelector('.tl[data-on="1"]:not([data-k="link"])')?'1':'0';
+    }catch(e){}
+  }
+  function open(){ tab.classList.add('open'); grip.setAttribute('aria-expanded','true'); grip.setAttribute('aria-label','Hide home status lights'); }
+  function close(){ tab.classList.remove('open'); grip.setAttribute('aria-expanded','false'); grip.setAttribute('aria-label','Show home status lights'); }
+  grip.onclick=()=>tab.classList.contains('open')?close():open();
+  document.addEventListener('pointerdown',e=>{ if(tab.classList.contains('open')&&!tab.contains(e.target)) close(); },true);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+  refresh(); setInterval(refresh,1500);
+  window.__refreshLamps=refresh;
+})();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openColor&&!document.querySelector('dialog[open]')){ openColor=null; render(); } });
 document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e.target.closest('.lt'))){ openColor=null; render(); } },true);
 (function(){
@@ -3714,6 +3842,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '3.4.0':{t:'Status lamps and holidays',items:['The clock card now shows the next holiday and how many days away it is (Canadian and Nova Scotia holidays, plus Halloween, Mother’s Day and similar).','A floating tab on the left edge works like the warning lights on a car dashboard: lamps for power cut, light offline, server link, doors open, locks unlocked, low camera battery, lights on, heating, motion and away mode. Lit lamps glow, quiet ones stay dim. Tap the arrow to see what each one says, or tap a lamp to jump to the right place.']},
   '3.3.0':{t:'Pop-out window (beta)',items:['New: Pop out opens notifications and your lights in their own small window you can keep beside other work. Find it in the Today panel or next to Lights. This is a beta, so tell me what feels off.']},
   '3.2.2':{t:'Back to the usual size',items:['Wide-screen scaling is removed. Screens and layouts are sized the way they were in 3.1.0. The colour panel on a light has a Done button, and also closes with Esc or a click outside.']},
   '3.2.0':{t:'Lumora 3.2',items:['Other devices: add smart plugs, door and motion sensors, thermostats and locks that Home Assistant already has. New automations such as “when the front door opens and it is dark, turn on the hallway”. Automations can lock a door but never unlock one.','Accounts with different access: admin, family and guest. Money and phone numbers are admin-only (an admin can allow Money for a family member). Guests only see lights and devices.','Two-step sign-in with an authenticator app, recovery codes, and a password reset code from the admin.','Usage history in Activity: hours each light was on, per day and per light, and a list of offline events with how long they lasted.','A soft start-up sound, a tidier control area on Devices, more on the clock card, and the whole app now scales up on wide screens and TVs.']},
