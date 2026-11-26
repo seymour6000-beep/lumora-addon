@@ -1,0 +1,10 @@
+
+/* ---- Lumora 4.5: Christmas season ---- */
+:root[data-season="xmas"],:root[data-season="xmas"][data-design]{color-scheme:dark;--bg:#0b1a14;--surface:#12281e;--raise:#183428;--ink:#fdf3ea;--muted:#a9c4b4;--line:#2a4b3a;--accent:#ff5a4d;--accent2:#ffc65c;--onaccent:#2b0704;--off:#1c3a2c;--knob:#fff;--ok:#7be0a8;--warn:#ffc65c;--bad:#ff8c80;--info:#9cd0ff}
+#xsnow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+#garland{position:fixed;top:0;left:0;right:0;height:18px;display:flex;justify-content:space-between;padding:0 6px;pointer-events:none;z-index:3;border-top:2px solid #2a4b3a}
+#garland i{width:8px;height:11px;border-radius:50% 50% 55% 55%;margin-top:3px;background:#ff5a4d;box-shadow:0 0 8px 1px currentColor;color:#ff5a4d;animation:xtw 2.4s ease-in-out infinite;animation-delay:calc(var(--i)*-.37s)}
+#garland i:nth-child(4n+2){background:#ffc65c;color:#ffc65c}#garland i:nth-child(4n+3){background:#3ddc84;color:#3ddc84}#garland i:nth-child(4n){background:#6fb8ff;color:#6fb8ff}
+@keyframes xtw{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){#garland i{animation:none}}
+@media (max-width:640px){#garland i:nth-child(n+21){display:none}}

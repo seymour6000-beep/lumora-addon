@@ -1,0 +1,25 @@
+
+/* ---- Lumora 6, part 3: security ---- */
+.seccard{margin:0 0 16px;padding:16px;border-radius:24px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55);display:grid;gap:12px}
+.seccard[data-mode="home"],.seccard[data-mode="away"]{border-color:color-mix(in srgb,var(--ok) 45%,transparent);box-shadow:inset 4px 0 0 var(--ok),inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55)}
+.seccard[data-state="pending"]{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn),0 0 0 3px color-mix(in srgb,var(--warn) 25%,transparent)}
+.seccard[data-state="sounding"]{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad),0 0 0 4px color-mix(in srgb,var(--bad) 30%,transparent);animation:secpulse 1s ease-in-out infinite alternate}
+@keyframes secpulse{to{box-shadow:inset 4px 0 0 var(--bad),0 0 0 8px color-mix(in srgb,var(--bad) 12%,transparent)}}
+@media (prefers-reduced-motion:reduce){.seccard[data-state="sounding"]{animation:none}}
+.sechead{display:flex;align-items:center;gap:12px}.sechead h3{margin:0;font:600 1.05rem var(--fd,var(--fb))}.sechead .sub{margin:0}
+.secic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 16%,transparent)}.secic .ico{width:24px;height:24px}
+.secmodes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.secmode{padding:11px 8px;border-radius:14px;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--ink);font:600 .95rem var(--fb);cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+.secmode.on{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));color:var(--onaccent);border-color:var(--accent)}
+.secmode:active{transform:translateY(2px);box-shadow:none}
+.secbanner{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border-radius:16px}
+.secbanner.pend{background:color-mix(in srgb,var(--warn) 18%,transparent)}.secbanner.snd{background:color-mix(in srgb,var(--bad) 22%,transparent)}
+.secbanner b{font:700 1.1rem var(--fd,var(--fb))}.secbanner span{flex:1;min-width:140px}
+.secd{border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);padding-top:10px}.secd summary{cursor:pointer;font-weight:600}
+.secev{display:grid;gap:6px;margin-top:8px}.secrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:.9rem}
+.secrow.alarm{background:color-mix(in srgb,var(--bad) 14%,transparent)}.secrow.pending{background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.secri .ico{width:18px;height:18px}.sect{flex:1}.secw{color:var(--muted);font-size:.8rem;white-space:nowrap}
+.secsnaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:8px}
+.secsnap{position:relative;margin:0}.secsnap img{width:100%;border-radius:12px;display:block}.secsnap figcaption{font-size:.74rem;color:var(--muted);margin-top:4px}.secsnap .x{position:absolute;top:6px;right:6px}
+.snapbtn{margin:8px 0}
+body[data-role="guest"] .secmodes,body[data-role="guest"] #secDemo{pointer-events:none;opacity:.5}

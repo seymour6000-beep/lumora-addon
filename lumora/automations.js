@@ -19,7 +19,7 @@ function sunMinutes(dateParts, tzOffsetMin, lat, lon) {
   return { rise: m(720 - 4 * (lon + ha) - eq + tzOffsetMin), set: m(720 - 4 * (lon - ha) - eq + tzOffsetMin) };
 }
 
-function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), onStat }) {
+function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), onStat, onOtherEvent }) {
   const lightsNow = new Map();            // id -> light
   const prevOnline = new Map();           // id -> bool
   const onSince = new Map();              // id -> ms
@@ -162,6 +162,7 @@ function create({ ha, readJson, tz, notify, activity, clock = () => Date.now(), 
     if (stopped || !s || !s.id) return;
     const a = prevOther.get(s.id); others[s.id] = s; prevOther.set(s.id, s);
     if (!a) return;
+    if (onOtherEvent) { try { onOtherEvent(s, a); } catch (e) { /* never block automations */ } }
     if (s.kind === 'sensor' && a.active !== s.active) fire('sensor', { id: s.id, ev: s.active ? 'on' : 'off' }, (r) => (r.t.id === 'any' || r.t.id === s.id) && r.t.ev === (s.active ? 'on' : 'off'));
     if (s.kind === 'lock' && a.locked !== s.locked) fire('lockev', { id: s.id }, (r) => (r.t.id === 'any' || r.t.id === s.id) && r.t.ev === (s.locked ? 'locked' : 'unlocked'));
     if (s.kind === 'thermostat' && a.temp != null && s.temp != null && a.temp !== s.temp) {

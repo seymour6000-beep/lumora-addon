@@ -19,7 +19,7 @@ if(/[?&]popout=1/.test(location.search)){document.documentElement.setAttribute('
    none of this runs and the app stays a self-contained demo. */
 (function(){
   window.__SRV=null;
-  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others','hub-autostat','hub-watch','hub-voice'];
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others','hub-autostat','hub-watch','hub-voice','hub-security'];
   try{
     if(!/^https?:$/.test(location.protocol)) return;
     var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
@@ -1058,6 +1058,75 @@ body[data-role="guest"] #watchPanel,body[data-role="family"] #watchPanel{display
 .addrrow code{font:700 1.15rem var(--fb);letter-spacing:.01em}.addrrow .btn{margin-left:auto}
 body[data-role="guest"] #voicePanel,body[data-role="family"] #voicePanel,body[data-role="guest"] #addrPanel{display:none!important}
 body[data-role="guest"] #deskPanel{display:none!important}
+
+/* ---- Lumora 5.1: home screen ---- */
+.ovstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 16px}
+.ovt{position:relative;display:grid;gap:2px;padding:14px 16px;border-radius:22px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 12px 24px -16px rgb(0 0 0/.5);overflow:hidden}
+.ovt::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--accent)}
+.ovt.ok::before{background:var(--ok)}.ovt.warn::before{background:var(--warn)}
+.ovl{font-size:.78rem;color:var(--muted);font-weight:600}.ovv{font:600 1.45rem var(--fd,var(--fb));letter-spacing:-.02em}.ovs{font-size:.8rem;color:var(--muted)}
+@media (max-width:760px){.ovstrip{grid-template-columns:repeat(2,1fr);gap:10px}.ovv{font-size:1.2rem}}
+.roomchips.rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:0 0 16px}
+.rcard{--rc:150,160,190;position:relative;display:grid;gap:6px;border-radius:24px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55);overflow:hidden;transition:box-shadow .3s,transform .2s}
+.rcard.lit{background:linear-gradient(160deg,rgba(var(--rc),.34),rgba(var(--rc),.1) 60%,var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 16px 30px -16px rgba(var(--rc),.7)}
+.rcard.dead{opacity:.6}
+.rcard .rchip{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i n" "c c" "b b";gap:4px 12px;align-items:center;text-align:left;padding:16px 16px 6px;border:0;background:transparent;border-radius:0;height:auto;min-height:0;width:100%;font:inherit;color:inherit;cursor:pointer}
+.rcard .ri{grid-area:i;width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.rcard.lit .ri{background:rgba(var(--rc),.4);box-shadow:0 0 18px rgba(var(--rc),.6)}
+.rcard .ri .ico{width:24px;height:24px}
+.rcard .rn{grid-area:n;font:600 1.05rem var(--fd,var(--fb));letter-spacing:-.01em}
+.rcard .rc{grid-area:c;font-size:.86rem;color:var(--muted)}
+.rcard .rb{grid-area:b;display:block;height:6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden;box-shadow:inset 0 1px 2px rgb(0 0 0/.25)}
+.rcard .rb i{display:block;height:100%;border-radius:99px;background:rgb(var(--rc))}
+.rcard .rshow{margin:0 16px 12px auto;border:0;background:transparent;color:var(--accent);font:600 .82rem var(--fb);padding:4px 2px;cursor:pointer;text-align:right}
+.rcard .rshow:hover{text-decoration:underline}
+.rcard .rchip:focus-visible,.rcard .rshow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:12px}
+@media (max-width:640px){.roomchips.rcards{grid-template-columns:repeat(2,1fr);gap:10px}.rcard .rchip{padding:14px 12px 4px}}
+
+/* ---- Lumora 6, part 2: automations ---- */
+.rsum{margin:0 0 10px;color:var(--muted);font-size:.9rem}
+.rule{align-items:flex-start;border-radius:22px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 12px 24px -16px rgb(0 0 0/.5)}
+.rule.on{box-shadow:inset 3px 0 0 var(--accent),inset 0 1px 0 rgb(255 255 255/.3),0 12px 24px -16px rgb(0 0 0/.5)}
+.rule .thenline{display:none}
+.rflow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 4px}
+.fchip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 8px;border-radius:12px;font-size:.84rem;font-weight:600;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:color-mix(in srgb,var(--surface) 80%,transparent);box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 12%,transparent)}
+.fchip .ico{width:17px;height:17px}
+.fchip.ft{background:color-mix(in srgb,var(--accent) 16%,var(--surface));border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.fchip.fc{background:color-mix(in srgb,var(--warn) 14%,var(--surface));border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.fchip.fa{background:color-mix(in srgb,var(--ok) 14%,var(--surface));border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.farrow{color:var(--muted);display:inline-flex}.farrow .ico{width:14px;height:14px;filter:none}
+.rtools{display:flex;gap:8px;margin-top:8px}
+.rcheck,.rhist{display:grid;gap:4px;margin-top:8px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 5%,transparent);font-size:.86rem}
+.rl.ok::before{content:"✓ ";color:var(--ok);font-weight:700}.rl.bad::before{content:"✗ ";color:var(--bad);font-weight:700}.rl.warn::before{content:"! ";color:var(--warn);font-weight:700}.rl.info{color:var(--muted)}
+.bprev{margin:14px 0 6px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);font-size:.92rem}
+.bstep{border-radius:18px}
+
+/* ---- Lumora 6, part 3: security ---- */
+.seccard{margin:0 0 16px;padding:16px;border-radius:24px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55);display:grid;gap:12px}
+.seccard[data-mode="home"],.seccard[data-mode="away"]{border-color:color-mix(in srgb,var(--ok) 45%,transparent);box-shadow:inset 4px 0 0 var(--ok),inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55)}
+.seccard[data-state="pending"]{border-color:var(--warn);box-shadow:inset 4px 0 0 var(--warn),0 0 0 3px color-mix(in srgb,var(--warn) 25%,transparent)}
+.seccard[data-state="sounding"]{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad),0 0 0 4px color-mix(in srgb,var(--bad) 30%,transparent);animation:secpulse 1s ease-in-out infinite alternate}
+@keyframes secpulse{to{box-shadow:inset 4px 0 0 var(--bad),0 0 0 8px color-mix(in srgb,var(--bad) 12%,transparent)}}
+@media (prefers-reduced-motion:reduce){.seccard[data-state="sounding"]{animation:none}}
+.sechead{display:flex;align-items:center;gap:12px}.sechead h3{margin:0;font:600 1.05rem var(--fd,var(--fb))}.sechead .sub{margin:0}
+.secic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 16%,transparent)}.secic .ico{width:24px;height:24px}
+.secmodes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.secmode{padding:11px 8px;border-radius:14px;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--ink);font:600 .95rem var(--fb);cursor:pointer;box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+.secmode.on{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));color:var(--onaccent);border-color:var(--accent)}
+.secmode:active{transform:translateY(2px);box-shadow:none}
+.secbanner{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border-radius:16px}
+.secbanner.pend{background:color-mix(in srgb,var(--warn) 18%,transparent)}.secbanner.snd{background:color-mix(in srgb,var(--bad) 22%,transparent)}
+.secbanner b{font:700 1.1rem var(--fd,var(--fb))}.secbanner span{flex:1;min-width:140px}
+.secd{border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);padding-top:10px}.secd summary{cursor:pointer;font-weight:600}
+.secev{display:grid;gap:6px;margin-top:8px}.secrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:.9rem}
+.secrow.alarm{background:color-mix(in srgb,var(--bad) 14%,transparent)}.secrow.pending{background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.secri .ico{width:18px;height:18px}.sect{flex:1}.secw{color:var(--muted);font-size:.8rem;white-space:nowrap}
+.secsnaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:8px}
+.secsnap{position:relative;margin:0}.secsnap img{width:100%;border-radius:12px;display:block}.secsnap figcaption{font-size:.74rem;color:var(--muted);margin-top:4px}.secsnap .x{position:absolute;top:6px;right:6px}
+.snapbtn{margin:8px 0}
+body[data-role="guest"] .secmodes,body[data-role="guest"] #secDemo{pointer-events:none;opacity:.5}
+
+#offBar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9000;max-width:min(92vw,520px);padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--surface);font:600 .88rem var(--fb);box-shadow:0 10px 24px -8px rgb(0 0 0/.5)}
 </style>
 </head>
 <body data-auth="out">
@@ -3277,7 +3346,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='5.0.0';
+const APP_VERSION='6.0.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4425,6 +4494,217 @@ window.__claudeSplash=function(){
   new MutationObserver(()=>{ if(document.body.dataset.auth==='in') run(); }).observe(document.body,{attributes:true,attributeFilter:['data-auth']});
   document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('.tab')) setTimeout(()=>{ drawSay(); status(); },400); });
 })();
+
+/* ---- Lumora 5.1: home screen (room cards and the live overview) ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const rgb=h=>{ const n=parseInt(String(h||'#fff1d6').slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+  /* room cards replace the plain room chips: the .rchip button still switches the whole room */
+  window.renderRoomChips=function(){
+    const box=document.getElementById('roomChips'); if(!box) return; box.innerHTML='';
+    const rooms=[...new Set(state.map(d=>d.room||'Home'))].sort();
+    if(rooms.length<2){ box.hidden=true; return; } box.hidden=false; box.classList.add('rcards');
+    rooms.forEach(r=>{
+      const all=state.filter(d=>(d.room||'Home')===r), ds=all.filter(d=>d.online!==false), on=ds.filter(d=>d.on), off=all.length-ds.length;
+      const card=el('div','rcard'+(on.length?' lit':'')+(!ds.length?' dead':''));
+      if(on.length){ const c=on.reduce((a,d)=>{ const v=rgb(d.color); return [a[0]+v[0],a[1]+v[1],a[2]+v[2]]; },[0,0,0]).map(x=>Math.round(x/on.length)); card.style.setProperty('--rc',c.join(',')); }
+      const b=el('button','chip rchip'); b.type='button'; b.setAttribute('aria-pressed',String(on.length>0)); b.title='Switch every light in '+r;
+      const ic=el('span','ri'); ic.innerHTML=ICO(on.length?'bulb':'bulboff'); const nm=el('span','rn',r);
+      const ct=el('span','rc',!ds.length?'Offline':on.length+' of '+ds.length+' on'+(off?' · '+off+' offline':''));
+      const avg=on.length?Math.round(on.reduce((a,d)=>a+(d.bri||0),0)/on.length):0; const bar=el('span','rb'); const fill=el('i'); fill.style.width=avg+'%'; bar.appendChild(fill); bar.setAttribute('aria-hidden','true');
+      b.append(ic,nm,ct,bar); b.onclick=()=>roomToggle(r);
+      const view=el('button','rshow','Show lights'); view.type='button'; view.setAttribute('aria-label','Show only the lights in '+r);
+      view.onclick=()=>{ filters.room=filters.room===r?'':r; try{ renderRoomChips(); render(); renderCams(); }catch(e){} };
+      view.textContent=filters.room===r?'Show all':'Show lights';
+      card.append(b,view); box.appendChild(card);
+    });
+  };
+  /* the overview strip under the hero */
+  function tile(label,value,sub,tone){ const t=el('div','ovt'+(tone?' '+tone:'')); t.append(el('span','ovl',label),el('b','ovv',value),el('span','ovs',sub||'')); return t; }
+  function overview(){
+    let box=document.getElementById('ovStrip'); const hero=document.querySelector('section[data-tab="Devices"] .hero'); if(!hero) return;
+    if(!box){ box=el('div','ovstrip'); box.id='ovStrip'; box.setAttribute('aria-label','Home at a glance'); hero.insertAdjacentElement('afterend',box); }
+    if(typeof state==='undefined') return;
+    const live=state.filter(d=>d.online!==false), on=live.filter(d=>d.on), off=state.length-live.length;
+    const W=Math.max(1,Math.min(200,+settings.lightWatts||9)); const watts=on.reduce((a,d)=>a+W*Math.max(.1,(d.bri||100)/100),0);
+    const cl=(typeof cams!=='undefined'?cams:[]), camsOn=cl.filter(c=>c.online!==false).length;
+    const tiles=[tile('Lights on',on.length+' of '+state.length,off?off+' offline':'All reachable',off?'warn':'ok'), tile('Using now','≈ '+Math.round(watts)+' W',on.length?'Estimate from brightness':'Nothing is on'), tile('Cameras',camsOn+' of '+cl.length,cl.some(c=>c.battery<20)?'A battery is low':'Online',cl.some(c=>c.battery<20)?'warn':''), tile('Mode',presence==='away'?'Away':'Home',presence==='away'?'Lights left on will be reported':'Welcome back')];
+    const sig=JSON.stringify(tiles.map(t=>t.textContent)); if(box.dataset.sig===sig) return; box.dataset.sig=sig; box.replaceChildren(...tiles);
+  }
+  setInterval(()=>{ try{ overview(); }catch(e){} },1500); setTimeout(()=>{ try{ overview(); }catch(e){} },800);
+})();
+
+/* ---- Lumora 6, part 2: automations as flows, with a check button, run history and a live plain-words preview ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const openH=new Set(), openC=new Set();
+  const trigIc=t=>({time:'clock',sun:'sun',motion:'camera',nomotion:'camera',lefton:'bulb',lightoff:'bulboff',manual:'power',home:'user',away:'away',sensor:'sensor',lockev:'lock',temp:'thermo',lowbat:'battery',outage:'boltoff',restored:'bolt'})[t]||'bolt';
+  const actIc=k=>({light:'bulb',bri:'bulb',color:'bulb',scene:'evening',room:'home',fadeup:'sun',fadedown:'movie',notify:'bell',wait:'clock',plug:'plug',therm:'thermo',lock:'lock'})[k]||'bolt';
+  const chip=(ic,text,cls)=>{ const c=el('span','fchip'+(cls?' '+cls:'')); c.innerHTML=ICO(ic); c.append(el('span','',text)); return c; };
+  const arrow=()=>{ const a=el('span','farrow'); a.setAttribute('aria-hidden','true'); a.innerHTML=ICO('chev'); return a; };
+  function explain(r){
+    const out=[];
+    if(!r.on) out.push(['bad','This automation is switched off.']);
+    if(settings.pauseAll) out.push(['bad','All automations are paused in the Automations page.']);
+    if(typeof power!=='undefined'&&power.outage&&settings.powerPause&&r.t.type!=='outage'&&r.t.type!=='restored') out.push(['bad','Paused because the power is out.']);
+    r.c.forEach(c=>{ let ok=false; try{ ok=condOK(c); }catch(e){} out.push([ok?'ok':'bad',(ok?'True now: ':'Not true now: ')+condText(c)]); });
+    const blocked=out.some(o=>o[0]==='bad');
+    out.push([blocked?'warn':'ok',blocked?'It would not run right now. When the trigger happens (when '+trigText(r.t)+'), it would be skipped.':'It would run when '+trigText(r.t)+'.']);
+    out.push(['info','Then it would '+r.acts.map(actText).join(', then ')+'.']);
+    return out;
+  }
+  function history(r){
+    const t=ruleTitle(r); const a=(typeof activity!=='undefined'?activity:[]).filter(x=>x.m&&x.m.includes(t)).slice(0,6);
+    return a;
+  }
+  function enhance(){
+    const root=document.getElementById('rules'); if(!root||typeof rules==='undefined') return;
+    const cards=[...root.querySelectorAll('.rule')];
+    cards.forEach((card,i)=>{
+      const r=rules[i]; if(!r||card.dataset.flow) return; card.dataset.flow='1';
+      const txt=card.querySelector('.txt'); if(!txt) return;
+      [...txt.querySelectorAll('.sub')].forEach(s=>{ if(/^Then /.test(s.textContent)) s.classList.add('thenline'); });
+      const flow=el('div','rflow'); flow.setAttribute('aria-hidden','true');
+      flow.append(chip(trigIc(r.t.type),cap(trigText(r.t)),'ft'));
+      r.c.forEach(c=>{ flow.append(arrow(),chip('shield','Only if '+condText(c),'fc')); });
+      r.acts.forEach(a=>{ flow.append(arrow(),chip(actIc(a.k),cap(actText(a)),'fa')); });
+      txt.append(flow);
+      const tools=el('div','rtools');
+      const bc=el('button','chip','Check now'); bc.type='button'; bc.setAttribute('aria-expanded',String(openC.has(r.id))); bc.title='See what would happen right now, without running it';
+      const bh=el('button','chip','History'); bh.type='button'; bh.setAttribute('aria-expanded',String(openH.has(r.id)));
+      tools.append(bc,bh); txt.append(tools);
+      const pc=el('div','rcheck'); pc.hidden=!openC.has(r.id); const ph=el('div','rhist'); ph.hidden=!openH.has(r.id);
+      const fillC=()=>{ pc.replaceChildren(...explain(r).map(([k,m])=>el('div','rl '+k,m))); };
+      const fillH=()=>{ const h=history(r); ph.replaceChildren(...(h.length?h.map(x=>el('div','rl info',new Date(x.t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' · '+x.m)):[el('div','rl info','Nothing recorded yet. Runs and skips show here.')])); };
+      fillC(); fillH();
+      bc.onclick=()=>{ if(openC.has(r.id)) openC.delete(r.id); else { openC.add(r.id); fillC(); } pc.hidden=!openC.has(r.id); bc.setAttribute('aria-expanded',String(openC.has(r.id))); };
+      bh.onclick=()=>{ if(openH.has(r.id)) openH.delete(r.id); else { openH.add(r.id); fillH(); } ph.hidden=!openH.has(r.id); bh.setAttribute('aria-expanded',String(openH.has(r.id))); };
+      txt.append(pc,ph);
+    });
+    /* summary line */
+    let sum=document.getElementById('rsum'); if(!sum){ sum=el('p','rsum'); sum.id='rsum'; root.parentNode.insertBefore(sum,root); }
+    const day0=new Date(); day0.setHours(0,0,0,0); const ranToday=(typeof activity!=='undefined'?activity:[]).filter(a=>a.t>=day0&&/^Automation ran:/.test(a.m)).length;
+    sum.textContent=rules.length?(rules.length+(rules.length===1?' automation':' automations')+' · '+rules.filter(r=>r.on).length+' on · '+ranToday+(ranToday===1?' run':' runs')+' today'):'';
+  }
+  const cap=s=>String(s).charAt(0).toUpperCase()+String(s).slice(1);
+  const _rr=renderRules; renderRules=function(){ _rr.apply(this,arguments); try{ enhance(); }catch(e){} };
+  try{ enhance(); }catch(e){}
+  /* plain-words preview under the builder */
+  function prev(){
+    const save=document.getElementById('bSave'); if(!save||typeof B==='undefined') return;
+    let p=document.getElementById('bPrev'); if(!p){ p=el('p','bprev'); p.id='bPrev'; p.setAttribute('aria-live','polite'); const host=save.closest('.btns'); if(host) host.parentNode.insertBefore(p,host); }
+    const safe=(f,d)=>{ try{ const v=f(); return v==null||/undefined|NaN/.test(String(v))?d:v; }catch(e){ return d; } };
+    const tr=safe(()=>trigText(B.t),'the trigger happens'), cs=B.c.map(c=>safe(()=>condText(c),'a condition is true')), as=B.acts.map(a=>safe(()=>actText(a),'do a step'));
+    const t='In plain words: when '+tr+(cs.length?', only if '+cs.join(' and '):'')+', '+(as.length?as.join(', then '):'(add at least one step below)')+'.';
+    if(p.textContent!==t) p.textContent=t;
+  }
+  setInterval(()=>{ if(!document.hidden) prev(); },500);
+})();
+
+/* ---- Lumora 6, part 3: security (alarm modes, timeline, snapshots) ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const DK='hub-secdemo', CK='hub-security', SK='hub-snaps';
+  const cfgLoad=()=>{ let v={}; try{ v=JSON.parse(localStorage.getItem(CK)||'{}')||{}; }catch(e){} return Object.assign({delay:20,flash:true},v); };
+  let CFG=cfgLoad(); const cfgSave=()=>{ try{ store.set(CK,CFG); }catch(e){ try{ localStorage.setItem(CK,JSON.stringify(CFG)); }catch(x){} } };
+  /* demo mode keeps its own alarm in this page; the add-on keeps the real one on the server */
+  let D={mode:'off',alarm:{state:'idle'},events:[],armedAt:0}; try{ const v=JSON.parse(localStorage.getItem(DK)||'null'); if(v&&v.mode){ D=v; if(D.alarm&&D.alarm.state==='pending') D.alarm={state:'idle'}; } }catch(e){}
+  const dSave=()=>{ try{ localStorage.setItem(DK,JSON.stringify(D)); }catch(e){} };
+  let S={mode:'off',alarm:{state:'idle'},events:[],armedAt:0,cfg:CFG}; let dTimer=null, prevLights=null;
+  const isRemote=()=>typeof REMOTE!=='undefined'&&REMOTE;
+  const dEvent=(k,m)=>{ D.events.unshift({t:Date.now(),k,m}); if(D.events.length>100) D.events.length=100; dSave(); };
+  async function dFlashOn(){ if(!CFG.flash) return; try{ prevLights=state.filter(d=>d.online!==false).map(d=>({id:d.id,on:d.on,bri:d.bri,color:d.color})); for(const l of prevLights) await adapter.set(l.id,{on:true,bri:100,color:'#ff1f1f'}); state=await adapter.list(); render(); }catch(e){} }
+  async function dFlashOff(){ const p=prevLights; prevLights=null; if(!p) return; try{ for(const l of p) await adapter.set(l.id,l.on?{on:true,bri:l.bri,color:l.color}:{on:false}); state=await adapter.list(); render(); }catch(e){} }
+  function dSound(reason){ if(D.alarm.state==='sounding') return; D.alarm={state:'sounding',since:Date.now(),reason}; dEvent('alarm','ALARM: '+reason); dSave(); dFlashOn(); try{ toast('Alarm: '+reason); }catch(e){} }
+  function dTrigger(reason,entry){
+    if(D.mode==='off'||D.alarm.state!=='idle') return; if(D.armedAt&&Date.now()-D.armedAt<CFG.delay*1000) return;
+    if(entry&&CFG.delay>0){ D.alarm={state:'pending',since:Date.now(),until:Date.now()+CFG.delay*1000,reason}; dEvent('pending',reason+'. Alarm in '+CFG.delay+' seconds unless you disarm'); dSave(); clearTimeout(dTimer); dTimer=setTimeout(()=>{ if(D.alarm.state==='pending'){ D.alarm={state:'idle'}; dSound(reason); draw(); } },CFG.delay*1000); }
+    else dSound(reason);
+  }
+  async function pull(){ if(!isRemote()) return; const r=await srvApi('GET','/api/security'); if(r.ok&&r.json){ S=r.json; draw(); } }
+  const view=()=>isRemote()?S:{mode:D.mode,alarm:D.alarm,events:D.events.slice(0,80),armedAt:D.armedAt,cfg:CFG};
+  async function setMode(m){
+    if(isRemote()){ const r=await srvApi('POST','/api/security/mode',{mode:m}); if(r.ok) S=r.json; }
+    else { clearTimeout(dTimer); const was=D.alarm.state; D.mode=m; D.armedAt=m==='off'?0:Date.now(); D.alarm={state:'idle'}; dEvent('mode',m==='off'?'Disarmed':'Armed: '+(m==='home'?'Home':'Away')); dSave(); if(was==='sounding'||prevLights) dFlashOff(); }
+    draw();
+  }
+  async function ack(){
+    if(isRemote()){ const r=await srvApi('POST','/api/security/ack',{}); if(r.ok) S=r.json; }
+    else { clearTimeout(dTimer); const was=D.alarm.state; D.alarm={state:'idle'}; if(was!=='idle') dEvent('mode','Alarm silenced'); dSave(); dFlashOff(); }
+    draw();
+  }
+  /* camera motion from this page goes to the alarm */
+  window.__secMotion=cam=>{
+    if(isRemote()) srvApi('POST','/api/security/event',{cam}).then(r=>{ if(r.ok){ S=r.json; draw(); } });
+    else { dEvent('motion','Motion at '+cam); if(D.mode!=='off') dTrigger('Motion at '+cam,false); draw(); }
+  };
+  if(typeof motionAt==='function'){ const _m=motionAt; motionAt=function(cam){ try{ window.__secMotion(cam); }catch(e){} return _m.apply(this,arguments); }; }
+  /* demo-only: simulate a door sensor so the alarm can be tried */
+  window.__secDemoDoor=()=>{ dEvent('sensor','Front door: opened'); if(D.mode!=='off') dTrigger('Front door triggered (door)',true); draw(); };
+  const when=t=>new Date(t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  const kind={motion:'camera',sensor:'sensor',lock:'lock',alarm:'alert',pending:'alert',mode:'shield'};
+  function card(){
+    let c=document.getElementById('secCard'); if(c) return c;
+    const anchor=document.getElementById('ovStrip')||document.querySelector('section[data-tab="Devices"] .hero'); if(!anchor) return null;
+    c=el('section','seccard'); c.id='secCard'; c.setAttribute('aria-label','Security');
+    c.innerHTML='<div class="sechead"><span class="secic"></span><div><h3>Security</h3><p class="sub" id="secStat"></p></div></div>'+
+      '<div class="secmodes" role="radiogroup" aria-label="Alarm mode"></div><div id="secAlarm" aria-live="assertive"></div>'+
+      '<details class="secd" id="secTl"><summary>Timeline</summary><div id="secEv" class="secev"></div></details>'+
+      '<details class="secd" id="secSn"><summary>Snapshots</summary><p class="sub" id="secSnNote"></p><div class="secsnaps" id="secSnaps"></div></details>'+
+      '<details class="secd" id="secSet"><summary>Alarm settings</summary><div class="srow"><label for="secDelay">Entry and exit delay</label><select id="secDelay"></select></div><div class="srow"><span>Flash the lights red when the alarm sounds</span><button class="sw" role="switch" id="secFlash" aria-label="Flash the lights red when the alarm sounds"><i></i></button></div><p class="sub">Home watches doors, windows and cameras. Away watches everything, including motion sensors and unlocked locks. Phone alerts use your Phone alerts settings. Camera motion is only seen while a Lumora page is open.</p><div id="secDemo"></div></details>';
+    c.querySelector('.secic').innerHTML=ICO('shield'); anchor.insertAdjacentElement('afterend',c);
+    const modes=c.querySelector('.secmodes'); [['off','Off'],['home','Home'],['away','Away']].forEach(([m,l])=>{ const b=el('button','secmode',l); b.type='button'; b.dataset.m=m; b.setAttribute('role','radio'); b.onclick=()=>setMode(m); modes.appendChild(b); });
+    const sel=c.querySelector('#secDelay'); [0,10,20,30,60].forEach(v=>{ const o=el('option','',v?v+' seconds':'None'); o.value=v; sel.appendChild(o); }); sel.value=String(CFG.delay); sel.onchange=()=>{ CFG.delay=Number(sel.value); cfgSave(); };
+    const fl=c.querySelector('#secFlash'); const pf=()=>{ fl.classList.toggle('on',!!CFG.flash); fl.setAttribute('aria-checked',String(!!CFG.flash)); }; pf(); fl.onclick=()=>{ CFG.flash=!CFG.flash; cfgSave(); pf(); };
+    if(!isRemote()){ const b=el('button','btn sm','Try it: open the front door'); b.type='button'; b.id='secTry'; b.onclick=()=>window.__secDemoDoor(); c.querySelector('#secDemo').append(el('p','sub','Demo mode has no real sensors. Arm the alarm, then try it:'),b); }
+    return c;
+  }
+  function snaps(){ try{ return JSON.parse(localStorage.getItem(SK)||'[]')||[]; }catch(e){ return []; } }
+  function drawSnaps(){
+    const box=document.getElementById('secSnaps'), note=document.getElementById('secSnNote'); if(!box) return; const list=snaps(); box.replaceChildren();
+    note.textContent=list.length?'Saved on this device. The newest 12 are kept.':'No snapshots yet. A Save snapshot button appears on cameras that provide a picture (Aosu battery cameras do not).';
+    list.forEach((s,i)=>{ const f=el('figure','secsnap'); const im=el('img'); im.src=s.d; im.alt='Snapshot of '+s.cam+' at '+new Date(s.t).toLocaleString(); const cap=el('figcaption','',s.cam+' · '+new Date(s.t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})); const x=el('button','x','×'); x.type='button'; x.setAttribute('aria-label','Delete this snapshot'); x.onclick=()=>{ const l=snaps(); l.splice(i,1); try{ localStorage.setItem(SK,JSON.stringify(l)); }catch(e){} drawSnaps(); }; f.append(im,cap,x); box.appendChild(f); });
+  }
+  function addSnapButtons(){
+    document.querySelectorAll('#cams .cam').forEach(cm=>{
+      const img=cm.querySelector('img.livecam'); if(!img||cm.querySelector('.snapbtn')) return;
+      const b=el('button','btn sm snapbtn','Save snapshot'); b.type='button';
+      b.onclick=()=>{ try{ const c=document.createElement('canvas'); c.width=Math.min(640,img.naturalWidth||640); c.height=Math.round(c.width*((img.naturalHeight||360)/(img.naturalWidth||640))); c.getContext('2d').drawImage(img,0,0,c.width,c.height); const d=c.toDataURL('image/jpeg',.7); const l=snaps(); l.unshift({t:Date.now(),cam:img.dataset.cam||'Camera',d}); l.length=Math.min(l.length,12); localStorage.setItem(SK,JSON.stringify(l)); b.textContent='Saved'; setTimeout(()=>b.textContent='Save snapshot',1500); drawSnaps(); }catch(e){ b.textContent='Could not save'; setTimeout(()=>b.textContent='Save snapshot',1800); } };
+      (cm.querySelector('.mrow')||cm).insertAdjacentElement('beforebegin',b);
+    });
+  }
+  if(typeof renderCams==='function'){ const _rc=renderCams; renderCams=function(){ _rc.apply(this,arguments); try{ addSnapButtons(); }catch(e){} }; }
+  function draw(){
+    const c=card(); if(!c) return; const v=view(); const a=v.alarm||{state:'idle'};
+    c.dataset.state=a.state; c.dataset.mode=v.mode;
+    c.querySelectorAll('.secmode').forEach(b=>{ const on=b.dataset.m===v.mode; b.classList.toggle('on',on); b.setAttribute('aria-checked',String(on)); });
+    const st=c.querySelector('#secStat');
+    st.textContent=a.state==='sounding'?'Alarm: '+(a.reason||''):a.state==='pending'?'Someone opened something. Disarm now to stop the alarm.':v.mode==='off'?'Disarmed':'Armed: '+(v.mode==='home'?'Home':'Away')+(v.armedAt?' since '+when(v.armedAt):'');
+    const box=c.querySelector('#secAlarm'); box.replaceChildren();
+    if(a.state==='pending'){ const left=Math.max(0,Math.ceil((a.until-Date.now())/1000)); const p=el('div','secbanner pend'); p.append(el('b','','Alarm in '+left+' s'),el('span','',a.reason||'')); const b=el('button','btn primary','Disarm'); b.type='button'; b.onclick=()=>setMode('off'); p.appendChild(b); box.appendChild(p); }
+    if(a.state==='sounding'){ const p=el('div','secbanner snd'); p.append(el('b','','ALARM'),el('span','',a.reason||'')); const b1=el('button','btn','Silence'); b1.type='button'; b1.onclick=ack; const b2=el('button','btn primary','Disarm'); b2.type='button'; b2.onclick=()=>setMode('off'); p.append(b1,b2); box.appendChild(p); }
+    const ev=c.querySelector('#secEv'); const list=(v.events||[]).slice(0,12); ev.replaceChildren(...(list.length?list.map(e=>{ const r=el('div','secrow '+e.k); const i=el('span','secri'); i.innerHTML=ICO(kind[e.k]||'bolt'); r.append(i,el('span','sect',e.m),el('span','secw',new Date(e.t).toLocaleDateString()===new Date().toLocaleDateString()?when(e.t):new Date(e.t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))); return r; }):[el('p','sub','Nothing yet. Camera motion, doors, locks and alarms are listed here.')]));
+    drawSnaps();
+  }
+  const boot=()=>{ card(); draw(); pull(); setInterval(()=>{ if(document.hidden) return; if(isRemote()) pull(); else draw(); },1000); if(typeof EventSource!=='undefined'&&isRemote()){ try{ const es=new EventSource('/api/events'); es.addEventListener('security',()=>pull()); }catch(e){} } };
+  if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,900)); else setTimeout(boot,900);
+  new MutationObserver(()=>{ if(document.body.dataset.auth==='in'){ card(); pull(); } }).observe(document.body,{attributes:true,attributeFilter:['data-auth']});
+})();
+
+/* ---- Lumora 6, part 4: offline notice ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  let bar=null;
+  const upd=()=>{
+    if(navigator.onLine){ if(bar){ bar.remove(); bar=null; } return; }
+    if(bar) return; bar=document.createElement('div'); bar.id='offBar'; bar.setAttribute('role','status');
+    bar.textContent='You are offline. Lumora shows what it last knew and will reconnect on its own.'; document.body.appendChild(bar);
+  };
+  addEventListener('online',upd); addEventListener('offline',upd); setTimeout(upd,1200);
+})();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openColor&&!document.querySelector('dialog[open]')){ openColor=null; render(); } });
 document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e.target.closest('.lt'))){ openColor=null; render(); } },true);
 (function(){
@@ -4453,6 +4733,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '6.0.0':{t:'Welcome to Lumora 6',items:["Lumora 6 is the biggest overhaul so far, built in four parts.", "Home screen: rooms are cards. Tap one to switch every light in it, see how many are on and how bright, and use Show lights to look at just that room. A strip under the clock shows lights on, power in use, cameras and home or away.", "Automations: every automation shows as a flow of trigger, conditions and steps. Check now tells you whether it would run right now and why, History lists its recent runs and skips, and the builder shows what you are making in plain words.", "Security: a new card on the home screen with an alarm that has Off, Home and Away modes. Doors and windows get an entry delay with a countdown, motion counts when you are away, and when it sounds the server sends a phone alert and flashes the lights red until you silence it. A timeline lists camera motion, doors, locks and alarms, and cameras with a picture can save snapshots.", "Faster and sturdier: Lumora opens instantly from a saved copy and refreshes it in the background, shows a notice when you are offline, and the source is now kept in the add-on repository as separate files with a build script."]},
   '5.0.0':{t:'Welcome to Lumora 5',items:['A new look: 3D logo and icons, a redesigned Today panel, and a festive Christmas theme from December 1 to January 5 with its own lighting automations.','Automations now run on the server, so they work with every browser closed.','Light watch: delayed and repeat alerts, drop-out and router-problem detection, quiet hours and a health report for every light.','Command palette (Ctrl+K), an energy estimate with CSV export, a status-lamp side tab and a pop-out window that stays on top.','Google Home and Alexa through Home Assistant, a Windows desktop app, and an easier Android TV install.','The server address is at the bottom of Settings, and the version number is in Settings, About Lumora.']},
   '4.11.0':{t:'Lumora for Windows',items:['There is now a Windows desktop app: a system tray icon, Windows alerts for new warnings, an always-on-top pop-out, and automatic updates. Download it from Settings, Lumora for Windows.']},
   '4.10.0':{t:'Google Home, Alexa and server address',items:['New Google Home and Alexa settings: Lumora shares your scenes with Home Assistant so you can say them out loud, lists phrases to try for your own lights, and has step-by-step setup for both assistants.','The address of your server is now at the bottom of Settings, with a Copy button.']},

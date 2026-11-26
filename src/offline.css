@@ -1,0 +1,2 @@
+
+#offBar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9000;max-width:min(92vw,520px);padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--surface);font:600 .88rem var(--fb);box-shadow:0 10px 24px -8px rgb(0 0 0/.5)}

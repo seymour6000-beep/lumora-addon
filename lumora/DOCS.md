@@ -90,3 +90,10 @@ The server address is shown at the bottom of Settings.
 A desktop app for Windows. In Lumora, Settings, *Lumora for Windows* has the download button (or open `/desktop.exe` on your server). Run `Lumora-Setup.exe`; Windows may warn because the app is not signed (More info, Run anyway). `Lumora-Portable.exe` runs with no install.
 
 Open the app and choose *Find my server automatically*, or type your server address (shown at the bottom of Settings). Sign in once; it remembers you. It stays in the system tray, shows Windows notifications for new warnings (light offline, power cut, weather warnings), has an always-on-top pop-out window (`Ctrl+Shift+P`), can start with Windows, and updates itself. `Ctrl+Alt+L` shows or hides it from anywhere. Right-click the tray icon for its options. GitHub builds the app from the `desktop/` folder of this repository.
+
+## Lumora 6.0
+
+- **Home screen**: room cards that toggle a whole room and show its colour, plus a strip with lights on, power use, cameras and mode.
+- **Automations**: every rule shows trigger, conditions and actions as chips, a "Check now" dry run, a History button, and a plain-words preview while you build.
+- **Security**: choose Off, Home or Away on the Security card. Doors and windows start an entry countdown (default 20 seconds, 0 to 120 in settings). When the alarm sounds, the add-on sends a phone alert (using Phone alerts settings) and flashes the lights red until you silence it, then restores them. Away also watches motion sensors and unlocked locks. The timeline lists motion, doors, locks and alarms. Camera motion reaches the alarm only while a Lumora page is open. Cameras with a live picture get a Save snapshot button (Aosu battery cameras have none).
+- **Core**: the app opens instantly from a saved copy and refreshes in the background, shows an offline notice, and the front-end source lives in `src/`.

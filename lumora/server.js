@@ -44,7 +44,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-voice', 'hub-others', 'hub-autostat',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-voice', 'hub-security', 'hub-others', 'hub-autostat',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -486,6 +486,73 @@ function createApp(userConfig = {}) {
   if (voiceFirst) voiceFirst.unref();
 
   /* ---- automations that run on the server ---- */
+  /* ---- security: alarm modes (off, home, away), an entry delay, a timeline, and phone alerts ---- */
+  const secFile = path.join(cfg.dataDir, 'security.json');
+  const sec = store.read(secFile, { mode: 'off', alarm: { state: 'idle' }, events: [] });
+  sec.mode = ['off', 'home', 'away'].includes(sec.mode) ? sec.mode : 'off'; sec.alarm = sec.alarm || { state: 'idle' }; sec.events = Array.isArray(sec.events) ? sec.events : [];
+  if (sec.alarm.state === 'pending') sec.alarm = { state: 'idle' };
+  let secDirty = false, secTimer = null, secPrevLights = null;
+  const secCfg = () => { const c = readJson2('hub-security', {}) || {}; return { delay: Math.max(0, Math.min(120, c.delay == null ? 20 : Number(c.delay) || 0)), flash: c.flash !== false }; };
+  const secSave = () => { secDirty = true; };
+  const secFlush = setInterval(() => { if (!secDirty) return; secDirty = false; try { store.write(secFile, sec); } catch (e) { /* ignore */ } }, 5000); secFlush.unref();
+  const ENTRY_CLASSES = new Set(['door', 'window', 'opening', 'garage_door', 'lock']);
+  function secEvent(k, m) { sec.events.unshift({ t: Date.now(), k, m: String(m).slice(0, 160) }); if (sec.events.length > 200) sec.events.length = 200; secSave(); broadcast('security', { t: Date.now() }); }
+  async function secPhone(title, msg) {
+    try {
+      const n = readJson2('hub-notify', {}) || {}; const phoneOk = ha && ha.isNotifyId(n.smsService) && /^\+[1-9][0-9]{7,14}$/.test(String(n.phone || ''));
+      if (!ha) return;
+      if (ha.isNotifyId(n.service)) await ha.notify(n.service, title, msg);
+      if (phoneOk) await ha.notify(n.smsService, title, msg, n.phone);
+    } catch (e) { log('security alert failed', e.message); }
+  }
+  async function secFlashOn() {
+    if (!ha || !secCfg().flash) return;
+    try {
+      const mine = new Set(readJson2('hub-lights', []).map((d) => d && d.id)); const gone = new Set(readJson2('hub-removed', []));
+      const ls = (await ha.allLights()).filter((l) => !gone.has(l.id) && (mine.size === 0 || mine.has(l.id)) && l.online);
+      secPrevLights = ls.map((l) => ({ id: l.id, on: l.on, bri: l.bri, color: l.color }));
+      for (const l of ls) await ha.setLight(l.id, { on: true, bri: 100, color: '#ff1f1f' });
+    } catch (e) { /* lights unreachable */ }
+  }
+  async function secFlashOff() {
+    const prev = secPrevLights; secPrevLights = null; if (!ha || !prev) return;
+    for (const l of prev) { try { await ha.setLight(l.id, l.on ? { on: true, bri: l.bri, color: l.color } : { on: false }); } catch (e) { /* ignore */ } }
+  }
+  function secSound(reason) {
+    if (sec.alarm.state === 'sounding') return;
+    sec.alarm = { state: 'sounding', since: Date.now(), reason }; secSave(); secEvent('alarm', 'ALARM: ' + reason);
+    secPhone('Alarm', reason + '. Open Lumora to see what is happening.'); secFlashOn();
+  }
+  function secTrigger(reason, entry) {
+    if (sec.mode === 'off' || sec.alarm.state !== 'idle') return;
+    const cfgS = secCfg();
+    if (sec.armedAt && Date.now() - sec.armedAt < cfgS.delay * 1000) return;      // still leaving
+    if (entry && cfgS.delay > 0) {
+      sec.alarm = { state: 'pending', since: Date.now(), until: Date.now() + cfgS.delay * 1000, reason }; secSave(); secEvent('pending', reason + '. Alarm in ' + cfgS.delay + ' seconds unless you disarm');
+      clearTimeout(secTimer); secTimer = setTimeout(() => { if (sec.alarm.state === 'pending') { sec.alarm = { state: 'idle' }; secSound(reason); } }, cfgS.delay * 1000); if (secTimer.unref) secTimer.unref();
+    } else secSound(reason);
+  }
+  function secOther(s, a) {
+    const name = s.name || s.id;
+    if (s.kind === 'sensor' && a.active !== s.active && s.active) {
+      const entry = ENTRY_CLASSES.has(s.cls); const what = (s.label || 'Sensor').toLowerCase();
+      secEvent('sensor', name + ': ' + (entry ? 'opened' : 'activity'));
+      if (sec.mode === 'away' || (sec.mode === 'home' && entry)) secTrigger(name + ' triggered (' + what + ')', entry);
+    } else if (s.kind === 'lock' && a.locked !== s.locked) {
+      secEvent('lock', name + (s.locked ? ' locked' : ' unlocked'));
+      if (!s.locked && sec.mode !== 'off') secTrigger(name + ' was unlocked', true);
+    }
+  }
+  function secSetMode(mode) {
+    clearTimeout(secTimer); const was = sec.alarm.state;
+    sec.mode = mode; sec.armedAt = mode === 'off' ? 0 : Date.now(); sec.alarm = { state: 'idle' }; secSave();
+    secEvent('mode', mode === 'off' ? 'Disarmed' : 'Armed: ' + (mode === 'home' ? 'Home' : 'Away'));
+    if (was === 'sounding' || secPrevLights) secFlashOff();
+  }
+  function secAck() { clearTimeout(secTimer); const was = sec.alarm.state; sec.alarm = { state: 'idle' }; secSave(); if (was !== 'idle') secEvent('mode', 'Alarm silenced'); secFlashOff(); }
+  function saveSecurityNow() { try { store.write(secFile, sec); } catch (e) { /* ignore */ } }
+  function secView() { return { mode: sec.mode, alarm: sec.alarm, armedAt: sec.armedAt || 0, events: sec.events.slice(0, 80), cfg: secCfg(), now: Date.now() }; }
+
   let autoLog = store.read(path.join(cfg.dataDir, 'autolog.json'), []); if (!Array.isArray(autoLog)) autoLog = [];
   let autoLogDirty = false;
   const pushMsg = async (title, msg) => {
@@ -497,6 +564,7 @@ function createApp(userConfig = {}) {
     ha, readJson: readJson2, tz: cfg.timeZone, notify: pushMsg,
     activity: (m) => { autoLog.unshift({ t: Date.now(), m: String(m).slice(0, 200) }); autoLog.length = Math.min(autoLog.length, 100); autoLogDirty = true; broadcast('auto', { t: Date.now() }); },
     onStat: (st) => { store.db.data['hub-autostat'] = JSON.stringify(st); store.saveDb(); },
+    onOtherEvent: (s, a) => secOther(s, a),
   }) : null;
   if (auto) auto.setStats(readJson2('hub-autostat', {}));
   const autoFlush = setInterval(() => { if (!autoLogDirty) return; autoLogDirty = false; try { store.write(path.join(cfg.dataDir, 'autolog.json'), autoLog); } catch (e) { /* ignore */ } }, 30000); autoFlush.unref();
@@ -758,6 +826,25 @@ function createApp(userConfig = {}) {
       if (String(req.headers['x-requested-with'] || '').toLowerCase() !== 'lumora' || !sameOrigin(req)) return fail(req, res, 403, 'forbidden', 'Request blocked.');
     }
 
+    if (p === '/api/security' && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      return json(req, res, 200, secView());
+    }
+    if (p.startsWith('/api/security/') && method === 'POST') {
+      const sess = currentSession(req);
+      if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      if (roleOf(sess.user) === 'guest') return fail(req, res, 403, 'forbidden', 'Your account can’t do that.');
+      const wait = bump(hits, 'sec|' + sess.user.id, 120, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      const b = await readJson(req).catch(() => ({}));
+      if (p === '/api/security/mode') { if (!['off', 'home', 'away'].includes(b.mode)) return fail(req, res, 400, 'bad_request', 'Choose off, home or away.'); secSetMode(b.mode); return json(req, res, 200, secView()); }
+      if (p === '/api/security/ack') { secAck(); return json(req, res, 200, secView()); }
+      if (p === '/api/security/event') {
+        const cam = String(b.cam || '').replace(/[<>&"']/g, '').slice(0, 40); if (!cam) return fail(req, res, 400, 'bad_request', 'Say which camera.');
+        secEvent('motion', 'Motion at ' + cam); if (sec.mode !== 'off') secTrigger('Motion at ' + cam, false);
+        return json(req, res, 200, secView());
+      }
+    }
     if (p === '/api/voice/status' && method === 'GET') {
       const sess = currentSession(req);
       if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
@@ -1225,7 +1312,7 @@ function createApp(userConfig = {}) {
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
     parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live, recordHistory, historyView, saveHistory, auto,
-    close() { saveHistory(); if (auto) auto.close(); clearInterval(autoFlush); clearInterval(histTimer); if (voiceTimer) clearInterval(voiceTimer); if (voiceFirst) clearTimeout(voiceFirst); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
+    close() { saveHistory(); if (auto) auto.close(); clearInterval(autoFlush); clearInterval(histTimer); clearInterval(secFlush); clearTimeout(secTimer); saveSecurityNow(); if (voiceTimer) clearInterval(voiceTimer); if (voiceFirst) clearTimeout(voiceFirst); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 

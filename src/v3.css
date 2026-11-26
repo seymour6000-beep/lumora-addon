@@ -1,0 +1,77 @@
+
+/* ===== Lumora 3: Lumen and Daybreak, the light field, and a motion system ===== */
+@property --f1{syntax:'<color>';inherits:true;initial-value:#2b8f86}
+@property --f2{syntax:'<color>';inherits:true;initial-value:#6a5bd6}
+@property --f3{syntax:'<color>';inherits:true;initial-value:#d99a1f}
+@property --f4{syntax:'<color>';inherits:true;initial-value:#1f6f8f}
+:root[data-design="lumen"]{--ok:#5fe3b0;--warn:#ffc233;--bad:#ff8a80;--info:#8ab8ff;color-scheme:dark;--bg:#070e15;--surface:#0f1c26;--ink:#eef4f6;--muted:#adc1ca;--line:#22394a;--accent:#ffc233;--onaccent:#2a1c00;--off:#17293a;--knob:#eef4f6}
+:root[data-design="daybreak"]{--ok:#1d6e40;--warn:#8a5a00;--bad:#b3261e;--info:#1d62b8;color-scheme:light;--bg:#edf2f1;--surface:#ffffff;--ink:#0f2429;--muted:#4f666d;--line:#cbd8d9;--accent:#0f5b54;--onaccent:#fff;--off:#dbe6e6;--knob:#fff}
+#field{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;background:var(--bg);display:none;--fo:.4;transition:--f1 1.6s ease,--f2 1.6s ease,--f3 1.6s ease,--f4 1.6s ease,--fo 1.2s ease}
+:root:is([data-design="lumen"],[data-design="daybreak"]) #field{display:block}
+:root:is([data-design="lumen"],[data-design="daybreak"])[data-bgmode="soft"] #bgfx{display:none!important}
+#field::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 74%,transparent),color-mix(in srgb,var(--bg) 46%,transparent) 50%,color-mix(in srgb,var(--bg) 40%,transparent))}
+#field i{position:absolute;width:64vmax;height:64vmax;border-radius:50%;opacity:var(--fo);will-change:transform}
+#field .b1{background:radial-gradient(circle,var(--f1),transparent 66%);left:-18vmax;top:-22vmax}
+#field .b2{background:radial-gradient(circle,var(--f2),transparent 66%);right:-24vmax;top:-10vmax}
+#field .b3{background:radial-gradient(circle,var(--f3),transparent 66%);left:8vmax;bottom:-34vmax}
+#field .b4{background:radial-gradient(circle,var(--f4),transparent 66%);right:-10vmax;bottom:-28vmax}
+:root[data-design="daybreak"] #field i{opacity:calc(var(--fo)*.55)}
+@keyframes drift1{to{transform:translate(14vmax,10vmax) scale(1.12)}}
+@keyframes drift2{to{transform:translate(-12vmax,14vmax) scale(.92)}}
+@keyframes drift3{to{transform:translate(12vmax,-12vmax) scale(1.1)}}
+@keyframes drift4{to{transform:translate(-14vmax,-8vmax) scale(1.06)}}
+html[data-fx="full"] #field .b1{animation:drift1 38s ease-in-out infinite alternate}
+html[data-fx="full"] #field .b2{animation:drift2 46s ease-in-out infinite alternate}
+html[data-fx="full"] #field .b3{animation:drift3 52s ease-in-out infinite alternate}
+html[data-fx="full"] #field .b4{animation:drift4 43s ease-in-out infinite alternate}
+
+/* glass */
+:root:is([data-design="lumen"],[data-design="daybreak"]) :is(.panel,.cam,.today,.nitem,.chip,.btn,.toast){backdrop-filter:blur(16px) saturate(135%);-webkit-backdrop-filter:blur(16px) saturate(135%)}
+:root:is([data-design="lumen"],[data-design="daybreak"]) :is(.panel,.cam,.today){background:color-mix(in srgb,var(--surface) 66%,transparent);border-color:color-mix(in srgb,var(--ink) 11%,transparent)}
+:root:is([data-design="lumen"],[data-design="daybreak"]) .dock{background:color-mix(in srgb,var(--surface) 72%,transparent);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-color:color-mix(in srgb,var(--ink) 10%,transparent)}
+:root:is([data-design="lumen"],[data-design="daybreak"]) .lt{backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);background:color-mix(in srgb,var(--surface) 62%,transparent);border-color:color-mix(in srgb,var(--ink) 11%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--ink) 10%,transparent),0 14px 34px -20px #000a}
+:root:is([data-design="lumen"],[data-design="daybreak"]) .lt.on{background:color-mix(in srgb,var(--c) calc(12% + var(--bn,50)*.2%),color-mix(in srgb,var(--surface) 66%,transparent));border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 22%,transparent),0 20px 54px -18px color-mix(in srgb,var(--c) calc(40% + var(--bn,50)*.4%),transparent)}
+:root:is([data-design="lumen"],[data-design="daybreak"]) .lt .bulb{transition:transform .5s cubic-bezier(.2,.9,.3,1.25),box-shadow .5s}
+:root:is([data-design="lumen"],[data-design="daybreak"]) .lt.on .bulb::before{box-shadow:0 0 calc(18px + var(--bn,50)*.5px) 2px color-mix(in srgb,var(--c) 70%,transparent)}
+:root:is([data-design="lumen"],[data-design="daybreak"]) .lt input[type=range]{accent-color:var(--c,var(--accent))}
+:root[data-design="daybreak"] .lt.on .bulb{color:#1a1a1a}
+
+/* motion system (only in Full) */
+@keyframes rise{from{opacity:0;transform:translateY(16px) scale(.975)}to{opacity:1;transform:none}}
+html[data-fx="full"] .enter :is(.lt,.panel,.cam,.stat,.nitem){animation:rise .55s cubic-bezier(.2,.85,.25,1) both;animation-delay:calc(var(--i,0)*38ms)}
+html[data-fx="full"] .lt{transition:transform .45s cubic-bezier(.2,.9,.3,1.2),box-shadow .45s,background .45s,border-color .45s,opacity .3s}
+html[data-fx="full"] .lt:hover{transform:translateY(-4px)}
+html[data-fx="full"] :is(.btn,.chip,.tab,.bulb,.dbtn){transition:transform .35s cubic-bezier(.3,1.7,.5,1),background .25s,box-shadow .25s,color .25s}
+html[data-fx="full"] :is(.btn,.chip,.tab,.bulb,.dbtn):active{transform:scale(.93)}
+html[data-fx="full"] .tab[aria-current=true]{animation:pulseTab 3.6s ease-in-out infinite}
+@keyframes pulseTab{50%{box-shadow:0 8px 26px color-mix(in srgb,var(--accent) 62%,transparent),inset 0 1px 0 #fff5}}
+.stat b.flip{display:inline-block;animation:flip .5s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes flip{from{transform:translateY(-45%);opacity:0}to{transform:none;opacity:1}}
+html:not([data-fx="off"]) .nitem{animation:slidein .45s cubic-bezier(.2,.9,.3,1.1) both}
+@keyframes slidein{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+.bloom,.burst{position:fixed;pointer-events:none;z-index:-1}
+.bloom{left:var(--x);top:var(--y);width:24px;height:24px;margin:-12px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 70%);animation:bloom 1s cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes bloom{from{transform:scale(1);opacity:.75}to{transform:scale(80);opacity:0}}
+.burst{inset:0;background:radial-gradient(circle at var(--x) var(--y),var(--c),transparent 58%);opacity:0;animation:burst .9s ease-out forwards}
+@keyframes burst{30%{opacity:.5}to{opacity:0}}
+html[data-fx="off"] :is(.bloom,.burst){display:none}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.32s;animation-timing-function:cubic-bezier(.3,.8,.3,1)}
+::view-transition-old(root){animation-name:vt-out}::view-transition-new(root){animation-name:vt-in}
+@keyframes vt-out{to{opacity:0;transform:translateY(-8px) scale(.995)}}@keyframes vt-in{from{opacity:0;transform:translateY(12px) scale(.995)}}
+:root[data-motion="reduced"] #field i,:root[data-motion="reduced"] .bloom,:root[data-motion="reduced"] .burst{animation:none!important}
+
+/* robustness */
+#netbar{position:fixed;left:50%;top:12px;transform:translate(-50%,-140%);z-index:300;display:flex;gap:10px;align-items:center;padding:10px 18px;border-radius:999px;background:var(--surface);color:var(--ink);border:1px solid var(--bad);box-shadow:0 12px 36px #0006;font-weight:600;font-size:.9rem;transition:transform .45s cubic-bezier(.2,.9,.3,1.2);max-width:calc(100vw - 24px)}
+#netbar.on{transform:translate(-50%,0)}
+#netbar i{width:14px;height:14px;border-radius:50%;border:2.5px solid var(--bad);border-top-color:transparent;animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+:root[data-motion="reduced"] #netbar i{animation:none}
+#rescue{position:fixed;inset:0;z-index:400;display:none;place-items:center;background:var(--bg);padding:20px}
+#rescue.on{display:grid}
+#rescue .rb{max-width:460px;width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:22px;padding:24px}
+#rescue h2{margin:0 0 8px}#rescue .srow{margin-top:12px;flex-wrap:wrap;gap:10px}
+.errlist{margin:8px 0 0;padding:0;list-style:none;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--muted);max-height:160px;overflow:auto}
+.errlist li{padding:4px 0;border-top:1px solid var(--line);word-break:break-word}
+.hrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:.9rem}
+.hrow:first-child{border-top:0}.hrow span:last-child{color:var(--muted);text-align:right}
+.hrow .good{color:var(--ok)}.hrow .badc{color:var(--bad)}

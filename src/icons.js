@@ -1,0 +1,51 @@
+/* ---- Lumora 4 icon set: 24px grid, rounded strokes, soft duotone fill ---- */
+const circ=(x,y,r)=>'M'+(x-r)+' '+y+'a'+r+' '+r+' 0 1 0 '+(2*r)+' 0a'+r+' '+r+' 0 1 0 '+(-2*r)+' 0z';
+const ICODEF={
+  home:{d:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z'],s:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H15v-5.2H9v5.2H5.2A1.2 1.2 0 0 1 4 19z']},
+  bolt:{d:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z'],s:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z']},
+  pulse:{d:[],s:['M3 12.5h4l2.4-6.5 4.2 12 2.4-5.5H21']},
+  clock:{d:[circ(12,12,8.5)],s:[circ(12,12,8.5),'M12 7.4V12l3.1 1.9']},
+  sky:{d:['M9.5 20.2a3.8 3.8 0 0 1-.4-7.6 5 5 0 0 1 9.6 1.3 3.2 3.2 0 0 1-.7 6.3z'],s:[circ(8.2,8.2,2.9),'M8.2 2.6v1.2M2.6 8.2h1.2M4.2 4.2l.9.9M12.2 4.2l-.9.9','M9.5 20.2a3.8 3.8 0 0 1-.4-7.6 5 5 0 0 1 9.6 1.3 3.2 3.2 0 0 1-.7 6.3z']},
+  wallet:{d:['M4 8.2A2.4 2.4 0 0 1 6.4 5.8H18v2.7H6.4A2.4 2.4 0 0 1 4 8.2V17a2 2 0 0 0 2 2h12.2a.8.8 0 0 0 .8-.8V9.8a.8.8 0 0 0-.8-.8H6.4'],s:['M4 8.2A2.4 2.4 0 0 1 6.4 5.8H17v2.4','M4 8.2V17a2 2 0 0 0 2 2h12.2a.8.8 0 0 0 .8-.8V9.8a.8.8 0 0 0-.8-.8H6.4A2.4 2.4 0 0 1 4 8.2z','M15.6 13.6h.01']},
+  apps:{d:['M5.2 4h4.6A1.2 1.2 0 0 1 11 5.2v4.6A1.2 1.2 0 0 1 9.8 11H5.2A1.2 1.2 0 0 1 4 9.8V5.2A1.2 1.2 0 0 1 5.2 4z','M14.2 4h4.6A1.2 1.2 0 0 1 20 5.2v4.6a1.2 1.2 0 0 1-1.2 1.2h-4.6A1.2 1.2 0 0 1 13 9.8V5.2A1.2 1.2 0 0 1 14.2 4z'],s:['M5.2 4h4.6A1.2 1.2 0 0 1 11 5.2v4.6A1.2 1.2 0 0 1 9.8 11H5.2A1.2 1.2 0 0 1 4 9.8V5.2A1.2 1.2 0 0 1 5.2 4z','M14.2 4h4.6A1.2 1.2 0 0 1 20 5.2v4.6a1.2 1.2 0 0 1-1.2 1.2h-4.6A1.2 1.2 0 0 1 13 9.8V5.2A1.2 1.2 0 0 1 14.2 4z','M5.2 13h4.6a1.2 1.2 0 0 1 1.2 1.2v4.6A1.2 1.2 0 0 1 9.8 20H5.2A1.2 1.2 0 0 1 4 18.8v-4.6A1.2 1.2 0 0 1 5.2 13z','M14.2 13h4.6a1.2 1.2 0 0 1 1.2 1.2v4.6a1.2 1.2 0 0 1-1.2 1.2h-4.6a1.2 1.2 0 0 1-1.2-1.2v-4.6a1.2 1.2 0 0 1 1.2-1.2z']},
+  sliders:{d:[circ(15,7,2.4),circ(9,17,2.4)],s:['M4 7h8.6M17.4 7H20M4 17h2.6M11.4 17H20',circ(15,7,2.4),circ(9,17,2.4)]},
+  bulb:{d:['M12 3.2a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v1.2h5.2V16c0-.8.4-1.5 1-2A6 6 0 0 0 12 3.2z'],s:['M12 3.2a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v1.2h5.2V16c0-.8.4-1.5 1-2A6 6 0 0 0 12 3.2z','M9.6 19.6h4.8M10.6 22h2.8']},
+  star:{d:['M12 3.6l2.6 5.3 5.8.9-4.2 4.1 1 5.8L12 16.9l-5.2 2.8 1-5.8-4.2-4.1 5.8-.9z'],s:['M12 3.6l2.6 5.3 5.8.9-4.2 4.1 1 5.8L12 16.9l-5.2 2.8 1-5.8-4.2-4.1 5.8-.9z']},
+  close:{d:[],s:['M6.5 6.5l11 11M17.5 6.5l-11 11']},
+  chev:{d:[],s:['m9 6 6 6-6 6']},
+  plus:{d:[],s:['M12 5v14M5 12h14']},
+  search:{d:[circ(11,11,6.2)],s:[circ(11,11,6.2),'m15.8 15.8 4.2 4.2']},
+  bell:{d:['M6 16.5v-5a6 6 0 0 1 12 0v5l1.6 2H4.4z'],s:['M6 16.5v-5a6 6 0 0 1 12 0v5l1.6 2H4.4z','M10 21a2.1 2.1 0 0 0 4 0']},
+  cal:{d:['M6 5.5h12a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2z'],s:['M6 5.5h12a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2z','M4 10h16M8.5 3.5v3.5M15.5 3.5v3.5']},
+  plug:{d:['M7 8.5h10v2.8a5 5 0 0 1-10 0z'],s:['M9 3v5.5M15 3v5.5M7 8.5h10v2.8a5 5 0 0 1-10 0z','M12 16.3V21']},
+  sensor:{d:[circ(12,12,3)],s:[circ(12,12,2.4),'M7.2 7.2a6.8 6.8 0 0 0 0 9.6M16.8 7.2a6.8 6.8 0 0 1 0 9.6','M4.4 4.4a10.8 10.8 0 0 0 0 15.2M19.6 4.4a10.8 10.8 0 0 1 0 15.2']},
+  lock:{d:['M6.5 11h11a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11z'],s:['M6.5 11h11a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 17.5 20h-11A1.5 1.5 0 0 1 5 18.5v-6A1.5 1.5 0 0 1 6.5 11z','M8 11V8a4 4 0 0 1 8 0v3','M12 15v1.8']},
+  thermo:{d:['M10 14.2V5.5a2 2 0 0 1 4 0v8.7a4 4 0 1 1-4 0z'],s:['M10 14.2V5.5a2 2 0 0 1 4 0v8.7a4 4 0 1 1-4 0z','M12 9v7']},
+  camera:{d:['M5.5 7h7a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 3 14.5v-5A2.5 2.5 0 0 1 5.5 7z'],s:['M5.5 7h7a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 3 14.5v-5A2.5 2.5 0 0 1 5.5 7z','m15 11 6-3.2v8.4L15 13']},
+  user:{d:[circ(12,8.5,3.6),'M4.5 20a7.5 7.5 0 0 1 15 0z'],s:[circ(12,8.5,3.6),'M4.8 20a7.2 7.2 0 0 1 14.4 0']},
+  shield:{d:['M12 3.2 19 6v5.6c0 4.2-2.8 7.4-7 9.2-4.2-1.8-7-5-7-9.2V6z'],s:['M12 3.2 19 6v5.6c0 4.2-2.8 7.4-7 9.2-4.2-1.8-7-5-7-9.2V6z','m8.8 12.2 2.2 2.2 4.2-4.4']},
+  evening:{d:['M7 17a5 5 0 0 1 10 0z'],s:['M3.5 17h17M7 17a5 5 0 0 1 10 0','M12 7.2v2M5.6 10.4 7 11.8M18.4 10.4 17 11.8','M7 20.5h10']},
+  movie:{d:['M4 10h16v8.2a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 18.2z'],s:['M4 10h16v8.2a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 18.2z','m4 10 1.2-4.4 14.6 3.1-.6 1.3','m8.3 6.5 2.2 3.1M13 7.5l2.2 3.1']},
+  sun:{d:[circ(12,12,4.2)],s:[circ(12,12,4.2),'M12 2.8v2.2M12 19v2.2M2.8 12H5M19 12h2.2M5.5 5.5l1.5 1.5M17 17l1.5 1.5M5.5 18.5 7 17M17 7l1.5-1.5']},
+  power:{d:[],s:['M12 3.5v8','M7.3 6.6a7.6 7.6 0 1 0 9.4 0']},
+  chart:{d:['M5 19V12h3.6v7zM10.2 19V6h3.6v13zM15.4 19v-9H19v9z'],s:['M5 19V12h3.6v7zM10.2 19V6h3.6v13zM15.4 19v-9H19v9z']},
+  list:{d:[],s:['M8.5 6.5H20M8.5 12H20M8.5 17.5H20','M4.2 6.5h.01M4.2 12h.01M4.2 17.5h.01']},
+  gear:{d:[circ(12,12,3)],s:[circ(12,12,3),'M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7']},
+  heart:{d:['M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z'],s:['M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z']},
+  check:{d:[],s:['m5 12.5 4.5 4.5L19 7.5']}
+};
+
+Object.assign(ICODEF,{
+  door:{d:['M6.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7.5A1.5 1.5 0 0 1 17 5v15.5z'],s:['M6.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7.5A1.5 1.5 0 0 1 17 5v15.5','M3.5 20.5h17M13.6 12.4h.01']},
+  alert:{d:['M12 3.6 21 19.4H3z'],s:['M12 3.6 21 19.4H3z','M12 9.8v4.4M12 17h.01']},
+  link:{d:[],s:['M10.2 13.8a3.6 3.6 0 0 0 5.1 0l3-3a3.6 3.6 0 0 0-5.1-5.1l-1 1','M13.8 10.2a3.6 3.6 0 0 0-5.1 0l-3 3a3.6 3.6 0 0 0 5.1 5.1l1-1']},
+  flame:{d:['M12 3.2c1 3.2 5.2 5.4 5.2 10.2a5.2 5.2 0 0 1-10.4 0c0-2.2 1-3.4 2.2-4.4.2 1.2.9 2 2 2.2-1-3-.4-5.4 1-8z'],s:['M12 3.2c1 3.2 5.2 5.4 5.2 10.2a5.2 5.2 0 0 1-10.4 0c0-2.2 1-3.4 2.2-4.4.2 1.2.9 2 2 2.2-1-3-.4-5.4 1-8z']},
+  battery:{d:['M5 8.5h11a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2z'],s:['M5 8.5h11a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2z','M21 11v2M6.5 11.5v1']},
+  bulboff:{d:['M12 3.2a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v1.2h5.2V16c0-.8.4-1.5 1-2A6 6 0 0 0 12 3.2z'],s:['M12 3.2a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v1.2h5.2V16c0-.8.4-1.5 1-2A6 6 0 0 0 12 3.2z','M9.6 19.6h4.8M10.6 22h2.8','M4 4l16 16']},
+  boltoff:{d:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z'],s:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z','M4 4l16 16']},
+  away:{d:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z'],s:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z','m9.5 13.5 5 4M14.5 13.5l-5 4']}
+});
+const icoInner=n=>{ const i=ICODEF[n]; if(!i) return ''; return i.d.map(p=>'<path class="d" d="'+p+'"/>').join('')+i.s.map(p=>'<path d="'+p+'"/>').join(''); };
+const ICO=(n,cls)=>'<svg class="ico'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icoInner(n)+'</svg>';
+
+const LOGO='<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="l3t" x1=".2" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#7a66ff"/><stop offset=".45" stop-color="#3a2bb8"/><stop offset="1" stop-color="#150e45"/></linearGradient><linearGradient id="l3e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".4" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient><radialGradient id="l3g" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd27a" stop-opacity=".75"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient><radialGradient id="l3b" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fffbe6"/><stop offset=".3" stop-color="#ffd872"/><stop offset=".65" stop-color="#ff9448"/><stop offset="1" stop-color="#d63b4e"/></radialGradient><linearGradient id="l3m" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7b7f93"/><stop offset=".35" stop-color="#e9ebf5"/><stop offset=".7" stop-color="#9a9eb4"/><stop offset="1" stop-color="#555970"/></linearGradient><linearGradient id="l3r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#ff9a6a"/><stop offset="1" stop-color="#ff5fa2"/></linearGradient><filter id="l3s" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.6"/></filter></defs><rect x="1" y="3.5" width="62" height="60" rx="18" fill="#08051c"/><rect x="1" y="1" width="62" height="60" rx="18" fill="url(#l3t)"/><rect x="1.8" y="1.8" width="60.4" height="58.4" rx="17.3" fill="none" stroke="url(#l3e)" stroke-width="1.6"/><path d="M6 20C8 8 18 4 32 4s24 4 26 16C46 14 18 14 6 20z" fill="#fff" fill-opacity=".16"/><circle cx="32" cy="30" r="25" fill="url(#l3g)"/><circle cx="32" cy="31" r="21.5" fill="none" stroke="#08051c" stroke-opacity=".55" stroke-width="4.4" stroke-dasharray="34 12.2" stroke-linecap="round" transform="rotate(-100 32 33)"/><circle cx="32" cy="30" r="21.5" fill="none" stroke="url(#l3r)" stroke-width="3.6" stroke-dasharray="34 12.2" stroke-linecap="round" transform="rotate(-100 32 30)"/><ellipse cx="32" cy="50.6" rx="9" ry="2.2" fill="#000" fill-opacity=".5" filter="url(#l3s)"/><path d="M32 15.5a10.5 10.5 0 0 0-6.4 18.8c1 .8 1.6 2 1.6 3.2v1.8h9.6v-1.8c0-1.2.6-2.4 1.6-3.2A10.5 10.5 0 0 0 32 15.5z" fill="url(#l3b)"/><path d="M32 15.5a10.5 10.5 0 0 0-6.4 18.8c1 .8 1.6 2 1.6 3.2v1.8h9.6v-1.8c0-1.2.6-2.4 1.6-3.2A10.5 10.5 0 0 0 32 15.5z" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"/><rect x="27.2" y="39.6" width="9.6" height="3.4" rx="1" fill="url(#l3m)"/><rect x="27.6" y="43.2" width="8.8" height="3" rx="1" fill="url(#l3m)"/><rect x="29" y="46.4" width="6" height="2.6" rx="1.3" fill="url(#l3m)"/><ellipse cx="27.6" cy="23" rx="3.2" ry="5.2" fill="#fff" fill-opacity=".75" transform="rotate(24 27.6 23)"/><circle cx="36.8" cy="19.4" r="1.2" fill="#fff" fill-opacity=".8"/></svg>';

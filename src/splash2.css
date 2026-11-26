@@ -1,0 +1,20 @@
+
+/* ---- Lumora 4.6: Claude splash, 3D icons ---- */
+#csplash{position:fixed;inset:0;z-index:150;display:grid;place-items:center;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,#2a1a14 0%,#120b09 62%,#0a0605 100%);color:#fdf1e6;transition:opacity .7s ease,visibility .7s}
+#csplash.out{opacity:0;visibility:hidden}
+#csplash .csin{display:grid;justify-items:center;gap:22px;animation:csrise .9s cubic-bezier(.2,.8,.2,1) both}
+#csplash .csmark{width:104px;height:104px;overflow:visible;filter:drop-shadow(0 10px 22px rgba(255,140,90,.35));animation:csturn 2.8s cubic-bezier(.3,.7,.2,1) both}
+#csplash .cst{margin:0;font-size:1.35rem;font-weight:600;letter-spacing:.02em;text-shadow:0 2px 0 #000a,0 8px 20px #000a;animation:csrise .9s .35s cubic-bezier(.2,.8,.2,1) both}
+@keyframes csrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes csturn{from{transform:rotate(-70deg) scale(.7);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){#csplash .csin,#csplash .csmark,#csplash .cst{animation:none}}
+/* version number lives in Settings; the corner tag only appears when there is an update */
+.vtag:not(.new){display:none!important}
+/* 3D icons: stacked edge plus soft ground shadow, tinted from each icon's own colour */
+.ico,.ti{filter:drop-shadow(0 1px 0 color-mix(in srgb,currentColor 38%,transparent)) drop-shadow(0 2.5px 2px rgb(0 0 0/.22))}
+.ico .d,.ti .d{fill-opacity:.26}
+.tab[aria-current=true] .ti .d{fill-opacity:.5}
+.lt .bulb .ico{filter:drop-shadow(0 1.5px 0 color-mix(in srgb,currentColor 45%,transparent)) drop-shadow(0 4px 4px rgb(0 0 0/.3))}
+.mark svg{filter:drop-shadow(0 6px 0 rgb(0 0 0/.25)) drop-shadow(0 12px 14px color-mix(in srgb,var(--accent) 40%,transparent))}
+:root[data-fx="off"] .ico,:root[data-fx="off"] .ti{filter:none}
+@media print{.ico,.ti{filter:none}}

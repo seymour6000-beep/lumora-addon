@@ -1,0 +1,83 @@
+
+/* ---- backgrounds ---- */
+#bgfx{position:fixed;inset:0;z-index:-3;pointer-events:none;display:none;overflow:hidden}
+html[data-bg]:not([data-bg="waves"]) #bgfx{display:block!important}
+#bgfx>*{position:absolute}
+#bgfx>canvas{inset:0;width:100%;height:100%}
+.bgsel{display:flex;flex-wrap:wrap;gap:8px}
+.bggrp{flex-basis:100%;font:700 .8rem var(--fb);color:var(--muted);margin:10px 0 2px}
+.bggrp:first-child{margin-top:0}
+.bgbtn{min-height:38px;padding:0 15px;border-radius:var(--rp);border:1px solid var(--line);background:transparent;font-weight:600;font-size:.86rem;color:var(--muted);transition:transform .3s var(--spring),background .2s,color .2s}
+.bgbtn:hover{color:var(--ink);border-color:var(--accent)}
+.bgbtn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+@keyframes bgdrift{to{transform:translate(8%,6%) scale(1.15)}}
+@keyframes bgdrift2{to{transform:translate(-9%,-5%) scale(1.1)}}
+@keyframes bgspin{to{transform:rotate(360deg)}}
+@keyframes bgpulse{50%{opacity:.75;transform:scale(1.15)}}
+@keyframes bgscroll{to{background-position:0 80px}}
+@keyframes bgmove{to{transform:translateX(-50%)}}
+@keyframes bgtw{50%{opacity:.25}}
+@keyframes aur{to{transform:translate(8%,10%) scaleY(1.25)}}
+@keyframes flt{to{transform:translate(12vw,-10vh)}}
+@keyframes fogm{to{transform:translateX(25%)}}
+@keyframes flowm{to{transform:rotate(18deg) scale(1.1)}}
+.bgx-plain{inset:0;background:var(--bg)}
+.bgx-soft{inset:0;background:radial-gradient(70% 60% at 15% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent),radial-gradient(60% 55% at 90% 100%,color-mix(in srgb,var(--info) 10%,transparent),transparent)}
+.bgx-dots{inset:0;background-image:radial-gradient(color-mix(in srgb,var(--ink) 16%,transparent) 1.5px,transparent 1.6px);background-size:26px 26px}
+.bgx-topo,.bgx-tri{inset:0;color:color-mix(in srgb,var(--ink) 12%,transparent)}
+.bgx-topo svg,.bgx-tri svg{width:100%;height:100%}
+.bgx-aurora{inset:0}
+.bgx-aurora i{display:block;position:absolute;left:-20%;width:140%;height:55%;filter:blur(60px);opacity:.5;animation:aur 22s ease-in-out infinite alternate}
+.bgx-aurora i:nth-child(1){top:-8%;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 70%,transparent),color-mix(in srgb,#7a5cff 60%,transparent),transparent)}
+.bgx-aurora i:nth-child(2){top:12%;animation-duration:30s;background:linear-gradient(90deg,transparent,color-mix(in srgb,#2fe6b0 55%,transparent),color-mix(in srgb,var(--accent) 50%,transparent),transparent)}
+.bgx-aurora i:nth-child(3){top:30%;opacity:.35;animation-duration:36s;background:linear-gradient(90deg,transparent,color-mix(in srgb,#ff6ad5 50%,transparent),transparent)}
+.bgx-flow{inset:-30%;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 30%,var(--bg)),var(--bg),color-mix(in srgb,#7a5cff 24%,var(--bg)),color-mix(in srgb,#2fe6b0 18%,var(--bg)));animation:flowm 40s ease-in-out infinite alternate}
+.bgx-stars{inset:0;background:radial-gradient(80% 60% at 50% 110%,color-mix(in srgb,var(--accent) 22%,transparent),transparent)}
+.bgx-stars i{position:absolute;border-radius:50%;background:var(--ink);animation:bgtw 4s ease-in-out infinite}
+.bgx-lights{inset:0}
+.bgx-lights i{position:absolute;border-radius:50%;filter:blur(40px);opacity:.4;animation:flt 26s ease-in-out infinite alternate}
+.bgx-fog{inset:0;background:linear-gradient(180deg,color-mix(in srgb,var(--ink) 8%,transparent),transparent)}
+.bgx-fog i{display:block;position:absolute;left:-30%;width:160%;height:40%;filter:blur(50px);background:color-mix(in srgb,var(--ink) 14%,transparent);animation:fogm 40s linear infinite alternate}
+.bgx-sky{inset:0}
+.bgx-sky.day{background:linear-gradient(180deg,color-mix(in srgb,#5aa9ff 30%,transparent),transparent 75%)}
+.bgx-sky.night{background:linear-gradient(180deg,color-mix(in srgb,#10204a 70%,transparent),transparent 85%)}
+.bgx-sky.dim{filter:saturate(.6) brightness(.9)}
+/* new */
+.bgx-nebula{inset:0}
+.bgx-nebula i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;filter:blur(70px);opacity:.38;animation:bgdrift 40s ease-in-out infinite alternate}
+.bgx-nebula i:nth-child(1){left:-20vmax;top:-25vmax;background:radial-gradient(circle,#7a3cff,transparent 65%)}
+.bgx-nebula i:nth-child(2){right:-25vmax;top:-5vmax;background:radial-gradient(circle,#ff3c9a,transparent 65%);animation-name:bgdrift2;animation-duration:52s}
+.bgx-nebula i:nth-child(3){left:10vmax;bottom:-40vmax;background:radial-gradient(circle,#2f8cff,transparent 65%);animation-duration:60s}
+.bgx-sunset{inset:0;background:linear-gradient(180deg,color-mix(in srgb,#3b1e7a 55%,transparent),color-mix(in srgb,#c2307a 45%,transparent) 45%,color-mix(in srgb,#ff9a4d 55%,transparent) 78%,color-mix(in srgb,#ffd36a 55%,transparent))}
+.bgx-ocean{inset:0}
+.bgx-ocean svg{position:absolute;left:0;bottom:0;width:200%;height:42%;animation:bgmove 26s linear infinite}
+.bgx-ocean svg:nth-child(2){height:34%;animation-duration:19s;animation-direction:reverse;opacity:.8}
+.bgx-ocean svg:nth-child(3){height:26%;animation-duration:14s}
+.bgx-synth{inset:0;background:linear-gradient(180deg,transparent 45%,color-mix(in srgb,#ff3caa 30%,transparent) 100%)}
+.bgx-synth::before{content:"";position:absolute;left:-50%;right:-50%;bottom:0;height:55%;background-image:linear-gradient(#ff3caa88 1.5px,transparent 1.5px),linear-gradient(90deg,#ff3caa88 1.5px,transparent 1.5px);background-size:60px 60px;transform:perspective(380px) rotateX(62deg);transform-origin:50% 100%;animation:bgscroll 3s linear infinite;mask-image:linear-gradient(0deg,#000,transparent 90%);-webkit-mask-image:linear-gradient(0deg,#000,transparent 90%)}
+.bgx-synth::after{content:"";position:absolute;left:50%;top:22%;width:30vmin;height:30vmin;margin-left:-15vmin;border-radius:50%;background:linear-gradient(180deg,#ffd36a,#ff3caa);opacity:.55;filter:blur(1px)}
+.bgx-bokeh{inset:0}
+.bgx-bokeh i{position:absolute;border-radius:50%;opacity:.28;animation:bgpulse 9s ease-in-out infinite}
+.bgx-lava{inset:0;filter:blur(30px) contrast(1.4)}
+.bgx-lava i{position:absolute;border-radius:50%;opacity:.45;animation:flt 18s ease-in-out infinite alternate}
+.bgx-mesh{inset:0;background:radial-gradient(at 12% 12%,color-mix(in srgb,#ff6ad5 35%,transparent),transparent 45%),radial-gradient(at 88% 10%,color-mix(in srgb,#6a8dff 35%,transparent),transparent 45%),radial-gradient(at 80% 90%,color-mix(in srgb,#2fe6b0 28%,transparent),transparent 45%),radial-gradient(at 10% 85%,color-mix(in srgb,#ffb35c 30%,transparent),transparent 45%)}
+.bgx-hex,.bgx-circuit{inset:0;color:color-mix(in srgb,var(--ink) 13%,transparent)}
+.bgx-hex svg,.bgx-circuit svg{width:100%;height:100%}
+.bgx-blue{inset:0;background-color:color-mix(in srgb,#1f5fff 14%,transparent);background-image:linear-gradient(color-mix(in srgb,var(--ink) 12%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 12%,transparent) 1px,transparent 1px),linear-gradient(color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px);background-size:120px 120px,120px 120px,24px 24px,24px 24px}
+.bgx-grain{inset:0;opacity:.5}
+.bgx-grain svg{width:100%;height:100%}
+.bgx-city{inset:0;background:linear-gradient(180deg,transparent 40%,color-mix(in srgb,#ff7a3c 18%,transparent))}
+.bgx-city svg{position:absolute;left:0;bottom:0;width:100%;height:60%}
+.bgx-city .w{animation:bgtw 5s ease-in-out infinite}
+.bgx-mount{inset:0;background:linear-gradient(180deg,color-mix(in srgb,#5a6aff 18%,transparent),transparent 60%)}
+.bgx-mount svg{position:absolute;left:0;bottom:0;width:100%;height:62%}
+.bgx-stripes{inset:0;background:repeating-linear-gradient(115deg,color-mix(in srgb,var(--accent) 16%,transparent) 0 70px,transparent 70px 140px);mask-image:linear-gradient(180deg,#000,transparent 85%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%)}
+.bgx-spot{inset:0;background:radial-gradient(34vmax 34vmax at var(--mx,50%) var(--my,35%),color-mix(in srgb,var(--accent) 30%,transparent),transparent 70%)}
+.bgx-plasma{inset:-40%;filter:blur(60px);opacity:.55;background:conic-gradient(from 0deg,#ff3caa,#7a3cff,#2f8cff,#2fe6b0,#ffd36a,#ff3caa);animation:bgspin 60s linear infinite}
+.bgx-prism{inset:-40%;opacity:.4;background:repeating-conic-gradient(from 0deg at 50% 50%,color-mix(in srgb,var(--accent) 40%,transparent) 0 10deg,transparent 10deg 30deg);mask-image:radial-gradient(closest-side,#000,transparent);-webkit-mask-image:radial-gradient(closest-side,#000,transparent);animation:bgspin 120s linear infinite}
+.bgx-checker{inset:0;background-image:conic-gradient(color-mix(in srgb,var(--ink) 7%,transparent) 25%,transparent 0 50%,color-mix(in srgb,var(--ink) 7%,transparent) 0 75%,transparent 0);background-size:64px 64px}
+.bgx-glassgrid{inset:0;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),transparent 40%,color-mix(in srgb,var(--info) 16%,transparent))}
+.bgx-glassgrid::before{content:"";position:absolute;inset:0;background-image:linear-gradient(color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1px);background-size:56px 56px}
+html[data-fx="off"] #bgfx *,html[data-fx="off"] #bgfx::before{animation:none!important}
+html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
+@media (prefers-reduced-motion:reduce){#bgfx *{animation:none!important}}
