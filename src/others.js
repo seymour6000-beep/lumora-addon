@@ -334,19 +334,21 @@
 /* ---- status lamps: a floating side tab, like the warning lights on a car dashboard ---- */
 (function(){
   if(document.documentElement.dataset.popout==='1') return;
-  const I={bulb:'bulb',off:'bulboff',door:'door',lock:'lock',motion:'sensor',power:'boltoff',link:'link',away:'away',heat:'flame',batt:'battery',alert:'alert'};
+  const I={bluetooth:'bluetooth',shield:'shield',bulb:'bulb',off:'bulboff',door:'door',lock:'lock',motion:'sensor',power:'boltoff',link:'link',away:'away',heat:'flame',batt:'battery',alert:'alert'};
   const LAMPS=[
-    {k:'alarm',ic:'alert',c:'bad',l:'Smoke, gas or leak',go:'Devices'},
-    {k:'power',ic:'power',c:'bad',l:'Power cut',go:'Activity'},
-    {k:'offline',ic:'off',c:'bad',l:'Light offline',go:'Devices'},
-    {k:'link',ic:'link',c:'bad',l:'Server link',inv:true,go:'Settings'},
-    {k:'doors',ic:'door',c:'warn',l:'Door or window open',go:'Devices'},
-    {k:'locks',ic:'lock',c:'warn',l:'Lock unlocked',go:'Devices'},
-    {k:'batt',ic:'batt',c:'warn',l:'Camera battery low',go:'Devices'},
-    {k:'lights',ic:'bulb',c:'amber',l:'Lights on',go:'Devices'},
-    {k:'heat',ic:'heat',c:'amber',l:'Heating',go:'Devices'},
-    {k:'motion',ic:'motion',c:'info',l:'Motion just now',go:'Activity'},
-    {k:'away',ic:'away',c:'info',l:'Away mode',go:'Devices'}
+    {k:'alarm',ic:'alert',l:'Smoke, gas or leak',go:'Devices'},
+    {k:'power',ic:'power',l:'Power cut',go:'Activity'},
+    {k:'offline',ic:'off',l:'Lights reachable',go:'Devices'},
+    {k:'link',ic:'link',l:'Server link',go:'Settings',g:'connections'},
+    {k:'security',ic:'shield',l:'Alarm',go:'Devices'},
+    {k:'doors',ic:'door',l:'Doors and windows',go:'Devices'},
+    {k:'locks',ic:'lock',l:'Locks',go:'Devices'},
+    {k:'batt',ic:'batt',l:'Camera batteries',go:'Devices'},
+    {k:'motion',ic:'motion',l:'Motion',go:'Activity'},
+    {k:'bt',ic:'bluetooth',l:'Bluetooth',go:'Settings',g:'connections'},
+    {k:'lights',ic:'bulb',l:'Lights',go:'Devices'},
+    {k:'heat',ic:'heat',l:'Heating',go:'Devices'},
+    {k:'away',ic:'away',l:'Home or away',go:'Devices'}
   ];
   const tab=document.createElement('aside'); tab.id='sidetab'; tab.setAttribute('aria-label','Home status lights');
   tab.innerHTML='<button class="stgrip" type="button" aria-expanded="false" aria-label="Show home status lights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><div class="stlamps" role="list"></div>';
@@ -354,13 +356,32 @@
   const box=tab.querySelector('.stlamps'), grip=tab.querySelector('.stgrip');
   const els={};
   LAMPS.forEach(L=>{
-    const b=document.createElement('button'); b.type='button'; b.className='tl'; b.dataset.k=L.k; b.dataset.c=L.c; b.setAttribute('role','listitem');
+    const b=document.createElement('button'); b.type='button'; b.className='tl'; b.dataset.k=L.k; b.dataset.lv='ok'; b.setAttribute('role','listitem');
     b.innerHTML=ICO(I[L.ic])+'<span class="tll"><b>'+L.l+'</b><em></em></span>';
-    b.onclick=()=>{ close(); try{ showTab(L.go); }catch(e){} };
+    b.onclick=()=>{ if(window.__beepStop) window.__beepStop(); close(); if(L.g){ try{ localStorage.setItem('hub-setgroup',L.g); }catch(e){} } try{ showTab(L.go); }catch(e){} };
     box.appendChild(b); els[L.k]=b;
   });
-  const set=(k,on,txt)=>{ const b=els[k]; const was=b.dataset.on==='1'; b.dataset.on=on?'1':'0'; b.querySelector('em').textContent=txt; b.setAttribute('aria-label',LAMPS.find(x=>x.k===k).l+': '+txt); if(on&&!was) b.classList.add('flash'),setTimeout(()=>b.classList.remove('flash'),1200); };
+  /* green = good, yellow = warning, red = issue */
+  const LV={ok:0,warn:1,bad:2}, LVT={ok:'good',warn:'warning',bad:'issue'};
+  const set=(k,lv,txt)=>{ const b=els[k]; if(!b) return; const was=b.dataset.lv; b.dataset.lv=lv; b.dataset.on=lv==='ok'?'0':'1'; b.querySelector('em').textContent=txt; b.setAttribute('aria-label',LAMPS.find(x=>x.k===k).l+': '+LVT[lv]+', '+txt); if(was!==lv&&lv!=='ok') b.classList.add('flash'),setTimeout(()=>b.classList.remove('flash'),1200); if(was!==lv&&lv==='bad'&&booted&&performance.now()>8000) newRed=true; };
+  let booted=false, newRed=false, beepT=0;
+  const BEEP_MS=5000;
+  let actx=null; const unlock=()=>{ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C(); } if(actx&&actx.state==='suspended') actx.resume(); }catch(e){} };
+  ['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,unlock,{passive:true}));
+  /* five seconds of short beeps; tapping the lights stops it early */
+  window.__beep=function(ms){
+    try{
+      if(window.__beepStop) window.__beepStop();
+      unlock(); if(!actx) return false; const end=actx.currentTime+(ms||BEEP_MS)/1000; let n=0; const nodes=[];
+      for(let t=actx.currentTime+0.02;t<end;t+=0.5){ const o=actx.createOscillator(), g=actx.createGain(); o.type='square'; o.frequency.value=n%2?740:988; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.18,t+0.02); g.gain.setValueAtTime(0.18,t+0.22); g.gain.exponentialRampToValueAtTime(0.0001,t+0.26); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+0.28); nodes.push(o); n++; }
+      window.__beepCount=(window.__beepCount||0)+1; window.__beepNodes=n; window.__beeping=true;
+      window.__beepStop=()=>{ nodes.forEach(o=>{ try{ o.stop(); }catch(e){} }); window.__beeping=false; clearTimeout(beepT); window.__beepStop=null; };
+      clearTimeout(beepT); beepT=setTimeout(()=>{ window.__beeping=false; window.__beepStop=null; },(ms||BEEP_MS)+300);
+      return true;
+    }catch(e){ return false; }
+  };
   const plural=(n,a,b)=>n+' '+(n===1?a:b);
+  const ST=()=>{ try{ return JSON.parse(localStorage.getItem('hub-settings')||'{}')||{}; }catch(e){ return {}; } };
   function refresh(){
     try{
       const lt=state||[], on=lt.filter(d=>d.online!==false&&d.on).length, off=lt.filter(d=>d.online===false).length;
@@ -372,26 +393,35 @@
       const heat=ls.filter(s=>s.kind==='thermostat'&&/heat/i.test(s.action||''));
       const camMotion=(cams||[]).filter(c=>c.last&&Date.now()-c.last<5*60000);
       const lowb=(cams||[]).filter(c=>typeof c.battery==='number'&&c.battery<=20);
-      set('alarm',alarms.length>0,alarms.length?alarms.map(a=>a.name).join(', '):'All clear');
-      set('power',!!(power&&power.outage),power&&power.outage?'Running without mains':'Normal');
-      set('offline',off>0,off?plural(off,'light','lights')+' offline':'All reachable');
-      const down=!!window.__devDown||(document.getElementById('netbar')&&document.getElementById('netbar').classList.contains('on')); set('link',down,down?'Can’t reach it':'Connected');
-      set('doors',doors.length>0,doors.length?doors.map(a=>a.name).join(', '):'All closed');
-      set('locks',unl.length>0,unl.length?unl.map(a=>a.name).join(', '):'All locked');
-      set('batt',lowb.length>0,lowb.length?lowb.map(c=>c.name).join(', '):'Fine');
-      set('lights',on>0,on?plural(on,'light','lights')+' on':'All off');
-      set('heat',heat.length>0,heat.length?'Heating on':'Idle');
-      set('motion',motion.length+camMotion.length>0,(motion.concat(camMotion)).map(a=>a.name).join(', ')||'Quiet');
-      set('away',typeof presence!=='undefined'&&presence==='away',typeof presence!=='undefined'&&presence==='away'?'Nobody home':'Someone home');
-      const bad=tab.querySelectorAll('.tl[data-on="1"][data-c="bad"]').length; tab.dataset.alert=bad?'1':'0'; tab.dataset.lit=tab.querySelector('.tl[data-on="1"]:not([data-k="link"])')?'1':'0';
+      set('alarm',alarms.length?'bad':'ok',alarms.length?alarms.map(a=>a.name).join(', '):'All clear');
+      set('power',power&&power.outage?'bad':'ok',power&&power.outage?'Running without mains':'Normal');
+      set('offline',off>0?'bad':'ok',off?plural(off,'light','lights')+' offline':'All reachable');
+      const down=!!window.__devDown||(document.getElementById('netbar')&&document.getElementById('netbar').classList.contains('on')); set('link',down?'bad':'ok',down?'Can’t reach it':'Connected');
+      const sv=window.__secView?window.__secView():null, away=typeof presence!=='undefined'&&presence==='away';
+      if(sv&&sv.alarm&&sv.alarm.state==='sounding') set('security','bad','Alarm sounding');
+      else if(sv&&sv.alarm&&sv.alarm.state==='pending') set('security','warn','Disarm now');
+      else if(sv&&sv.mode&&sv.mode!=='off') set('security','ok','Armed: '+(sv.mode==='home'?'Home':'Away'));
+      else set('security',away?'warn':'ok',away?'Nobody home and the alarm is off':'Disarmed');
+      set('doors',doors.length?'warn':'ok',doors.length?doors.map(a=>a.name).join(', '):'All closed');
+      set('locks',unl.length?'warn':'ok',unl.length?unl.map(a=>a.name).join(', '):'All locked');
+      set('batt',lowb.some(c=>c.battery<=5)?'bad':lowb.length?'warn':'ok',lowb.length?lowb.map(c=>c.name+' '+c.battery+'%').join(', '):'Fine');
+      set('motion',motion.length+camMotion.length?'warn':'ok',(motion.concat(camMotion)).map(a=>a.name).join(', ')||'Quiet');
+      const bt=window.__btLamp?window.__btLamp():{lv:'ok',txt:'Not set up'}; set('bt',bt.lv,bt.txt);
+      set('lights','ok',on?plural(on,'light','lights')+' on':'All off');
+      set('heat','ok',heat.length?'Heating on':'Idle');
+      set('away','ok',away?'Nobody home':'Someone home');
+      const worst=Object.values(els).reduce((m,b)=>Math.max(m,LV[b.dataset.lv]||0),0); const wl=['ok','warn','bad'][worst];
+      tab.dataset.worst=wl; tab.dataset.alert=wl==='bad'?'1':'0'; tab.dataset.lit=wl==='warn'?'1':'0'; tab.querySelector('.stgrip').setAttribute('data-lv',wl);
+      if(!booted){ booted=true; newRed=false; }
+      else if(newRed){ newRed=false; if(!(typeof settings!=='undefined'&&settings.beepRed===false)&&!(window.__beepOff)) window.__beep(BEEP_MS); }
     }catch(e){}
   }
   function open(){ tab.classList.add('open'); grip.setAttribute('aria-expanded','true'); grip.setAttribute('aria-label','Hide home status lights'); }
   function close(){ tab.classList.remove('open'); grip.setAttribute('aria-expanded','false'); grip.setAttribute('aria-label','Show home status lights'); }
-  grip.onclick=()=>tab.classList.contains('open')?close():open();
+  grip.onclick=()=>{ if(window.__beepStop) window.__beepStop(); tab.classList.contains('open')?close():open(); };
   document.addEventListener('pointerdown',e=>{ if(tab.classList.contains('open')&&!tab.contains(e.target)) close(); },true);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
-  refresh(); setInterval(refresh,1500);
+  setTimeout(()=>{ refresh(); refresh(); },300); setInterval(refresh,1500);
   window.__refreshLamps=refresh;
 })();
 

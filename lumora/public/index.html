@@ -19,7 +19,7 @@ if(/[?&]popout=1/.test(location.search)){document.documentElement.setAttribute('
    none of this runs and the app stays a self-contained demo. */
 (function(){
   window.__SRV=null;
-  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others','hub-autostat','hub-watch','hub-voice','hub-security'];
+  var SYNC=['hub-lights','hub-rules','hub-cams','hub-settings','hub-scenes','hub-removed','hub-apps','hub-power','hub-activity','hub-presence','hub-money','hub-notify','hub-others','hub-autostat','hub-watch','hub-voice','hub-security','hub-sleep'];
   try{
     if(!/^https?:$/.test(location.protocol)) return;
     var x=new XMLHttpRequest(); x.open('GET','/api/boot',false); x.setRequestHeader('X-Requested-With','lumora'); x.send();
@@ -1135,6 +1135,109 @@ body[data-role="guest"] .secmodes,body[data-role="guest"] #secDemo{pointer-event
 .dot::after,.x::after,.rshow::after,.sw::after,.tl::after,.stgrip::after{content:"";position:absolute;inset:-8px}
 .builder{grid-template-columns:minmax(0,1fr)}.builder>*{min-width:0}
 .bstep select,.bstep input:not([type=checkbox]):not([type=radio]){width:100%;min-width:0}
+
+/* ---- 6.1: status rail (green good, yellow warning, red issue) and dock ---- */
+#sidetab{--st-ok:#22b866;--st-warn:#f2b705;--st-bad:#ef4337;left:12px}
+#sidetab .tl[data-lv="ok"]{--lv:var(--st-ok)}#sidetab .tl[data-lv="warn"]{--lv:var(--st-warn)}#sidetab .tl[data-lv="bad"]{--lv:var(--st-bad)}
+#sidetab .stlamps{padding:10px 8px;gap:6px;max-width:64px;border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);border-radius:28px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 90%,#fff 10%),color-mix(in srgb,var(--surface) 80%,transparent));
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 18px 36px -16px rgb(0 0 0/.55)}
+#sidetab.open .stlamps{max-width:310px}
+#sidetab .tl{padding:3px 4px;gap:12px;border-radius:999px;min-height:40px;color:var(--ink)}
+#sidetab .tl:hover{background:color-mix(in srgb,var(--lv) 10%,transparent)}
+#sidetab .tl svg{width:34px;height:34px;padding:7px;box-sizing:border-box;border-radius:50%;opacity:1;filter:none;color:var(--lv);
+  background:radial-gradient(circle at 35% 28%,color-mix(in srgb,var(--lv) 30%,#fff 20%),color-mix(in srgb,var(--lv) 16%,transparent) 70%);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--lv) 60%,transparent),inset 0 -3px 5px color-mix(in srgb,var(--lv) 25%,transparent)}
+#sidetab .tl[data-lv="ok"] svg{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--lv) 50%,transparent)}
+#sidetab .tl[data-lv="warn"] svg{box-shadow:inset 0 0 0 2px var(--lv),0 0 12px color-mix(in srgb,var(--lv) 55%,transparent)}
+#sidetab .tl[data-lv="bad"] svg{box-shadow:inset 0 0 0 2px var(--lv),0 0 16px color-mix(in srgb,var(--lv) 75%,transparent)}
+#sidetab .tl .tll em{color:var(--muted)}
+#sidetab .tl[data-lv="warn"] .tll em,#sidetab .tl[data-lv="bad"] .tll em{color:var(--lv);font-weight:700}
+html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s ease-in-out infinite}
+#sidetab .tl[data-lv="warn"] svg,#sidetab .tl[data-lv="ok"] svg{animation:none}
+#sidetab .stgrip{width:22px;height:48px;border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);border-left:0;border-radius:0 14px 14px 0}
+#sidetab .stgrip[data-lv="ok"]{color:var(--st-ok)}#sidetab .stgrip[data-lv="warn"]{color:var(--st-warn);box-shadow:inset 0 0 0 1px var(--st-warn)}#sidetab .stgrip[data-lv="bad"]{color:var(--st-bad);box-shadow:inset 0 0 0 1px var(--st-bad)}
+@media (min-width:701px){html:not([data-popout="1"]):not([data-tv="1"]) main{padding-left:92px}}
+@media (max-width:700px){
+  #sidetab{left:0}
+  #sidetab .stlamps{max-width:0;padding:8px 0;border:0;box-shadow:none}
+  #sidetab.open .stlamps{max-width:290px;padding:8px;border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);border-left:0;border-radius:0 24px 24px 0;box-shadow:0 14px 40px rgb(0 0 0/.35)}
+}
+
+/* dock: icon over a label, active tab raised */
+.dock{border-radius:30px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 90%,#fff 10%),color-mix(in srgb,var(--surface) 76%,transparent));
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.45),0 22px 44px -16px rgb(0 0 0/.6)}
+.tab{border-radius:22px}
+.tab[aria-current=true]{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 10px 18px -8px var(--accent)}
+@media (min-width:701px){
+  .tab{flex-direction:column;justify-content:center;gap:3px;height:58px;min-width:64px;padding:0 10px}
+  .tab>span{max-width:none;opacity:1;font-size:.68rem;font-weight:600;line-height:1}
+  .tab[aria-current=true]{gap:3px;padding:0 10px}
+  .tab[aria-current=true]>span{max-width:none}
+  .tab:not([aria-current=true]):hover{transform:translateY(-3px)}
+}
+
+@media (min-width:701px){.dock{padding:7px 9px;gap:4px}}
+@media (max-width:700px){.dock{padding:6px;gap:0;border-radius:26px}}
+
+/* narrow screens: let grid cards shrink instead of stretching the page */
+.musiccard,.seccard,.sleepcard{grid-template-columns:minmax(0,1fr)}
+.sleepcard{grid-template-columns:auto minmax(0,1fr) auto}
+.muhead>*,.munow>*,.muvol>*,.mulink>*{min-width:0}
+.sgrid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+
+/* ---- 6.1: bluetooth ---- */
+.btlist{display:grid;gap:8px;margin-top:10px}
+.btrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.btdot{width:12px;height:12px;border-radius:50%;background:var(--off);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--ink) 20%,transparent);flex:none}
+.btdot[data-on="1"]{background:#22b866;box-shadow:0 0 10px #22b866}
+.bttx{flex:1;display:flex;flex-direction:column;min-width:0}.bttx em{font-style:normal;color:var(--muted);font-size:.8rem}.btn_{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btact{display:flex;gap:6px}
+
+/* ---- 6.1: sleep mode ---- */
+.rsleep{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0 6px;padding:5px 12px 5px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,#3b4cca 14%,transparent);color:var(--ink);font:600 .8rem var(--fb);min-height:30px;position:relative}
+.rsleep .ico{width:16px;height:16px}.rsleep::after{content:"";position:absolute;inset:-6px}
+.sleepcard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px 12px;margin:0 0 16px;padding:14px 16px;border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,#2b2f8f 22%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,#6a73ff 35%,transparent);box-shadow:inset 0 1px 0 rgb(255 255 255/.25),0 14px 26px -18px rgb(0 0 0/.55)}
+.slic{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,#6a73ff 22%,transparent)}.slic .ico{width:22px;height:22px}
+.sltx{display:flex;flex-direction:column}.sltx span{color:var(--muted);font-size:.86rem}
+.slprog{grid-column:1/-1;height:6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}.slprog i{display:block;height:100%;background:linear-gradient(90deg,#ffb36b,#6a73ff);border-radius:inherit;transition:width 1s linear}
+.slbed{display:flex;gap:6px;align-items:center}.slbed .in{width:auto}
+
+/* ---- 6.1: music ---- */
+.musiccard{margin:0 0 16px;padding:16px;border-radius:24px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55);display:grid;gap:12px}
+.musiccard[data-state="playing"]{border-color:color-mix(in srgb,#1db954 45%,transparent);box-shadow:inset 4px 0 0 #1db954,inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55)}
+.muhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.muhead h3{margin:0;font:600 1.05rem var(--fd,var(--fb))}.muhead .sub{margin:0}.muhead>div{flex:1;min-width:120px}
+.muic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,#1db954 18%,transparent);color:#169c46}.muic .ico{width:24px;height:24px}
+.musel{max-width:100%;min-width:0}
+.munow{display:flex;align-items:center;gap:14px}.muart{width:72px;height:72px;border-radius:16px;flex:none;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted)}.muart img{width:100%;height:100%;object-fit:cover}.muart .ico{width:30px;height:30px}
+.mutx{display:flex;flex-direction:column;min-width:0}.mut{font-size:1.1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mua{color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muprog{height:6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}.muprog i{display:block;height:100%;background:#1db954;border-radius:inherit}.mutime{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem;margin-top:-6px}
+.mubtns{display:flex;justify-content:center;align-items:center;gap:14px}
+.mub{width:44px;height:44px;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--ink);display:grid;place-items:center;padding:0;box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+.mub:active{transform:translateY(2px);box-shadow:none}.mub .ico{width:22px;height:22px}.mub.big{width:58px;height:58px;background:#1db954;border-color:#169c46;color:#fff}.mub.big .ico{width:28px;height:28px}.mub.on{color:#169c46;border-color:#1db954}
+.muvol{display:flex;align-items:center;gap:10px}.muvol input{flex:1;min-width:0}.muvi .ico{width:20px;height:20px}.muvn{width:3.2em;text-align:right;color:var(--muted);font-size:.85rem}
+.mulink{display:flex;gap:8px}.mulink .in{flex:1;min-width:0}
+.muerr{color:var(--bad);margin:0}.muempty{display:grid;gap:8px;justify-items:start}.muempty p{margin:0}
+
+/* ---- 6.1: settings by topic ---- */
+.setwrap{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.setnav{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 70%,transparent)}
+.setb{display:flex;align-items:center;gap:10px;flex:none;padding:8px 14px 8px 10px;border-radius:18px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:color-mix(in srgb,var(--surface) 85%,transparent);color:var(--ink);text-align:left;font:inherit;min-height:44px;box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 10%,transparent)}
+.setb .ico{width:24px;height:24px;flex:none;color:var(--accent)}
+.sbt{display:flex;flex-direction:column;line-height:1.2}.sbt b{font-size:.92rem;font-weight:600;white-space:nowrap}.sbt em{display:none;font-style:normal;color:var(--muted);font-size:.76rem}
+.setb:active{transform:translateY(2px);box-shadow:none}
+.setb.on{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 82%,#fff),var(--accent));border-color:var(--accent);color:var(--onaccent)}.setb.on .ico,.setb.on .sbt em{color:inherit}
+.sgtitle{margin:2px 0 4px;font:600 1.15rem var(--fd,var(--fb))}
+section[data-tab="Settings"]:not([data-search="1"]) .sgrid>.panel.sgoff{display:none}
+section[data-tab="Settings"][data-search="1"] .sgtitle,section[data-tab="Settings"][data-search="1"] .setnav{display:none}
+@media (min-width:960px){
+  .setwrap{grid-template-columns:260px minmax(0,1fr);gap:22px}
+  .setnav{flex-direction:column;overflow:visible;position:sticky;top:12px;padding:0;background:none}
+  .setb{width:100%;padding:10px 12px;border-radius:20px}.sbt b{white-space:normal}.sbt em{display:block}
+  .setwrap>.sgtitle{display:none}
+}
+.sgtitle{grid-column:1/-1}
 </style>
 </head>
 <body data-auth="out">
@@ -2570,6 +2673,17 @@ Object.assign(ICODEF,{
   boltoff:{d:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z'],s:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z','M4 4l16 16']},
   away:{d:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z'],s:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z','m9.5 13.5 5 4M14.5 13.5l-5 4']}
 });
+Object.assign(ICODEF,{
+  bluetooth:{d:[],s:['m7 7.5 10 9-5 4.5v-17l5 4.5-10 9']},
+  music:{d:['M9 17.5a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 17.5zM20 15.5a2.5 2.5 0 1 1-2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z'],s:['M9 17.5V6l11-2v11.5','M9 9.5l11-2']},
+  moon:{d:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z'],s:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z']},
+  play:{d:['M8 5.5v13l11-6.5z'],s:['M8 5.5v13l11-6.5z']},
+  pause:{d:[],s:['M8.5 5.5v13M15.5 5.5v13']},
+  skipnext:{d:['M6 6v12l9-6z'],s:['M6 6v12l9-6z','M18 6v12']},
+  skipprev:{d:['M18 6v12l-9-6z'],s:['M18 6v12l-9-6z','M6 6v12']},
+  volume:{d:[],s:['M4 9.5h3.5L12 6v12l-4.5-3.5H4z','M15.5 9a4 4 0 0 1 0 6','M18 6.5a7.5 7.5 0 0 1 0 11']},
+  shuffle:{d:[],s:['M4 7h3.5c4 0 5 10 9 10H20','M4 17h3.5c1.4 0 2.4-1.2 3.3-2.8','M13.2 9.2C14 7.9 15 7 16.5 7H20','m18 5 2 2-2 2','m18 15 2 2-2 2']}
+});
 const icoInner=n=>{ const i=ICODEF[n]; if(!i) return ''; return i.d.map(p=>'<path class="d" d="'+p+'"/>').join('')+i.s.map(p=>'<path d="'+p+'"/>').join(''); };
 const ICO=(n,cls)=>'<svg class="ico'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icoInner(n)+'</svg>';
 
@@ -3354,7 +3468,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='6.0.1';
+const APP_VERSION='6.1.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4087,19 +4201,21 @@ const HEALTH={server:true,ha:null};
 /* ---- status lamps: a floating side tab, like the warning lights on a car dashboard ---- */
 (function(){
   if(document.documentElement.dataset.popout==='1') return;
-  const I={bulb:'bulb',off:'bulboff',door:'door',lock:'lock',motion:'sensor',power:'boltoff',link:'link',away:'away',heat:'flame',batt:'battery',alert:'alert'};
+  const I={bluetooth:'bluetooth',shield:'shield',bulb:'bulb',off:'bulboff',door:'door',lock:'lock',motion:'sensor',power:'boltoff',link:'link',away:'away',heat:'flame',batt:'battery',alert:'alert'};
   const LAMPS=[
-    {k:'alarm',ic:'alert',c:'bad',l:'Smoke, gas or leak',go:'Devices'},
-    {k:'power',ic:'power',c:'bad',l:'Power cut',go:'Activity'},
-    {k:'offline',ic:'off',c:'bad',l:'Light offline',go:'Devices'},
-    {k:'link',ic:'link',c:'bad',l:'Server link',inv:true,go:'Settings'},
-    {k:'doors',ic:'door',c:'warn',l:'Door or window open',go:'Devices'},
-    {k:'locks',ic:'lock',c:'warn',l:'Lock unlocked',go:'Devices'},
-    {k:'batt',ic:'batt',c:'warn',l:'Camera battery low',go:'Devices'},
-    {k:'lights',ic:'bulb',c:'amber',l:'Lights on',go:'Devices'},
-    {k:'heat',ic:'heat',c:'amber',l:'Heating',go:'Devices'},
-    {k:'motion',ic:'motion',c:'info',l:'Motion just now',go:'Activity'},
-    {k:'away',ic:'away',c:'info',l:'Away mode',go:'Devices'}
+    {k:'alarm',ic:'alert',l:'Smoke, gas or leak',go:'Devices'},
+    {k:'power',ic:'power',l:'Power cut',go:'Activity'},
+    {k:'offline',ic:'off',l:'Lights reachable',go:'Devices'},
+    {k:'link',ic:'link',l:'Server link',go:'Settings',g:'connections'},
+    {k:'security',ic:'shield',l:'Alarm',go:'Devices'},
+    {k:'doors',ic:'door',l:'Doors and windows',go:'Devices'},
+    {k:'locks',ic:'lock',l:'Locks',go:'Devices'},
+    {k:'batt',ic:'batt',l:'Camera batteries',go:'Devices'},
+    {k:'motion',ic:'motion',l:'Motion',go:'Activity'},
+    {k:'bt',ic:'bluetooth',l:'Bluetooth',go:'Settings',g:'connections'},
+    {k:'lights',ic:'bulb',l:'Lights',go:'Devices'},
+    {k:'heat',ic:'heat',l:'Heating',go:'Devices'},
+    {k:'away',ic:'away',l:'Home or away',go:'Devices'}
   ];
   const tab=document.createElement('aside'); tab.id='sidetab'; tab.setAttribute('aria-label','Home status lights');
   tab.innerHTML='<button class="stgrip" type="button" aria-expanded="false" aria-label="Show home status lights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button><div class="stlamps" role="list"></div>';
@@ -4107,13 +4223,32 @@ const HEALTH={server:true,ha:null};
   const box=tab.querySelector('.stlamps'), grip=tab.querySelector('.stgrip');
   const els={};
   LAMPS.forEach(L=>{
-    const b=document.createElement('button'); b.type='button'; b.className='tl'; b.dataset.k=L.k; b.dataset.c=L.c; b.setAttribute('role','listitem');
+    const b=document.createElement('button'); b.type='button'; b.className='tl'; b.dataset.k=L.k; b.dataset.lv='ok'; b.setAttribute('role','listitem');
     b.innerHTML=ICO(I[L.ic])+'<span class="tll"><b>'+L.l+'</b><em></em></span>';
-    b.onclick=()=>{ close(); try{ showTab(L.go); }catch(e){} };
+    b.onclick=()=>{ if(window.__beepStop) window.__beepStop(); close(); if(L.g){ try{ localStorage.setItem('hub-setgroup',L.g); }catch(e){} } try{ showTab(L.go); }catch(e){} };
     box.appendChild(b); els[L.k]=b;
   });
-  const set=(k,on,txt)=>{ const b=els[k]; const was=b.dataset.on==='1'; b.dataset.on=on?'1':'0'; b.querySelector('em').textContent=txt; b.setAttribute('aria-label',LAMPS.find(x=>x.k===k).l+': '+txt); if(on&&!was) b.classList.add('flash'),setTimeout(()=>b.classList.remove('flash'),1200); };
+  /* green = good, yellow = warning, red = issue */
+  const LV={ok:0,warn:1,bad:2}, LVT={ok:'good',warn:'warning',bad:'issue'};
+  const set=(k,lv,txt)=>{ const b=els[k]; if(!b) return; const was=b.dataset.lv; b.dataset.lv=lv; b.dataset.on=lv==='ok'?'0':'1'; b.querySelector('em').textContent=txt; b.setAttribute('aria-label',LAMPS.find(x=>x.k===k).l+': '+LVT[lv]+', '+txt); if(was!==lv&&lv!=='ok') b.classList.add('flash'),setTimeout(()=>b.classList.remove('flash'),1200); if(was!==lv&&lv==='bad'&&booted&&performance.now()>8000) newRed=true; };
+  let booted=false, newRed=false, beepT=0;
+  const BEEP_MS=5000;
+  let actx=null; const unlock=()=>{ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C(); } if(actx&&actx.state==='suspended') actx.resume(); }catch(e){} };
+  ['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,unlock,{passive:true}));
+  /* five seconds of short beeps; tapping the lights stops it early */
+  window.__beep=function(ms){
+    try{
+      if(window.__beepStop) window.__beepStop();
+      unlock(); if(!actx) return false; const end=actx.currentTime+(ms||BEEP_MS)/1000; let n=0; const nodes=[];
+      for(let t=actx.currentTime+0.02;t<end;t+=0.5){ const o=actx.createOscillator(), g=actx.createGain(); o.type='square'; o.frequency.value=n%2?740:988; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.18,t+0.02); g.gain.setValueAtTime(0.18,t+0.22); g.gain.exponentialRampToValueAtTime(0.0001,t+0.26); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+0.28); nodes.push(o); n++; }
+      window.__beepCount=(window.__beepCount||0)+1; window.__beepNodes=n; window.__beeping=true;
+      window.__beepStop=()=>{ nodes.forEach(o=>{ try{ o.stop(); }catch(e){} }); window.__beeping=false; clearTimeout(beepT); window.__beepStop=null; };
+      clearTimeout(beepT); beepT=setTimeout(()=>{ window.__beeping=false; window.__beepStop=null; },(ms||BEEP_MS)+300);
+      return true;
+    }catch(e){ return false; }
+  };
   const plural=(n,a,b)=>n+' '+(n===1?a:b);
+  const ST=()=>{ try{ return JSON.parse(localStorage.getItem('hub-settings')||'{}')||{}; }catch(e){ return {}; } };
   function refresh(){
     try{
       const lt=state||[], on=lt.filter(d=>d.online!==false&&d.on).length, off=lt.filter(d=>d.online===false).length;
@@ -4125,26 +4260,35 @@ const HEALTH={server:true,ha:null};
       const heat=ls.filter(s=>s.kind==='thermostat'&&/heat/i.test(s.action||''));
       const camMotion=(cams||[]).filter(c=>c.last&&Date.now()-c.last<5*60000);
       const lowb=(cams||[]).filter(c=>typeof c.battery==='number'&&c.battery<=20);
-      set('alarm',alarms.length>0,alarms.length?alarms.map(a=>a.name).join(', '):'All clear');
-      set('power',!!(power&&power.outage),power&&power.outage?'Running without mains':'Normal');
-      set('offline',off>0,off?plural(off,'light','lights')+' offline':'All reachable');
-      const down=!!window.__devDown||(document.getElementById('netbar')&&document.getElementById('netbar').classList.contains('on')); set('link',down,down?'Can’t reach it':'Connected');
-      set('doors',doors.length>0,doors.length?doors.map(a=>a.name).join(', '):'All closed');
-      set('locks',unl.length>0,unl.length?unl.map(a=>a.name).join(', '):'All locked');
-      set('batt',lowb.length>0,lowb.length?lowb.map(c=>c.name).join(', '):'Fine');
-      set('lights',on>0,on?plural(on,'light','lights')+' on':'All off');
-      set('heat',heat.length>0,heat.length?'Heating on':'Idle');
-      set('motion',motion.length+camMotion.length>0,(motion.concat(camMotion)).map(a=>a.name).join(', ')||'Quiet');
-      set('away',typeof presence!=='undefined'&&presence==='away',typeof presence!=='undefined'&&presence==='away'?'Nobody home':'Someone home');
-      const bad=tab.querySelectorAll('.tl[data-on="1"][data-c="bad"]').length; tab.dataset.alert=bad?'1':'0'; tab.dataset.lit=tab.querySelector('.tl[data-on="1"]:not([data-k="link"])')?'1':'0';
+      set('alarm',alarms.length?'bad':'ok',alarms.length?alarms.map(a=>a.name).join(', '):'All clear');
+      set('power',power&&power.outage?'bad':'ok',power&&power.outage?'Running without mains':'Normal');
+      set('offline',off>0?'bad':'ok',off?plural(off,'light','lights')+' offline':'All reachable');
+      const down=!!window.__devDown||(document.getElementById('netbar')&&document.getElementById('netbar').classList.contains('on')); set('link',down?'bad':'ok',down?'Can’t reach it':'Connected');
+      const sv=window.__secView?window.__secView():null, away=typeof presence!=='undefined'&&presence==='away';
+      if(sv&&sv.alarm&&sv.alarm.state==='sounding') set('security','bad','Alarm sounding');
+      else if(sv&&sv.alarm&&sv.alarm.state==='pending') set('security','warn','Disarm now');
+      else if(sv&&sv.mode&&sv.mode!=='off') set('security','ok','Armed: '+(sv.mode==='home'?'Home':'Away'));
+      else set('security',away?'warn':'ok',away?'Nobody home and the alarm is off':'Disarmed');
+      set('doors',doors.length?'warn':'ok',doors.length?doors.map(a=>a.name).join(', '):'All closed');
+      set('locks',unl.length?'warn':'ok',unl.length?unl.map(a=>a.name).join(', '):'All locked');
+      set('batt',lowb.some(c=>c.battery<=5)?'bad':lowb.length?'warn':'ok',lowb.length?lowb.map(c=>c.name+' '+c.battery+'%').join(', '):'Fine');
+      set('motion',motion.length+camMotion.length?'warn':'ok',(motion.concat(camMotion)).map(a=>a.name).join(', ')||'Quiet');
+      const bt=window.__btLamp?window.__btLamp():{lv:'ok',txt:'Not set up'}; set('bt',bt.lv,bt.txt);
+      set('lights','ok',on?plural(on,'light','lights')+' on':'All off');
+      set('heat','ok',heat.length?'Heating on':'Idle');
+      set('away','ok',away?'Nobody home':'Someone home');
+      const worst=Object.values(els).reduce((m,b)=>Math.max(m,LV[b.dataset.lv]||0),0); const wl=['ok','warn','bad'][worst];
+      tab.dataset.worst=wl; tab.dataset.alert=wl==='bad'?'1':'0'; tab.dataset.lit=wl==='warn'?'1':'0'; tab.querySelector('.stgrip').setAttribute('data-lv',wl);
+      if(!booted){ booted=true; newRed=false; }
+      else if(newRed){ newRed=false; if(!(typeof settings!=='undefined'&&settings.beepRed===false)&&!(window.__beepOff)) window.__beep(BEEP_MS); }
     }catch(e){}
   }
   function open(){ tab.classList.add('open'); grip.setAttribute('aria-expanded','true'); grip.setAttribute('aria-label','Hide home status lights'); }
   function close(){ tab.classList.remove('open'); grip.setAttribute('aria-expanded','false'); grip.setAttribute('aria-label','Show home status lights'); }
-  grip.onclick=()=>tab.classList.contains('open')?close():open();
+  grip.onclick=()=>{ if(window.__beepStop) window.__beepStop(); tab.classList.contains('open')?close():open(); };
   document.addEventListener('pointerdown',e=>{ if(tab.classList.contains('open')&&!tab.contains(e.target)) close(); },true);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
-  refresh(); setInterval(refresh,1500);
+  setTimeout(()=>{ refresh(); refresh(); },300); setInterval(refresh,1500);
   window.__refreshLamps=refresh;
 })();
 
@@ -4645,6 +4789,7 @@ window.__claudeSplash=function(){
     draw();
   }
   /* camera motion from this page goes to the alarm */
+  window.__secView=()=>view();
   window.__secMotion=cam=>{
     if(isRemote()) srvApi('POST','/api/security/event',{cam}).then(r=>{ if(r.ok){ S=r.json; draw(); } });
     else { dEvent('motion','Motion at '+cam); if(D.mode!=='off') dTrigger('Motion at '+cam,false); draw(); }
@@ -4713,6 +4858,292 @@ window.__claudeSplash=function(){
   };
   addEventListener('online',upd); addEventListener('offline',upd); setTimeout(upd,1200);
 })();
+
+/* ---- Lumora 6.1: Bluetooth (find and connect to nearby devices from this browser) ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const KEY='hub-bt', nav=navigator.bluetooth;
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const saved=()=>{ try{ const v=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } };
+  const keep=l=>{ try{ localStorage.setItem(KEY,JSON.stringify(l.slice(0,20))); }catch(e){} };
+  const live=new Map(); let err='', busy=false, avail=null, note='';
+  try{ if(nav&&nav.getAvailability){ nav.getAvailability().then(v=>{ avail=v; draw(); }).catch(()=>{}); if(nav.addEventListener) nav.addEventListener('availabilitychanged',e=>{ avail=e.value; draw(); }); } }catch(e){}
+  const friendly=e=>{ const m=String((e&&e.name)||''); if(m==='NotFoundError') return ''; if(m==='SecurityError'||m==='NotAllowedError') return 'Bluetooth is blocked. Allow it for this site in the browser, then try again.'; if(m==='NetworkError') return 'Could not connect. Move closer and make sure the device is on and not paired to something else.'; return 'Bluetooth problem: '+String((e&&e.message)||m).slice(0,80); };
+  window.__btLamp=()=>{
+    if(!nav) return {lv:'warn',txt:'Not available in this browser'};
+    if(err) return {lv:'bad',txt:err.slice(0,60)};
+    if(avail===false) return {lv:'warn',txt:'Bluetooth is off or missing'};
+    if(live.size) return {lv:'ok',txt:live.size+(live.size===1?' device connected':' devices connected')};
+    if(saved().length) return {lv:'warn',txt:'No device connected'};
+    return {lv:'ok',txt:'Ready, nothing paired'};
+  };
+  window.__btState=()=>({supported:!!nav,avail,connected:[...live.values()].map(x=>x.dev.name||'Device'),saved:saved().length,err});
+  async function connect(dev){
+    busy=true; draw();
+    try{
+      const srv=await dev.gatt.connect(); live.set(dev.id,{dev,srv}); err='';
+      if(!dev.__lum){ dev.__lum=1; dev.addEventListener('gattserverdisconnected',()=>{ live.delete(dev.id); draw(); try{ window.__refreshLamps&&window.__refreshLamps(); }catch(e){} }); }
+      try{ const s=await srv.getPrimaryService('battery_service'); const c=await s.getCharacteristic('battery_level'); const v=await c.readValue(); live.get(dev.id).battery=v.getUint8(0); }catch(e){ /* no battery service */ }
+    }catch(e){ err=friendly(e); }
+    busy=false; draw(); try{ window.__refreshLamps&&window.__refreshLamps(); }catch(e){}
+  }
+  async function pair(){
+    if(!nav||busy) return; err=''; note='';
+    try{
+      const dev=await nav.requestDevice({acceptAllDevices:true,optionalServices:['battery_service','device_information']});
+      const l=saved().filter(x=>x.id!==dev.id); l.unshift({id:dev.id,name:dev.name||'Bluetooth device',t:Date.now()}); keep(l);
+      await connect(dev);
+    }catch(e){ err=friendly(e); if(!err) note='No device was chosen.'; draw(); }
+  }
+  async function known(){ try{ return nav&&nav.getDevices?await nav.getDevices():[]; }catch(e){ return []; } }
+  async function reconnect(){
+    if(!nav) return; const ds=await known(); const ids=new Set(saved().map(x=>x.id));
+    for(const d of ds){ if(ids.has(d.id)&&!live.has(d.id)){ try{ await connect(d); }catch(e){} } }
+  }
+  async function forget(id){
+    const d=live.get(id); try{ if(d&&d.dev.gatt.connected) d.dev.gatt.disconnect(); }catch(e){} live.delete(id);
+    try{ const ds=await known(); const x=ds.find(z=>z.id===id); if(x&&x.forget) await x.forget(); }catch(e){}
+    keep(saved().filter(x=>x.id!==id)); draw();
+  }
+  function panel(){
+    const grid=document.querySelector('section[data-tab="Settings"] .sgrid'); if(!grid) return null;
+    let p=document.getElementById('btPanel'); if(p) return p;
+    p=el('div','panel wide'); p.id='btPanel';
+    p.innerHTML='<h3>Bluetooth</h3><p class="sub" id="btStat"></p><div class="nrow"><button class="btn primary" id="btPair" type="button">Find a device</button></div><div id="btList" class="btlist"></div><p class="sub" id="btNote" role="status"></p>'+
+      '<details class="secd"><summary>Can other devices find Lumora over Bluetooth?</summary><p class="sub">Not yet. A web page can look for Bluetooth devices and connect to them, but a browser cannot announce itself, so phones and speakers will not see Lumora in their Bluetooth lists. Making Lumora discoverable needs Bluetooth access on the computer that runs Home Assistant. If you want that, the Home Assistant Bluetooth integration is the place to start: it discovers nearby devices and shares them with Lumora like any other device.</p></details>';
+    grid.appendChild(p); p.querySelector('#btPair').onclick=pair; return p;
+  }
+  function draw(){
+    const p=panel(); if(!p) return; const st=window.__btLamp();
+    p.querySelector('#btStat').textContent=!nav?'This browser cannot use Bluetooth. Chrome, Edge and the Lumora desktop app can, and the page must be opened over HTTPS or on this computer.':st.txt+'.';
+    const btn=p.querySelector('#btPair'); btn.disabled=!nav||busy; btn.textContent=busy?'Working…':'Find a device';
+    p.querySelector('#btNote').textContent=note;
+    const box=p.querySelector('#btList'); box.replaceChildren();
+    saved().forEach(d=>{ const r=el('div','btrow'); const on=live.get(d.id); const dot=el('span','btdot'); dot.dataset.on=on?'1':'0';
+      const nm=el('span','btn_',d.name+(on&&on.battery!=null?' · '+on.battery+'% battery':'')); const sub=el('em','',on?'Connected':'Not connected');
+      const a=el('div','btact'); const b1=el('button','btn sm',on?'Disconnect':'Connect'); b1.type='button';
+      b1.onclick=async()=>{ if(on){ try{ on.dev.gatt.disconnect(); }catch(e){} live.delete(d.id); draw(); } else { const ds=await known(); const x=ds.find(z=>z.id===d.id); if(x) connect(x); else { note='Press Find a device to choose it again.'; draw(); } } };
+      const b2=el('button','btn sm','Forget'); b2.type='button'; b2.onclick=()=>forget(d.id); a.append(b1,b2);
+      const tx=el('span','bttx'); tx.append(nm,sub); r.append(dot,tx,a); box.appendChild(r); });
+    if(!saved().length) box.appendChild(el('p','sub','Nothing paired yet. Press Find a device and pick one from the list your browser shows.'));
+  }
+  const boot=()=>{ draw(); reconnect(); setInterval(()=>{ if(!document.hidden) draw(); },4000); };
+  if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,1200)); else setTimeout(boot,1200);
+})();
+
+/* ---- Lumora 6.1: sleep mode (fade a room to warm and off) ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const CK='hub-sleep', DK='hub-sleepdemo';
+  const cfgLoad=()=>{ let v={}; try{ v=JSON.parse(localStorage.getItem(CK)||'{}')||{}; }catch(e){} return Object.assign({minutes:30,room:'Bedroom',bedtime:'',warm:true},v); };
+  let CFG=cfgLoad(); const cfgSave=()=>{ try{ store.set(CK,CFG); }catch(e){ try{ localStorage.setItem(CK,JSON.stringify(CFG)); }catch(x){} } };
+  const isRemote=()=>typeof REMOTE!=='undefined'&&REMOTE;
+  let S={active:false,room:CFG.room,minutes:CFG.minutes,startedAt:0,endsAt:0};
+  let D=null; try{ D=JSON.parse(localStorage.getItem(DK)||'null'); if(D&&Date.now()>D.startedAt+D.minutes*60000+60000) D=null; }catch(e){}
+  const dSave=()=>{ try{ if(D) localStorage.setItem(DK,JSON.stringify(D)); else localStorage.removeItem(DK); }catch(e){} };
+  const roomsNow=()=>[...new Set((state||[]).map(d=>d.room||'Home'))].sort();
+  const view=()=>isRemote()?S:(D?{active:true,room:D.room,minutes:D.minutes,startedAt:D.startedAt,endsAt:D.startedAt+D.minutes*60000}:{active:false,room:CFG.room,minutes:CFG.minutes,startedAt:0,endsAt:0});
+  async function pull(){ if(!isRemote()) return; const r=await srvApi('GET','/api/sleep'); if(r.ok&&r.json){ S=r.json; draw(); } }
+  async function dTick(){
+    if(!D) return; const p=Math.min(1,(Date.now()-D.startedAt)/(D.minutes*60000));
+    try{
+      for(const l of D.from){ if(p>=1) await adapter.set(l.id,{on:false}); else await adapter.set(l.id,{on:true,bri:Math.max(1,Math.round(l.bri*(1-p))),color:CFG.warm?'#ffb36b':undefined}); }
+      state=await adapter.list(); render();
+    }catch(e){}
+    if(p>=1){ D=null; dSave(); try{ log('Sleep mode finished'); }catch(e){} draw(); }
+  }
+  async function start(){
+    const msg=document.getElementById('slMsg'); const say=t=>{ if(msg) msg.textContent=t; try{ if(t) toast(t); }catch(e){} };
+    if(isRemote()){ const r=await srvApi('POST','/api/sleep/start',{minutes:CFG.minutes}); if(r.ok){ S=r.json; say(''); } else say((r.json&&r.json.error&&r.json.error.message)||(r.json&&r.json.message)||'Could not start sleep mode.'); draw(); return; }
+    const lights=(state||[]).filter(d=>(d.room||'Home')===CFG.room&&d.online!==false&&d.on);
+    if(!lights.length){ say('The '+CFG.room+' lights are already off.'); return; }
+    D={room:CFG.room,minutes:CFG.minutes,startedAt:Date.now(),from:lights.map(l=>({id:l.id,bri:l.bri||100}))}; dSave(); try{ log('Sleep mode started in '+CFG.room); }catch(e){} say(''); await dTick(); draw();
+  }
+  async function cancel(){ if(isRemote()){ const r=await srvApi('POST','/api/sleep/cancel',{}); if(r.ok) S=r.json; } else { D=null; dSave(); } draw(); }
+  window.__sleepStart=start; window.__sleepCancel=cancel; window.__sleepView=view;
+  const left=v=>{ const m=Math.max(0,Math.ceil((v.endsAt-Date.now())/60000)); return m<=1?'less than a minute':m+' minutes'; };
+  function bar(){
+    let c=document.getElementById('sleepCard'); const v=view();
+    if(!v.active){ if(c) c.remove(); return; }
+    if(!c){ const a=document.getElementById('secCard')||document.getElementById('ovStrip'); if(!a) return; c=el('section','sleepcard'); c.id='sleepCard'; c.setAttribute('role','status'); a.insertAdjacentElement('afterend',c); }
+    c.replaceChildren(); const ic=el('span','slic'); ic.innerHTML=ICO('moon'); const tx=el('div','sltx'); tx.append(el('b','','Sleep mode in '+v.room),el('span','',left(v)+' until the lights are off'));
+    const prog=el('div','slprog'); const f=el('i'); f.style.width=Math.min(100,Math.max(2,((Date.now()-v.startedAt)/(v.endsAt-v.startedAt))*100))+'%'; prog.appendChild(f);
+    const b=el('button','btn sm','Stop'); b.type='button'; b.onclick=cancel; c.append(ic,tx,b,prog);
+  }
+  function roomBtn(){
+    document.querySelectorAll('#roomChips .rcard').forEach(card=>{
+      const rn=card.querySelector('.rn'); if(!rn||rn.textContent!==CFG.room){ const o=card.querySelector('.rsleep'); if(o) o.remove(); return; }
+      if(card.querySelector('.rsleep')) return;
+      const b=el('button','rsleep'); b.type='button'; b.setAttribute('aria-label','Start sleep mode in '+CFG.room); b.innerHTML=ICO('moon')+'<span>Sleep</span>'; b.onclick=()=>{ view().active?cancel():start(); };
+      card.append(b);
+    });
+    document.querySelectorAll('#roomChips .rsleep span').forEach(s=>s.textContent=view().active?'Stop sleep':'Sleep');
+  }
+  if(typeof window.renderRoomChips==='function'){ const _r=window.renderRoomChips; window.renderRoomChips=function(){ _r.apply(this,arguments); try{ roomBtn(); }catch(e){} }; }
+  function panel(){
+    const grid=document.querySelector('section[data-tab="Settings"] .sgrid'); if(!grid) return null;
+    let p=document.getElementById('sleepPanel'); if(p) return p;
+    p=el('div','panel'); p.id='sleepPanel';
+    p.innerHTML='<h3>Sleep mode</h3><p class="sub">Fades the lights in one room down to a dim, warm glow and then off. On the add-on it carries on even if you close this page.</p>'+
+      '<div class="srow"><label for="slRoom">Room</label><select id="slRoom"></select></div>'+
+      '<div class="srow"><label for="slMin">Fade over</label><select id="slMin"></select></div>'+
+      '<div class="srow"><label for="slBed">Start by itself at</label><span class="slbed"><input type="time" id="slBed" class="in"><button class="btn sm" type="button" id="slBedX">Off</button></span></div>'+
+      '<div class="srow"><span>Warm light while dimming</span><button class="sw" role="switch" id="slWarm" aria-label="Warm light while dimming"><i></i></button></div>'+
+      '<div class="nrow"><button class="btn primary" type="button" id="slGo">Start sleep mode now</button></div><p class="sub" id="slMsg" role="status"></p>';
+    grid.appendChild(p);
+    const mins=p.querySelector('#slMin'); [5,10,15,20,30,45,60,90].forEach(m=>{ const o=el('option','',m+' minutes'); o.value=m; mins.appendChild(o); }); mins.value=String(CFG.minutes); mins.onchange=()=>{ CFG.minutes=Number(mins.value); cfgSave(); };
+    p.querySelector('#slBed').value=CFG.bedtime||''; p.querySelector('#slBed').onchange=e=>{ CFG.bedtime=e.target.value||''; cfgSave(); };
+    p.querySelector('#slBedX').onclick=()=>{ CFG.bedtime=''; p.querySelector('#slBed').value=''; cfgSave(); };
+    const w=p.querySelector('#slWarm'); const pw=()=>{ w.classList.toggle('on',!!CFG.warm); w.setAttribute('aria-checked',String(!!CFG.warm)); }; pw(); w.onclick=()=>{ CFG.warm=!CFG.warm; cfgSave(); pw(); };
+    p.querySelector('#slGo').onclick=()=>{ view().active?cancel():start(); };
+    return p;
+  }
+  function draw(){
+    const p=panel(); if(p){ const sel=p.querySelector('#slRoom'); const rooms=[...new Set(roomsNow().concat([CFG.room]))];
+      if(sel.options.length!==rooms.length||[...sel.options].some((o,i)=>o.value!==rooms[i])){ sel.replaceChildren(...rooms.map(r=>{ const o=el('option','',r); o.value=r; return o; })); sel.onchange=()=>{ CFG.room=sel.value; cfgSave(); draw(); }; }
+      sel.value=CFG.room; p.querySelector('#slGo').textContent=view().active?'Stop sleep mode':'Start sleep mode now'; }
+    bar(); roomBtn();
+  }
+  const boot=()=>{ draw(); pull(); if(D) dTick(); setInterval(()=>{ if(document.hidden) return; if(isRemote()) pull(); else if(D) dTick(); draw(); },5000); setInterval(()=>{ if(!document.hidden) bar(); },20000); if(typeof EventSource!=='undefined'&&isRemote()){ try{ const es=new EventSource('/api/events'); es.addEventListener('sleep',()=>pull()); }catch(e){} } };
+  if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,1000)); else setTimeout(boot,1000);
+})();
+
+/* ---- Lumora 6.1: music (Spotify through Home Assistant, plus any speaker it knows) ---- */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const isRemote=()=>typeof REMOTE!=='undefined'&&REMOTE;
+  let players=[], haOk=true, chosen='', busy=false, lastErr='';
+  try{ chosen=localStorage.getItem('hub-musicpick')||''; }catch(e){}
+  /* demo mode: a pretend Spotify player so you can try the controls */
+  const TR=[['Golden Hour','Lumora Demo Band',212],['Porch Light','The Dimmers',187],['Warm White','Kelvin & Co',240]];
+  let dm={id:'media_player.spotify_demo',name:'Spotify (demo)',state:'paused',spotify:true,title:TR[0][0],artist:TR[0][1],album:'Demo',volume:35,muted:false,source:'Kitchen speaker',sources:['Kitchen speaker','Living room','Phone'],shuffle:false,picture:'',duration:TR[0][2],position:0,_i:0,_t:Date.now()};
+  const dmTick=()=>{ const now=Date.now(); if(dm.state==='playing'){ dm.position+= (now-dm._t)/1000; if(dm.position>=dm.duration){ dmSkip(1); } } dm._t=now; };
+  function dmSkip(n){ dm._i=(dm._i+n+TR.length)%TR.length; const t=TR[dm._i]; dm.title=t[0]; dm.artist=t[1]; dm.duration=t[2]; dm.position=0; }
+  async function pull(){
+    if(!isRemote()){ dmTick(); players=[dm]; haOk=true; draw(); return; }
+    const r=await srvApi('GET','/api/media'); if(!r.ok||!r.json) return; haOk=r.json.ha!==false; players=(r.json.players||[]).slice().sort((a,b)=>(b.spotify-a.spotify)||(b.state==='playing')-(a.state==='playing')||a.name.localeCompare(b.name)); draw();
+  }
+  const cur=()=>players.find(p=>p.id===chosen)||players.find(p=>p.state==='playing')||players[0]||null;
+  async function act(action,value){
+    const p=cur(); if(!p||busy) return; lastErr='';
+    if(!isRemote()){ dmTick(); if(action==='toggle') dm.state=dm.state==='playing'?'paused':'playing'; else if(action==='next') dmSkip(1); else if(action==='previous') dmSkip(-1); else if(action==='volume') dm.volume=Number(value); else if(action==='shuffle') dm.shuffle=!!value; else if(action==='source') dm.source=value; else if(action==='play_media'){ dm.title='From your link'; dm.artist='Spotify'; dm.duration=200; dm.position=0; dm.state='playing'; } draw(); return; }
+    busy=true; const r=await srvApi('POST','/api/media',{id:p.id,action,value}); busy=false;
+    if(!r.ok) lastErr=(r.json&&r.json.error&&r.json.error.message)||(r.json&&r.json.message)||'That did not work.';
+    setTimeout(pull,600); draw();
+  }
+  window.__musicPlayers=()=>players; window.__musicAct=act;
+  const mmss=s=>{ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  function card(){
+    let c=document.getElementById('musicCard'); if(c) return c;
+    const a=document.getElementById('sleepCard')||document.getElementById('secCard')||document.getElementById('ovStrip'); if(!a) return null;
+    c=el('section','musiccard'); c.id='musicCard'; c.setAttribute('aria-label','Music'); (document.getElementById('secCard')||a).insertAdjacentElement('afterend',c); return c;
+  }
+  function draw(){
+    const c=card(); if(!c) return; const p=cur(); const keep=document.activeElement&&c.contains(document.activeElement)?document.activeElement.id:'';
+    if(keep==='muLink'||keep==='muVol') return;   // do not redraw while someone is typing or dragging
+    c.replaceChildren(); c.dataset.state=p?p.state:'none';
+    const head=el('div','muhead'); const ic=el('span','muic'); ic.innerHTML=ICO('music'); const ht=el('div'); ht.append(el('h3','','Music'),el('p','sub',p?(p.spotify?'Spotify':'Speaker')+' · '+p.name:'No player found'));
+    head.append(ic,ht);
+    if(players.length>1){ const sel=el('select','musel'); sel.id='muPick'; sel.setAttribute('aria-label','Choose a player'); players.forEach(x=>{ const o=el('option','',x.name+(x.state==='playing'?' (playing)':'')); o.value=x.id; sel.appendChild(o); }); sel.value=p.id; sel.onchange=()=>{ chosen=sel.value; try{ localStorage.setItem('hub-musicpick',chosen); }catch(e){} draw(); }; head.appendChild(sel); }
+    c.appendChild(head);
+    if(!p){ const e=el('div','muempty'); e.append(el('p','',haOk?'Home Assistant has no music players yet.':'Music needs Home Assistant.'),el('p','sub','To use Spotify, add the Spotify integration in Home Assistant (Settings, Devices and services). Spotify Premium is needed to control playback. Open Settings in Lumora, then Connections and Spotify, for the steps.')); const b=el('button','btn sm','Open Spotify settings'); b.type='button'; b.onclick=()=>{ try{ localStorage.setItem('hub-setgroup','connections'); showTab('Settings'); }catch(e){} }; e.appendChild(b); c.appendChild(e); return; }
+    const row=el('div','munow'); const art=el('div','muart'); if(p.picture){ const im=el('img'); im.src=p.picture; im.alt=''; im.referrerPolicy='no-referrer'; art.appendChild(im); } else art.innerHTML=ICO('music');
+    const tx=el('div','mutx'); tx.append(el('b','mut',p.title||(p.state==='off'?'Off':'Nothing playing')),el('span','mua',[p.artist,p.album].filter(Boolean).join(' · ')||p.state));
+    row.append(art,tx); c.appendChild(row);
+    if(p.duration){ const pr=el('div','muprog'); const f=el('i'); f.style.width=Math.min(100,(p.position||0)/p.duration*100)+'%'; pr.appendChild(f); const tm=el('div','mutime'); tm.append(el('span','',mmss(p.position||0)),el('span','',mmss(p.duration))); c.append(pr,tm); }
+    const ctl=el('div','mubtns'); const mk=(ic,lab,fn,cls)=>{ const b=el('button','mub'+(cls?' '+cls:'')); b.type='button'; b.setAttribute('aria-label',lab); b.innerHTML=ICO(ic); b.onclick=fn; return b; };
+    const sh=mk('shuffle','Shuffle',()=>act('shuffle',!p.shuffle)); sh.setAttribute('aria-pressed',String(!!p.shuffle)); if(p.shuffle) sh.classList.add('on');
+    ctl.append(sh,mk('skipprev','Previous track',()=>act('previous')),mk(p.state==='playing'?'pause':'play',p.state==='playing'?'Pause':'Play',()=>act('toggle'),'big'),mk('skipnext','Next track',()=>act('next')));
+    c.appendChild(ctl);
+    if(p.volume!=null){ const v=el('div','muvol'); const vi=el('span','muvi'); vi.innerHTML=ICO('volume'); const r=el('input'); r.type='range'; r.min=0; r.max=100; r.value=p.volume; r.id='muVol'; r.setAttribute('aria-label','Volume'); r.onchange=()=>act('volume',Number(r.value)); v.append(vi,r,el('span','muvn',p.volume+'%')); c.appendChild(v); }
+    if(p.sources&&p.sources.length){ const s=el('div','srow'); const l=el('label','','Play on'); l.htmlFor='muSrc'; const sel=el('select'); sel.id='muSrc'; p.sources.forEach(x=>{ const o=el('option','',x); o.value=x; sel.appendChild(o); }); sel.value=p.source||p.sources[0]; sel.onchange=()=>act('source',sel.value); s.append(l,sel); c.appendChild(s); }
+    const lk=el('div','mulink'); const inp=el('input','in'); inp.id='muLink'; inp.type='url'; inp.placeholder='Paste a Spotify playlist, album or song link'; inp.setAttribute('aria-label','Spotify link'); const go=el('button','btn sm','Play'); go.type='button'; go.onclick=()=>{ if(inp.value.trim()) act('play_media',inp.value.trim()); }; inp.onkeydown=e=>{ if(e.key==='Enter') go.click(); }; lk.append(inp,go); c.appendChild(lk);
+    if(lastErr) { const e=el('p','muerr',lastErr); e.setAttribute('role','alert'); c.appendChild(e); }
+  }
+  function panel(){
+    const grid=document.querySelector('section[data-tab="Settings"] .sgrid'); if(!grid) return null;
+    let p=document.getElementById('spotPanel'); if(p) return p;
+    p=el('div','panel wide'); p.id='spotPanel';
+    p.innerHTML='<h3>Spotify</h3><p class="sub" id="spStat"></p><ol class="tvsteps"><li>In Home Assistant, open Settings, then Devices and services, then Add integration, and choose Spotify.</li><li>Sign in to Spotify when it asks. Playing music from Home Assistant needs Spotify Premium.</li><li>Open Spotify on a phone or speaker once so it shows up as a place to play.</li><li>Come back here. Spotify appears in the Music card on the Devices tab within a few seconds.</li></ol><p class="sub">Lumora never sees your Spotify password. Home Assistant holds the sign-in and Lumora only sends it play, pause, skip and volume.</p>';
+    grid.appendChild(p); return p;
+  }
+  function stat(){
+    const p=panel(); if(!p) return; const sp=players.filter(x=>x.spotify); const t=p.querySelector('#spStat');
+    t.textContent=!isRemote()?'Demo mode: the Music card plays a pretend Spotify player. Connect Home Assistant to use the real one.':!haOk?'Lumora is not connected to Home Assistant.':sp.length?'Spotify found: '+sp.map(x=>x.name).join(', ')+'.':players.length?'Home Assistant has '+players.length+(players.length===1?' speaker':' speakers')+' but no Spotify yet.':'Spotify is not set up in Home Assistant yet.';
+  }
+  const boot=()=>{ card(); pull().then(stat); setInterval(()=>{ if(document.hidden) return; pull().then(stat); },isRemote()?4000:1000); };
+  if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,1100)); else setTimeout(boot,1100);
+})();
+
+/* ---- Lumora 6.1: Settings, organised by topic ---- */
+(function(){
+  const el=(t,c,x)=>{ const e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; };
+  const GROUPS=[
+    {id:'account',label:'Account and people',ic:'user',hint:'Your sign-in, household members and login security',p:['Account','Household','Security']},
+    {id:'home',label:'Home and look',ic:'home',hint:'Name, clock, theme and background',p:['Home','Design','Background']},
+    {id:'lights',label:'Lights and rooms',ic:'bulb',hint:'Lights, scenes, sleep mode and light checks',p:['Lights','Your scenes','Sleep mode','Light watch','Offline detection','Automations and location']},
+    {id:'devices',label:'Devices and cameras',ic:'sensor',hint:'Sensors, locks, cameras and power cuts',p:['Devices','Cameras','Power outage']},
+    {id:'alerts',label:'Alerts and sound',ic:'bell',hint:'Notifications, phone alerts and the red-light beep',p:['Notifications and sound','Status lights','Phone alerts']},
+    {id:'connections',label:'Connections',ic:'link',hint:'Home Assistant, Spotify, Bluetooth, Google Home and Alexa',p:['Connections','Spotify','Bluetooth','Google Home and Alexa']},
+    {id:'screens',label:'Screens and apps',ic:'apps',hint:'TV, remote and the Windows app',p:['Use Lumora on a TV','Approve a TV','TV and remote','Lumora for Windows']},
+    {id:'system',label:'System and backup',ic:'gear',hint:'Health, backup, server address and version',p:['Health and backup','This server’s address','Data and about','About Lumora']}
+  ];
+  const norm=t=>String(t||'').replace(/[’‘]/g,"'").trim().toLowerCase();
+  const gOf=title=>{ const n=norm(title); for(const g of GROUPS){ const i=g.p.findIndex(x=>norm(x)===n); if(i>-1) return {g:g.id,o:i}; } return {g:'system',o:99}; };
+  const sec=()=>document.querySelector('section[data-tab="Settings"]');
+  const grid=()=>document.querySelector('section[data-tab="Settings"] .sgrid');
+  const rd=()=>{ try{ return localStorage.getItem('hub-setgroup')||''; }catch(e){ return ''; } };
+  let active=rd()||'account', busy=false;
+  function statusPanel(){
+    const g=grid(); if(!g||document.getElementById('lampPanel')) return;
+    const p=el('div','panel'); p.id='lampPanel';
+    p.innerHTML='<h3>Status lights</h3><p class="sub">The lights on the left of the screen show green when things are good, yellow when something needs a look, and red when something is wrong.</p>'+
+      '<div class="srow"><span>Beep for 5 seconds when a light turns red</span><button class="sw" role="switch" id="beepSw" aria-label="Beep for 5 seconds when a light turns red"><i></i></button></div>'+
+      '<div class="nrow"><button class="btn sm" type="button" id="beepTest">Test the beep</button></div><p class="sub">Your browser only allows sound after you have tapped or clicked something on the page.</p>';
+    g.appendChild(p);
+    const sw=p.querySelector('#beepSw'); const paint=()=>{ const on=settings.beepRed!==false; sw.classList.toggle('on',on); sw.setAttribute('aria-checked',String(on)); }; paint();
+    sw.onclick=()=>{ settings.beepRed=settings.beepRed===false; saveSettings(); paint(); };
+    p.querySelector('#beepTest').onclick=()=>{ if(window.__beep) window.__beep(5000); };
+  }
+  function build(){
+    const s=sec(), g=grid(); if(!s||!g) return false;
+    if(!s.querySelector('.setnav')){
+      const wrap=el('div','setwrap'); const nav=el('nav','setnav'); nav.setAttribute('aria-label','Settings sections');
+      GROUPS.forEach(x=>{ const b=el('button','setb'); b.type='button'; b.dataset.g=x.id; b.innerHTML=ICO(x.ic)+'<span class="sbt"><b></b><em></em></span>'; b.querySelector('b').textContent=x.label; b.querySelector('em').textContent=x.hint; b.onclick=()=>choose(x.id); nav.appendChild(b); });
+      g.parentNode.insertBefore(wrap,g); wrap.append(nav,g);
+      const q=document.getElementById('setQ'); if(q) q.addEventListener('input',()=>{ s.dataset.search=q.value.trim()?'1':'0'; });
+      const h=el('h3','sgtitle'); h.id='sgTitle'; g.parentNode.insertBefore(h,g);
+    }
+    return true;
+  }
+  function tidy(){
+    if(busy) return; const g=grid(); if(!g||!build()) return; busy=true;
+    try{
+      statusPanel();
+      const panels=[...g.children].filter(c=>c.classList&&c.classList.contains('panel'));
+      panels.forEach(p=>{ const h=p.querySelector('h3,h2'); const m=gOf(h&&h.textContent); p.dataset.g=m.g; p.dataset.o=m.o; });
+      const order=GROUPS.map(x=>x.id);
+      const want=panels.slice().sort((a,b)=>order.indexOf(a.dataset.g)-order.indexOf(b.dataset.g)||a.dataset.o-b.dataset.o);
+      if(want.some((p,i)=>p!==panels[i])) want.forEach(p=>g.appendChild(p));
+      apply();
+    } finally { busy=false; }
+  }
+  function apply(){
+    const s=sec(), g=grid(); if(!s||!g) return; if(!GROUPS.some(x=>x.id===active)) active='account';
+    g.querySelectorAll(':scope>.panel').forEach(p=>p.classList.toggle('sgoff',p.dataset.g!==active));
+    s.querySelectorAll('.setb').forEach(b=>{ const on=b.dataset.g===active; b.classList.toggle('on',on); if(on) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current');
+      const n=[...g.querySelectorAll(':scope>.panel')].filter(p=>p.dataset.g===b.dataset.g&&!p.hidden).length; b.dataset.n=n; });
+    const t=document.getElementById('sgTitle'), G=GROUPS.find(x=>x.id===active); if(t&&G) t.textContent=G.label;
+  }
+  function choose(id){ active=id; try{ localStorage.setItem('hub-setgroup',id); }catch(e){} apply(); const nav=sec().querySelector('.setb.on'); if(nav&&nav.scrollIntoView) try{ nav.scrollIntoView({block:'nearest',inline:'center'}); }catch(e){} }
+  const sync=()=>{ const v=rd(); if(v&&v!==active) active=v; tidy(); };
+  if(typeof showTab==='function'){ const _s=showTab; showTab=function(t){ const r=_s.apply(this,arguments); if(t==='Settings'){ try{ sync(); }catch(e){} } return r; }; }
+  window.__settingsGroups=()=>GROUPS.map(x=>({id:x.id,label:x.label}));
+  const boot=()=>{ tidy(); const g=grid(); if(g) new MutationObserver(()=>{ if(!busy) setTimeout(tidy,60); }).observe(g,{childList:true,attributes:true,attributeFilter:['hidden'],subtree:false}); setInterval(tidy,3000); };
+  if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,1500)); else setTimeout(boot,1500);
+})();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openColor&&!document.querySelector('dialog[open]')){ openColor=null; render(); } });
 document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e.target.closest('.lt'))){ openColor=null; render(); } },true);
 (function(){
@@ -4741,6 +5172,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '6.1.0':{t:'Lumora 6.1',items:["Sleep mode: a Sleep button on the Bedroom card fades the room to a dim warm glow and then off. Choose the room, the fade time and an optional bedtime in Settings. On the add-on it carries on with the page closed.", "Spotify and music: a Music card with play, skip, volume, shuffle, where to play, and a paste-a-link box. It uses Home Assistant's Spotify integration, and Settings has the steps.", "Bluetooth: a Bluetooth light on the left, and a Settings page to find and connect nearby devices from Chrome, Edge or the Windows app. A browser cannot make Lumora discoverable to other devices.", "The left lights now follow one rule: green is good, yellow is a warning, red is an issue. A red light beeps for 5 seconds, and you can turn that off.", "A new dock with labels, a new look for the left lights, and Settings sorted into eight topics: account, home, lights, devices, alerts, connections, screens and system."]},
   '6.0.1':{t:'Lumora 6.0.1',items:["Fixes: silencing the alarm while the lights are still flashing now always restores them, and they are restored even if the add-on restarted during an alarm.", "The automation builder no longer scrolls sideways on a phone, small buttons are easier to tap, and the logo no longer repeats internal ids."]},
   '6.0.0':{t:'Welcome to Lumora 6',items:["Lumora 6 is the biggest overhaul so far, built in four parts.", "Home screen: rooms are cards. Tap one to switch every light in it, see how many are on and how bright, and use Show lights to look at just that room. A strip under the clock shows lights on, power in use, cameras and home or away.", "Automations: every automation shows as a flow of trigger, conditions and steps. Check now tells you whether it would run right now and why, History lists its recent runs and skips, and the builder shows what you are making in plain words.", "Security: a new card on the home screen with an alarm that has Off, Home and Away modes. Doors and windows get an entry delay with a countdown, motion counts when you are away, and when it sounds the server sends a phone alert and flashes the lights red until you silence it. A timeline lists camera motion, doors, locks and alarms, and cameras with a picture can save snapshots.", "Faster and sturdier: Lumora opens instantly from a saved copy and refreshes it in the background, shows a notice when you are offline, and the source is now kept in the add-on repository as separate files with a build script."]},
   '5.0.0':{t:'Welcome to Lumora 5',items:['A new look: 3D logo and icons, a redesigned Today panel, and a festive Christmas theme from December 1 to January 5 with its own lighting automations.','Automations now run on the server, so they work with every browser closed.','Light watch: delayed and repeat alerts, drop-out and router-problem detection, quiet hours and a health report for every light.','Command palette (Ctrl+K), an energy estimate with CSV export, a status-lamp side tab and a pop-out window that stays on top.','Google Home and Alexa through Home Assistant, a Windows desktop app, and an easier Android TV install.','The server address is at the bottom of Settings, and the version number is in Settings, About Lumora.']},

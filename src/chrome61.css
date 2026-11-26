@@ -1,0 +1,51 @@
+
+/* ---- 6.1: status rail (green good, yellow warning, red issue) and dock ---- */
+#sidetab{--st-ok:#22b866;--st-warn:#f2b705;--st-bad:#ef4337;left:12px}
+#sidetab .tl[data-lv="ok"]{--lv:var(--st-ok)}#sidetab .tl[data-lv="warn"]{--lv:var(--st-warn)}#sidetab .tl[data-lv="bad"]{--lv:var(--st-bad)}
+#sidetab .stlamps{padding:10px 8px;gap:6px;max-width:64px;border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);border-radius:28px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 90%,#fff 10%),color-mix(in srgb,var(--surface) 80%,transparent));
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 18px 36px -16px rgb(0 0 0/.55)}
+#sidetab.open .stlamps{max-width:310px}
+#sidetab .tl{padding:3px 4px;gap:12px;border-radius:999px;min-height:40px;color:var(--ink)}
+#sidetab .tl:hover{background:color-mix(in srgb,var(--lv) 10%,transparent)}
+#sidetab .tl svg{width:34px;height:34px;padding:7px;box-sizing:border-box;border-radius:50%;opacity:1;filter:none;color:var(--lv);
+  background:radial-gradient(circle at 35% 28%,color-mix(in srgb,var(--lv) 30%,#fff 20%),color-mix(in srgb,var(--lv) 16%,transparent) 70%);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--lv) 60%,transparent),inset 0 -3px 5px color-mix(in srgb,var(--lv) 25%,transparent)}
+#sidetab .tl[data-lv="ok"] svg{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--lv) 50%,transparent)}
+#sidetab .tl[data-lv="warn"] svg{box-shadow:inset 0 0 0 2px var(--lv),0 0 12px color-mix(in srgb,var(--lv) 55%,transparent)}
+#sidetab .tl[data-lv="bad"] svg{box-shadow:inset 0 0 0 2px var(--lv),0 0 16px color-mix(in srgb,var(--lv) 75%,transparent)}
+#sidetab .tl .tll em{color:var(--muted)}
+#sidetab .tl[data-lv="warn"] .tll em,#sidetab .tl[data-lv="bad"] .tll em{color:var(--lv);font-weight:700}
+html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s ease-in-out infinite}
+#sidetab .tl[data-lv="warn"] svg,#sidetab .tl[data-lv="ok"] svg{animation:none}
+#sidetab .stgrip{width:22px;height:48px;border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);border-left:0;border-radius:0 14px 14px 0}
+#sidetab .stgrip[data-lv="ok"]{color:var(--st-ok)}#sidetab .stgrip[data-lv="warn"]{color:var(--st-warn);box-shadow:inset 0 0 0 1px var(--st-warn)}#sidetab .stgrip[data-lv="bad"]{color:var(--st-bad);box-shadow:inset 0 0 0 1px var(--st-bad)}
+@media (min-width:701px){html:not([data-popout="1"]):not([data-tv="1"]) main{padding-left:92px}}
+@media (max-width:700px){
+  #sidetab{left:0}
+  #sidetab .stlamps{max-width:0;padding:8px 0;border:0;box-shadow:none}
+  #sidetab.open .stlamps{max-width:290px;padding:8px;border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);border-left:0;border-radius:0 24px 24px 0;box-shadow:0 14px 40px rgb(0 0 0/.35)}
+}
+
+/* dock: icon over a label, active tab raised */
+.dock{border-radius:30px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 90%,#fff 10%),color-mix(in srgb,var(--surface) 76%,transparent));
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.45),0 22px 44px -16px rgb(0 0 0/.6)}
+.tab{border-radius:22px}
+.tab[aria-current=true]{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 10px 18px -8px var(--accent)}
+@media (min-width:701px){
+  .tab{flex-direction:column;justify-content:center;gap:3px;height:58px;min-width:64px;padding:0 10px}
+  .tab>span{max-width:none;opacity:1;font-size:.68rem;font-weight:600;line-height:1}
+  .tab[aria-current=true]{gap:3px;padding:0 10px}
+  .tab[aria-current=true]>span{max-width:none}
+  .tab:not([aria-current=true]):hover{transform:translateY(-3px)}
+}
+
+@media (min-width:701px){.dock{padding:7px 9px;gap:4px}}
+@media (max-width:700px){.dock{padding:6px;gap:0;border-radius:26px}}
+
+/* narrow screens: let grid cards shrink instead of stretching the page */
+.musiccard,.seccard,.sleepcard{grid-template-columns:minmax(0,1fr)}
+.sleepcard{grid-template-columns:auto minmax(0,1fr) auto}
+.muhead>*,.munow>*,.muvol>*,.mulink>*{min-width:0}
+.sgrid{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}

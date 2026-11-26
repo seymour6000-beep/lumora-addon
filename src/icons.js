@@ -45,6 +45,17 @@ Object.assign(ICODEF,{
   boltoff:{d:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z'],s:['M13.2 3 5.5 13.4h5.6L10.4 21l8.1-10.6h-5.7z','M4 4l16 16']},
   away:{d:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z'],s:['M4 11.2 12 4.5l8 6.7V19a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19z','m9.5 13.5 5 4M14.5 13.5l-5 4']}
 });
+Object.assign(ICODEF,{
+  bluetooth:{d:[],s:['m7 7.5 10 9-5 4.5v-17l5 4.5-10 9']},
+  music:{d:['M9 17.5a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 17.5zM20 15.5a2.5 2.5 0 1 1-2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z'],s:['M9 17.5V6l11-2v11.5','M9 9.5l11-2']},
+  moon:{d:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z'],s:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z']},
+  play:{d:['M8 5.5v13l11-6.5z'],s:['M8 5.5v13l11-6.5z']},
+  pause:{d:[],s:['M8.5 5.5v13M15.5 5.5v13']},
+  skipnext:{d:['M6 6v12l9-6z'],s:['M6 6v12l9-6z','M18 6v12']},
+  skipprev:{d:['M18 6v12l-9-6z'],s:['M18 6v12l-9-6z','M6 6v12']},
+  volume:{d:[],s:['M4 9.5h3.5L12 6v12l-4.5-3.5H4z','M15.5 9a4 4 0 0 1 0 6','M18 6.5a7.5 7.5 0 0 1 0 11']},
+  shuffle:{d:[],s:['M4 7h3.5c4 0 5 10 9 10H20','M4 17h3.5c1.4 0 2.4-1.2 3.3-2.8','M13.2 9.2C14 7.9 15 7 16.5 7H20','m18 5 2 2-2 2','m18 15 2 2-2 2']}
+});
 const icoInner=n=>{ const i=ICODEF[n]; if(!i) return ''; return i.d.map(p=>'<path class="d" d="'+p+'"/>').join('')+i.s.map(p=>'<path d="'+p+'"/>').join(''); };
 const ICO=(n,cls)=>'<svg class="ico'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icoInner(n)+'</svg>';
 

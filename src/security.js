@@ -33,6 +33,7 @@
     draw();
   }
   /* camera motion from this page goes to the alarm */
+  window.__secView=()=>view();
   window.__secMotion=cam=>{
     if(isRemote()) srvApi('POST','/api/security/event',{cam}).then(r=>{ if(r.ok){ S=r.json; draw(); } });
     else { dEvent('motion','Motion at '+cam); if(D.mode!=='off') dTrigger('Motion at '+cam,false); draw(); }

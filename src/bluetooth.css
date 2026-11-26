@@ -1,0 +1,8 @@
+
+/* ---- 6.1: bluetooth ---- */
+.btlist{display:grid;gap:8px;margin-top:10px}
+.btrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.btdot{width:12px;height:12px;border-radius:50%;background:var(--off);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--ink) 20%,transparent);flex:none}
+.btdot[data-on="1"]{background:#22b866;box-shadow:0 0 10px #22b866}
+.bttx{flex:1;display:flex;flex-direction:column;min-width:0}.bttx em{font-style:normal;color:var(--muted);font-size:.8rem}.btn_{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btact{display:flex;gap:6px}

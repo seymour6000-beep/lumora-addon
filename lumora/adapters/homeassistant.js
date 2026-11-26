@@ -113,6 +113,45 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, pr
       }
       throw Object.assign(new Error('That device can’t do that'), { status: 400 });
     },
+    /* media players (Spotify through Home Assistant's Spotify integration, speakers, TVs) */
+    async mediaPlayers() {
+      const states = await req('/api/states');
+      if (!Array.isArray(states)) return [];
+      return states.filter((s) => s && /^media_player\.[a-z0-9_]+$/.test(String(s.entity_id))).map((s) => {
+        const a = s.attributes || {}; const pic = typeof a.entity_picture === 'string' && /^https:\/\//.test(a.entity_picture) ? a.entity_picture : '';
+        return {
+          id: s.entity_id, name: cleanName(s, s.entity_id), state: String(s.state || 'unknown'),
+          spotify: /spotify/i.test(s.entity_id) || /spotify/i.test(String(a.app_name || a.source || '')),
+          title: String(a.media_title || '').slice(0, 120), artist: String(a.media_artist || a.media_album_artist || '').slice(0, 120), album: String(a.media_album_name || '').slice(0, 120),
+          volume: typeof a.volume_level === 'number' ? Math.round(a.volume_level * 100) : null, muted: !!a.is_volume_muted,
+          source: String(a.source || '').slice(0, 60), sources: Array.isArray(a.source_list) ? a.source_list.slice(0, 40).map((x) => String(x).slice(0, 60)) : [],
+          shuffle: a.shuffle === true, repeat: String(a.repeat || ''), picture: pic,
+          duration: Number.isFinite(a.media_duration) ? a.media_duration : null, position: Number.isFinite(a.media_position) ? a.media_position : null,
+        };
+      });
+    },
+    async mediaCall(id, action, value) {
+      if (!/^media_player\.[a-z0-9_]+$/.test(String(id))) throw Object.assign(new Error('Not a media player'), { status: 400 });
+      const post = (svc, data) => req('/api/services/media_player/' + svc, { method: 'POST', body: JSON.stringify({ entity_id: id, ...data }) });
+      switch (action) {
+        case 'play': return post('media_play', {});
+        case 'pause': return post('media_pause', {});
+        case 'toggle': return post('media_play_pause', {});
+        case 'next': return post('media_next_track', {});
+        case 'previous': return post('media_previous_track', {});
+        case 'volume': return post('volume_set', { volume_level: Math.max(0, Math.min(1, Number(value) / 100 || 0)) });
+        case 'mute': return post('volume_mute', { is_volume_muted: !!value });
+        case 'shuffle': return post('shuffle_set', { shuffle: !!value });
+        case 'source': if (typeof value !== 'string' || !value || value.length > 60) throw Object.assign(new Error('Pick a source'), { status: 400 }); return post('select_source', { source: value });
+        case 'play_media': {
+          const m = String(value || '').trim(); let uri = m, type = '';
+          const u = m.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist|artist|show|episode)\/([A-Za-z0-9]{10,30})/);
+          if (u) { type = u[1]; uri = 'spotify:' + u[1] + ':' + u[2]; } else { const q = m.match(/^spotify:(track|album|playlist|artist|show|episode):([A-Za-z0-9]{10,30})$/); if (!q) throw Object.assign(new Error('Paste a Spotify link, such as an open.spotify.com playlist link'), { status: 400 }); type = q[1]; }
+          return post('play_media', { media_content_id: uri, media_content_type: type });
+        }
+        default: throw Object.assign(new Error('Unknown action'), { status: 400 });
+      }
+    },
     isLightId: (id) => LIGHT_ID.test(String(id)),
     async ping() { await req('/api/'); return true; },
     isCameraId: (id) => CAMERA_ID.test(String(id)),

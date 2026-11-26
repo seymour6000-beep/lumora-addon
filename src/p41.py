@@ -46,7 +46,7 @@ rep("'4.8.0':{t:'Light watch'","'4.8.1':{t:'Easier TV install',items:['Installin
 rep("APP_VERSION='4.8.1'","APP_VERSION='4.9.0'")
 rep("'4.8.1':{t:'Easier TV install'","'4.9.0':{t:'Pop-out window is final',items:['The pop-out window is no longer a beta.','It now shows the time and how many lights are on, has an All lights off button, and remembers its size and position.']},\n  '4.8.1':{t:'Easier TV install'")
 rep("APP_VERSION='4.9.0'","APP_VERSION='4.10.0'")
-rep("'hub-others','hub-autostat','hub-watch'];","'hub-others','hub-autostat','hub-watch','hub-voice','hub-security'];")
+rep("'hub-others','hub-autostat','hub-watch'];","'hub-others','hub-autostat','hub-watch','hub-voice','hub-security','hub-sleep'];")
 rep("'4.9.0':{t:'Pop-out window is final'","'4.10.0':{t:'Google Home, Alexa and server address',items:['New Google Home and Alexa settings: Lumora shares your scenes with Home Assistant so you can say them out loud, lists phrases to try for your own lights, and has step-by-step setup for both assistants.','The address of your server is now at the bottom of Settings, with a Copy button.']},\n  '4.9.0':{t:'Pop-out window is final'")
 rep("APP_VERSION='4.10.0'","APP_VERSION='4.11.0'")
 rep("'4.10.0':{t:'Google Home, Alexa and server address'","'4.11.0':{t:'Lumora for Windows',items:['There is now a Windows desktop app: a system tray icon, Windows alerts for new warnings, an always-on-top pop-out, and automatic updates. Download it from Settings, Lumora for Windows.']},\n  '4.10.0':{t:'Google Home, Alexa and server address'")

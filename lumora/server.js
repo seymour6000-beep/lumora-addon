@@ -44,7 +44,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-voice', 'hub-security', 'hub-others', 'hub-autostat',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-voice', 'hub-security', 'hub-sleep', 'hub-spotify', 'hub-others', 'hub-autostat',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -554,6 +554,47 @@ function createApp(userConfig = {}) {
   function saveSecurityNow() { try { store.write(secFile, sec); } catch (e) { /* ignore */ } }
   function secView() { return { mode: sec.mode, alarm: sec.alarm, armedAt: sec.armedAt || 0, events: sec.events.slice(0, 80), cfg: secCfg(), now: Date.now() }; }
 
+  /* ---- sleep mode: fade a room's lights down to warm and off, on the server so it carries on with the page closed ---- */
+  const sleepFile = path.join(cfg.dataDir, 'sleep.json');
+  let slp = store.read(sleepFile, null); if (slp && !(slp.startedAt && slp.minutes && Array.isArray(slp.from))) slp = null;
+  const sleepCfg = () => { const c = readJson2('hub-sleep', {}) || {}; return { minutes: Math.max(1, Math.min(120, Number(c.minutes) || 30)), room: String(c.room || 'Bedroom').slice(0, 30), bedtime: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(c.bedtime || '')) ? c.bedtime : '', warm: c.warm !== false }; };
+  let slpBusy = false, slpLastBed = '';
+  const sleepSave = () => { try { if (slp) store.write(sleepFile, slp); else if (fs.existsSync(sleepFile)) fs.unlinkSync(sleepFile); } catch (e) { /* ignore */ } };
+  async function sleepStart(minutes) {
+    if (!ha) throw Object.assign(new Error('Sleep mode needs Home Assistant.'), { status: 409 });
+    const c = sleepCfg(); const mine = readJson2('hub-lights', []) || []; const gone = new Set(readJson2('hub-removed', []));
+    const ids = mine.filter((d) => d && d.room === c.room && !gone.has(d.id)).map((d) => d.id);
+    if (!ids.length) throw Object.assign(new Error('There are no lights in ' + c.room + '.'), { status: 409 });
+    const live = (await ha.allLights()).filter((l) => ids.includes(l.id) && l.online && l.on);
+    if (!live.length) throw Object.assign(new Error('The ' + c.room + ' lights are already off.'), { status: 409 });
+    slp = { room: c.room, minutes: Math.max(1, Math.min(120, Number(minutes) || c.minutes)), startedAt: Date.now(), from: live.map((l) => ({ id: l.id, bri: l.bri })), warm: c.warm, step: 0 };
+    sleepSave(); secEvent('mode', 'Sleep mode started in ' + c.room); await sleepTick(); return sleepView();
+  }
+  function sleepStop(why) { if (!slp) return; const r = slp.room; slp = null; sleepSave(); if (why) secEvent('mode', why.replace('{room}', r)); broadcast('sleep', { t: Date.now() }); }
+  async function sleepTick() {
+    if (!slp || slpBusy || !ha) return; slpBusy = true;
+    try {
+      const p = Math.min(1, (Date.now() - slp.startedAt) / (slp.minutes * 60000)); const done = p >= 1;
+      for (const l of slp.from) {
+        try {
+          if (done) await ha.setLight(l.id, { on: false });
+          else await ha.setLight(l.id, Object.assign({ on: true, bri: Math.max(1, Math.round(l.bri * (1 - p))) }, slp.warm ? { temp: 2200 } : {}));
+        } catch (e) { /* one light failing must not stop the others */ }
+      }
+      slp && (slp.step = (slp.step || 0) + 1);
+      if (done) sleepStop('Sleep mode finished: {room} lights are off');
+    } finally { slpBusy = false; }
+  }
+  function sleepView() { const c = sleepCfg(); return { active: !!slp, room: slp ? slp.room : c.room, minutes: slp ? slp.minutes : c.minutes, startedAt: slp ? slp.startedAt : 0, endsAt: slp ? slp.startedAt + slp.minutes * 60000 : 0, cfg: c, ha: !!ha, now: Date.now() }; }
+  const sleepTimer = setInterval(() => {
+    sleepTick().catch(() => {});
+    try {
+      const c = sleepCfg(); const hm = hhmmFmt.format(new Date());
+      if (c.bedtime && hm === c.bedtime && slpLastBed !== hm + dayFmt.format(new Date()) && !slp) { slpLastBed = hm + dayFmt.format(new Date()); sleepStart().catch(() => {}); }
+    } catch (e) { /* ignore */ }
+  }, 20000); sleepTimer.unref();
+  if (slp) { const t = setTimeout(() => sleepTick().catch(() => {}), 1500); t.unref(); }   // pick up where it left off after a restart
+
   let autoLog = store.read(path.join(cfg.dataDir, 'autolog.json'), []); if (!Array.isArray(autoLog)) autoLog = [];
   let autoLogDirty = false;
   const pushMsg = async (title, msg) => {
@@ -845,6 +886,35 @@ function createApp(userConfig = {}) {
         secEvent('motion', 'Motion at ' + cam); if (sec.mode !== 'off') secTrigger('Motion at ' + cam, false);
         return json(req, res, 200, secView());
       }
+    }
+    if (p === '/api/sleep' && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      return json(req, res, 200, sleepView());
+    }
+    if ((p === '/api/sleep/start' || p === '/api/sleep/cancel') && method === 'POST') {
+      const sess = currentSession(req);
+      if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      if (roleOf(sess.user) === 'guest') return fail(req, res, 403, 'forbidden', 'Your account can’t do that.');
+      const wait = bump(hits, 'slp|' + sess.user.id, 30, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      const b = await readJson(req).catch(() => ({}));
+      if (p === '/api/sleep/cancel') { sleepStop('Sleep mode stopped in {room}'); return json(req, res, 200, sleepView()); }
+      try { const v = await sleepStart(b && b.minutes); broadcast('sleep', { t: Date.now() }); return json(req, res, 200, v); } catch (e) { return fail(req, res, e.status || 502, 'sleep_failed', e.message); }
+    }
+    if (p === '/api/media' && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      if (!ha) return json(req, res, 200, { ha: false, players: [] });
+      try { return json(req, res, 200, { ha: true, players: await ha.mediaPlayers() }); } catch (e) { return fail(req, res, 502, 'ha_unreachable', 'Could not reach Home Assistant.'); }
+    }
+    if (p === '/api/media' && method === 'POST') {
+      const sess = currentSession(req);
+      if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      if (roleOf(sess.user) === 'guest') return fail(req, res, 403, 'forbidden', 'Your account can’t do that.');
+      if (!ha) return fail(req, res, 409, 'no_ha', 'Music needs Home Assistant.');
+      const wait = bump(hits, 'med|' + sess.user.id, 120, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      const b = await readJson(req).catch(() => ({}));
+      try { await ha.mediaCall(b.id, b.action, b.value); return json(req, res, 200, { ok: true }); } catch (e) { return fail(req, res, e.status || 502, 'media_failed', e.message); }
     }
     if (p === '/api/voice/status' && method === 'GET') {
       const sess = currentSession(req);

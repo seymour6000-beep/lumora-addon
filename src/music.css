@@ -1,0 +1,16 @@
+
+/* ---- 6.1: music ---- */
+.musiccard{margin:0 0 16px;padding:16px;border-radius:24px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55);display:grid;gap:12px}
+.musiccard[data-state="playing"]{border-color:color-mix(in srgb,#1db954 45%,transparent);box-shadow:inset 4px 0 0 #1db954,inset 0 1px 0 rgb(255 255 255/.3),0 14px 26px -18px rgb(0 0 0/.55)}
+.muhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.muhead h3{margin:0;font:600 1.05rem var(--fd,var(--fb))}.muhead .sub{margin:0}.muhead>div{flex:1;min-width:120px}
+.muic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,#1db954 18%,transparent);color:#169c46}.muic .ico{width:24px;height:24px}
+.musel{max-width:100%;min-width:0}
+.munow{display:flex;align-items:center;gap:14px}.muart{width:72px;height:72px;border-radius:16px;flex:none;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted)}.muart img{width:100%;height:100%;object-fit:cover}.muart .ico{width:30px;height:30px}
+.mutx{display:flex;flex-direction:column;min-width:0}.mut{font-size:1.1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mua{color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muprog{height:6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}.muprog i{display:block;height:100%;background:#1db954;border-radius:inherit}.mutime{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem;margin-top:-6px}
+.mubtns{display:flex;justify-content:center;align-items:center;gap:14px}
+.mub{width:44px;height:44px;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--ink);display:grid;place-items:center;padding:0;box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 14%,transparent)}
+.mub:active{transform:translateY(2px);box-shadow:none}.mub .ico{width:22px;height:22px}.mub.big{width:58px;height:58px;background:#1db954;border-color:#169c46;color:#fff}.mub.big .ico{width:28px;height:28px}.mub.on{color:#169c46;border-color:#1db954}
+.muvol{display:flex;align-items:center;gap:10px}.muvol input{flex:1;min-width:0}.muvi .ico{width:20px;height:20px}.muvn{width:3.2em;text-align:right;color:var(--muted);font-size:.85rem}
+.mulink{display:flex;gap:8px}.mulink .in{flex:1;min-width:0}
+.muerr{color:var(--bad);margin:0}.muempty{display:grid;gap:8px;justify-items:start}.muempty p{margin:0}
