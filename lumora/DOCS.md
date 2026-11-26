@@ -84,3 +84,9 @@ Settings, Google Home and Alexa. Your lights are already Home Assistant entities
 You still do the one-time link between Home Assistant and Google or Amazon. The page lists the steps. The easy route is Home Assistant Cloud (Nabu Casa, paid). A free manual route exists but needs a Google developer project or an Alexa skill. In Home Assistant, Settings, Voice assistants, expose your lights and the Lumora scenes. Lumora does not talk to Google or Amazon itself and cannot check that the link works.
 
 The server address is shown at the bottom of Settings.
+
+## Lumora for Windows (4.11)
+
+A desktop app for Windows. In Lumora, Settings, *Lumora for Windows* has the download button (or open `/desktop.exe` on your server). Run `Lumora-Setup.exe`; Windows may warn because the app is not signed (More info, Run anyway). `Lumora-Portable.exe` runs with no install.
+
+Open the app and choose *Find my server automatically*, or type your server address (shown at the bottom of Settings). Sign in once; it remembers you. It stays in the system tray, shows Windows notifications for new warnings (light offline, power cut, weather warnings), has an always-on-top pop-out window (`Ctrl+Shift+P`), can start with Windows, and updates itself. `Ctrl+Alt+L` shows or hides it from anywhere. Right-click the tray icon for its options. GitHub builds the app from the `desktop/` folder of this repository.

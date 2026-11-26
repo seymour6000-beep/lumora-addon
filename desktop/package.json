@@ -1,0 +1,43 @@
+{
+  "name": "lumora-desktop",
+  "productName": "Lumora",
+  "version": "1.0.0",
+  "description": "Lumora for Windows: your lights and notifications in a desktop window.",
+  "main": "main.js",
+  "author": "Lumora",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/discover.test.js",
+    "dist": "electron-builder --win nsis portable --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ca.lumora.desktop",
+    "productName": "Lumora",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "discover.js", "config.js", "ui/**/*", "build/tray.png", "build/icon.png", "package.json"],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [ { "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] } ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lumora",
+      "artifactName": "Lumora-Setup.exe"
+    },
+    "portable": { "artifactName": "Lumora-Portable.exe" },
+    "publish": [ { "provider": "generic", "url": "https://github.com/seymour6000-beep/lumora-addon/releases/download/desktop-latest" } ]
+  }
+}

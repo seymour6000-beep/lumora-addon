@@ -1,0 +1,45 @@
+name: Build Lumora for Windows
+on:
+  push:
+    paths: ['desktop/**', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: desktop
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Test
+        run: npm test
+      - name: Version
+        run: npm version --no-git-tag-version "1.0.${{ github.run_number }}"
+      - name: Build installer
+        run: npx electron-builder --win nsis portable --publish never
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lumora-Windows
+          path: |
+            desktop/dist/Lumora-Setup.exe
+            desktop/dist/Lumora-Portable.exe
+            desktop/dist/latest.yml
+            desktop/dist/Lumora-Setup.exe.blockmap
+      - name: Publish release
+        if: github.ref == 'refs/heads/main'
+        working-directory: .
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release delete desktop-latest --yes --cleanup-tag || true
+          gh release create desktop-latest desktop/dist/Lumora-Setup.exe desktop/dist/Lumora-Portable.exe desktop/dist/latest.yml desktop/dist/Lumora-Setup.exe.blockmap --title "Lumora for Windows" --notes "Install Lumora-Setup.exe (installer with automatic updates) or run Lumora-Portable.exe (no install)."

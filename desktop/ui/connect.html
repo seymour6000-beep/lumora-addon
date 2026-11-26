@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lumora</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'">
+<link rel="stylesheet" href="ui.css"></head><body><main>
+<img class="logo" src="logo.svg" alt="">
+<h1>Connect to Lumora</h1>
+<p>Lumora runs on your Home Assistant. Let this app look for it, or type its address.</p>
+<div class="row"><button class="primary" id="find" type="button">Find my server automatically</button>
+<div class="bar" id="bar" hidden><i id="barFill"></i></div></div>
+<p style="margin:16px 0 8px">or type the address</p>
+<form id="form" class="row" style="margin-top:0"><input id="addr" placeholder="192.168.1.50:8080" autocomplete="off" spellcheck="false" aria-label="Server address"><button id="go" type="submit">Connect</button></form>
+<p class="msg" id="msg" role="status" aria-live="polite"></p>
+</main><script src="connect.js"></script></body></html>

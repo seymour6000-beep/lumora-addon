@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lumora</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'">
+<link rel="stylesheet" href="ui.css"></head><body><main>
+<img class="logo" src="logo.svg" alt="">
+<h1>Can’t reach Lumora</h1>
+<p id="where">The server isn’t answering. Check that Home Assistant is running and that this computer is on your home network.</p>
+<div class="row"><button class="primary" id="retry" type="button">Try again</button><button id="change" type="button">Change server</button></div>
+<p class="msg" id="msg" role="status" aria-live="polite">Trying again by itself every 10 seconds.</p>
+</main><script src="offline.js"></script></body></html>

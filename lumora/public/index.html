@@ -1057,6 +1057,7 @@ body[data-role="guest"] #watchPanel,body[data-role="family"] #watchPanel{display
 .addrlist{display:grid;gap:8px;margin:8px 0}.addrrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-radius:16px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);background:color-mix(in srgb,var(--surface) 88%,transparent);box-shadow:inset 0 1px 0 rgb(255 255 255/.2)}
 .addrrow code{font:700 1.15rem var(--fb);letter-spacing:.01em}.addrrow .btn{margin-left:auto}
 body[data-role="guest"] #voicePanel,body[data-role="family"] #voicePanel,body[data-role="guest"] #addrPanel{display:none!important}
+body[data-role="guest"] #deskPanel{display:none!important}
 </style>
 </head>
 <body data-auth="out">
@@ -3276,7 +3277,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.10.0';
+const APP_VERSION='4.11.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4387,6 +4388,21 @@ window.__claudeSplash=function(){
     bits.push(s.alexa?'Alexa is set up in Home Assistant.':'Alexa is not set up in Home Assistant yet (Home Assistant Cloud sets it up from its own page, so this can show “not set up” even when Cloud is on).');
     el.textContent=bits.join(' ');
   }
+  /* Lumora for Windows: download steps, or the app's own settings when running inside it */
+  function buildDesk(){
+    const grid=document.querySelector('section[data-tab="Settings"] .sgrid'); if(!grid||document.getElementById('deskPanel')) return;
+    const p=document.createElement('div'); p.className='panel wide'; p.id='deskPanel'; const D=window.lumoraDesktop;
+    if(D&&D.isDesktop){
+      p.innerHTML='<h3>Lumora for Windows</h3><p class="sub">You are using the desktop app. It stays in the system tray so you get Windows alerts.</p><div id="deskSw"></div><div class="nrow"><button class="btn" id="deskChange" type="button">Change server</button></div>';
+      D.getConfig().then(c=>{ const box=p.querySelector('#deskSw'); [['alerts','Windows alerts for new warnings'],['alwaysOnTop','Keep the window on top'],['closeToTray','Close button hides to the tray'],['openAtLogin','Start with Windows']].forEach(([k,l])=>{
+        const row=document.createElement('div'); row.className='srow'; const sp=document.createElement('span'); sp.textContent=l; const b=document.createElement('button'); b.className='sw'; b.type='button'; b.setAttribute('role','switch'); b.innerHTML='<i></i>'; b.setAttribute('aria-label',l);
+        let on=!!c[k]; const paint=()=>{ b.classList.toggle('on',on); b.setAttribute('aria-checked',String(on)); }; paint(); b.onclick=async()=>{ on=!on; paint(); await D.setConfig(k,on); }; row.append(sp,b); box.appendChild(row); }); });
+      p.querySelector('#deskChange').onclick=()=>D.changeServer();
+    } else {
+      p.innerHTML='<h3>Lumora for Windows</h3><p class="sub">A desktop window for Lumora with Windows alerts, a system tray icon, a pop-out that stays on top, and automatic updates.</p><ol class="tvsteps"><li>Download the installer below and run it. Windows may show a blue “protected your PC” box because the app is not signed. Choose <b>More info</b>, then <b>Run anyway</b>.</li><li>Open Lumora from the Start menu and choose <b>Find my server automatically</b>. If it can’t find it, type <b>'+esc(location.protocol==='file:'?'your server address':location.host)+'</b>.</li><li>Sign in once. The app remembers you.</li></ol><div class="nrow"><a class="btn primary" href="/desktop.exe" id="deskDl">Download for Windows</a><a class="btn" href="https://github.com/seymour6000-beep/lumora-addon/releases/tag/desktop-latest" target="_blank" rel="noopener noreferrer">Other downloads</a></div>';
+    }
+    const addr=document.getElementById('addrPanel'); if(addr) grid.insertBefore(p,addr); else grid.appendChild(p);
+  }
   /* the address of this server, at the bottom of Settings */
   function buildAddr(){
     const grid=document.querySelector('section[data-tab="Settings"] .sgrid'); if(!grid||document.getElementById('addrPanel')) return;
@@ -4403,7 +4419,7 @@ window.__claudeSplash=function(){
       const b=document.createElement('button'); b.className='btn sm'; b.type='button'; b.textContent='Copy'; b.onclick=async()=>{ try{ await navigator.clipboard.writeText('http://'+a); b.textContent='Copied'; }catch(e){ b.textContent='Press Ctrl+C'; try{ const r=document.createRange(); r.selectNodeContents(t); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); }catch(x){} } setTimeout(()=>b.textContent='Copy',1800); };
       row.append(t,s,b); list.appendChild(row); });
   }
-  const run=()=>{ try{ buildVoice(); buildAddr(); }catch(e){} };
+  const run=()=>{ try{ buildVoice(); buildAddr(); buildDesk(); }catch(e){} };
   const boot=()=>{ run(); setInterval(()=>{ if(document.getElementById('vSay')&&!document.hidden) drawSay(); },4000); };
   if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,600)); else setTimeout(boot,600);
   new MutationObserver(()=>{ if(document.body.dataset.auth==='in') run(); }).observe(document.body,{attributes:true,attributeFilter:['data-auth']});
@@ -4437,6 +4453,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '4.11.0':{t:'Lumora for Windows',items:['There is now a Windows desktop app: a system tray icon, Windows alerts for new warnings, an always-on-top pop-out, and automatic updates. Download it from Settings, Lumora for Windows.']},
   '4.10.0':{t:'Google Home, Alexa and server address',items:['New Google Home and Alexa settings: Lumora shares your scenes with Home Assistant so you can say them out loud, lists phrases to try for your own lights, and has step-by-step setup for both assistants.','The address of your server is now at the bottom of Settings, with a Copy button.']},
   '4.9.0':{t:'Pop-out window is final',items:['The pop-out window is no longer a beta.','It now shows the time and how many lights are on, has an All lights off button, and remembers its size and position.']},
   '4.8.1':{t:'Easier TV install',items:['Installing on Google TV or Android TV is now three steps: Downloader app, type your server address followed by /tv.apk, then sign in with a code. The steps are in Settings, Use Lumora on a TV, and on a page at /tv on your server.']},
