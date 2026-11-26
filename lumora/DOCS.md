@@ -42,3 +42,10 @@ Smart plugs (switch), door/motion/smoke/leak sensors (binary_sensor with a devic
 ## Automations on the server
 
 Automations run inside the add-on, so they keep working with every browser closed. Supported triggers: set times, sunrise and sunset, door/motion sensors, locks, temperature, light left on, light offline, and home or away. Camera motion and power-cut triggers still need a Lumora page open. Turn the behaviour off with **Run on the server** at the top of the Automations tab. Automations can lock a door but never unlock one.
+
+## Quick commands, energy and pop-out (4.2–4.3)
+
+- **Quick commands:** press Ctrl+K (or `/`, or the magnifier button) to search pages, scenes, lights, plugs and locks. Enter runs the top result. Alt+1–8 switches pages.
+- **Energy:** the History tab estimates energy from light on-time. Set watts per light and your price per kWh there. It is an estimate, not a meter reading. Export the history as CSV from the same tab.
+- **Pop-out (beta):** opens a small window with lights and notifications.
+- **Status lamps:** the side tab on the screen edge shows the state of your home at a glance.

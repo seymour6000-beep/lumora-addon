@@ -3170,7 +3170,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='4.3.0';
+const APP_VERSION='4.4.0';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4078,6 +4078,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '4.4.0':{t:'Polish and docs',items:['Quick commands now accept typing the moment they open.','Documentation updated for quick commands, energy, pop-out and status lamps.']},
   '4.3.0':{t:'Quick commands',items:['Press Ctrl+K (or /, or tap the magnifier at the top) to search and do things fast: turn a light on or off, run a scene, switch a plug, lock a door or jump to any page.','Alt+1 to Alt+8 open the pages in order.']},
   '4.2.0':{t:'Energy estimates and CSV',items:['Usage history now shows an estimate of the energy your lights used and what it cost. Set watts per light and your price per kWh right above the chart.','Download CSV saves the history (minutes on per light per day, estimated kWh and offline events) so you can open it in a spreadsheet.']},
   '4.1.0':{t:'Automations run on the server',items:['Your automations now run inside Lumora on your Home Assistant, so they keep working when no browser is open. This covers set times, sunrise and sunset, door and motion sensors, locks, temperature, “light left on”, “light offline” and home or away.','A new switch at the top of Automations, Run on the server, turns this on or off. When it is on, the browser stands back so nothing runs twice. Camera motion and power-cut rules still need a Lumora page open.','Automations can lock a door but never unlock one. Last-run times and counts are kept on the server too.']},
