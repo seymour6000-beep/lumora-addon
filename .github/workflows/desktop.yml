@@ -25,9 +25,26 @@ jobs:
         run: npm test
       - name: Version
         run: npm version --no-git-tag-version "1.0.${{ github.run_number }}"
-      - name: Build installer
-        run: npx electron-builder --win nsis portable --publish never
-        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+      - name: Build installer (signed when signing secrets are set)
+        run: |
+          ARGS=""
+          if [ -n "$AZURE_CLIENT_ID" ]; then
+            ARGS="-c.win.azureSignOptions.endpoint=$AZ_ENDPOINT -c.win.azureSignOptions.codeSigningAccountName=$AZ_ACCOUNT -c.win.azureSignOptions.certificateProfileName=$AZ_PROFILE -c.win.azureSignOptions.publisherName=$AZ_PUBLISHER"
+            echo "Signing with Azure Artifact Signing"
+          elif [ -n "$CSC_LINK" ]; then echo "Signing with the certificate file"
+          else echo "No signing secrets: building an unsigned app"; fi
+          npx electron-builder --win nsis portable --publish never $ARGS
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZ_ENDPOINT: ${{ vars.AZ_ENDPOINT }}
+          AZ_ACCOUNT: ${{ vars.AZ_ACCOUNT }}
+          AZ_PROFILE: ${{ vars.AZ_PROFILE }}
+          AZ_PUBLISHER: ${{ vars.AZ_PUBLISHER }}
       - uses: actions/upload-artifact@v4
         with:
           name: Lumora-Windows
