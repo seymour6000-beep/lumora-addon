@@ -44,7 +44,7 @@ function loadConfig(env = process.env) {
 /* the keys the app saves on the server (everything else stays in the browser) */
 const SYNC_KEYS = new Set([
   'hub-lights', 'hub-rules', 'hub-cams', 'hub-settings', 'hub-scenes', 'hub-removed',
-  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-others', 'hub-autostat',
+  'hub-apps', 'hub-power',  'hub-activity', 'hub-presence', 'hub-money', 'hub-notify', 'hub-watch', 'hub-voice', 'hub-others', 'hub-autostat',
 ]);
 const MAX_VALUE = 512 * 1024;
 const MAX_BODY = 1024 * 1024;
@@ -442,6 +442,49 @@ function createApp(userConfig = {}) {
     const cutoff = now - n * 86400000;
     return { days: out, names: hist.names, events: hist.events.filter((e) => e.t >= cutoff).slice(-400), now, tz: cfg.timeZone };
   }
+  const lanAddrs = () => { try { const out = []; for (const list of Object.values(require('os').networkInterfaces())) for (const i of list || []) if (i.family === 'IPv4' && !i.internal && !/^(172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(i.address)) out.push(i.address); return [...new Set(out)].slice(0, 4); } catch (e) { return []; } };
+  /* ---- voice assistants: share Lumora's scenes with Home Assistant so Google Home and Alexa can use them ---- */
+  const BUILTIN_SCENES = {
+    Evening: { on: true, bri: 45, color: '#ffb35c' }, Movie: { on: true, bri: 12, color: '#8fc1ff' }, Bright: { on: true, bri: 100, color: '#fff1d6' }, 'All off': { on: false },
+    Christmas: { on: true, bri: 60, color: '#ff4a3d' }, 'Christmas tree': { on: true, bri: 55, color: '#3ddc84' }, 'Christmas gold': { on: true, bri: 50, color: '#ffc65c' },
+  };
+  const voiceState = { last: 0, count: 0, error: '', names: [], hash: '' };
+  const sceneSlug = (n) => 'lumora_' + String(n).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+  const entityState = (p) => {
+    if (!p || p.on === false) return { state: 'off' };
+    const e = { state: 'on' };
+    if (p.bri != null) e.brightness = Math.max(1, Math.min(255, Math.round(Number(p.bri) * 2.55)));
+    if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) { const n = parseInt(p.color.slice(1), 16); e.rgb_color = [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    return e;
+  };
+  async function syncVoiceScenes(force) {
+    if (!ha) return { ok: false, error: 'Home Assistant is not connected.' };
+    const v = readJson2('hub-voice', {}) || {};
+    if (v.syncScenes === false && !force) return { ok: true, count: 0, off: true };
+    let lights = await ha.allLights();
+    const mine = new Set(readJson2('hub-lights', []).map((d) => d && d.id)); const gone = new Set(readJson2('hub-removed', []));
+    lights = lights.filter((l) => !gone.has(l.id) && (mine.size === 0 || mine.has(l.id)));
+    const scenes = {};
+    for (const [n, p] of Object.entries(BUILTIN_SCENES)) scenes[n] = Object.fromEntries(lights.map((l) => [l.id, p]));
+    const custom = readJson2('hub-scenes', {}) || {};
+    for (const [n, m] of Object.entries(custom)) { if (!m || typeof m !== 'object') continue; scenes[String(n).slice(0, 40)] = m['*'] ? Object.fromEntries(lights.map((l) => [l.id, m['*']])) : m; }
+    let count = 0, error = '';
+    const names = [];
+    for (const [n, m] of Object.entries(scenes)) {
+      const ents = {};
+      for (const [id, p] of Object.entries(m)) if (/^light\.[a-z0-9_]+$/.test(id) && lights.some((l) => l.id === id)) ents[id] = entityState(p);
+      if (!Object.keys(ents).length) continue;
+      try { await ha.createScene(sceneSlug(n), ents); count++; names.push(n); } catch (e) { error = e.message; break; }
+    }
+    Object.assign(voiceState, { last: Date.now(), count, error, names });
+    return { ok: !error, count, names, error };
+  }
+  const voiceHash = () => JSON.stringify([readJson2('hub-scenes', {}), readJson2('hub-voice', {}), readJson2('hub-lights', []).length]);
+  const voiceTimer = ha ? setInterval(() => { const h = voiceHash(); if (h !== voiceState.hash || Date.now() - voiceState.last > 300000) { voiceState.hash = h; syncVoiceScenes().catch((e) => { voiceState.error = e.message; }); } }, 30000) : null;
+  if (voiceTimer) voiceTimer.unref();
+  const voiceFirst = ha ? setTimeout(() => { voiceState.hash = voiceHash(); syncVoiceScenes().catch((e) => { voiceState.error = e.message; }); }, 8000) : null;
+  if (voiceFirst) voiceFirst.unref();
+
   /* ---- automations that run on the server ---- */
   let autoLog = store.read(path.join(cfg.dataDir, 'autolog.json'), []); if (!Array.isArray(autoLog)) autoLog = [];
   let autoLogDirty = false;
@@ -715,13 +758,27 @@ function createApp(userConfig = {}) {
       if (String(req.headers['x-requested-with'] || '').toLowerCase() !== 'lumora' || !sameOrigin(req)) return fail(req, res, 403, 'forbidden', 'Request blocked.');
     }
 
+    if (p === '/api/voice/status' && method === 'GET') {
+      const sess = currentSession(req);
+      if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      if (roleOf(sess.user) !== 'admin') return fail(req, res, 403, 'admin_only', 'Only the admin can do that.');
+      let comps = [];
+      if (ha) { try { comps = await ha.haComponents(); } catch (e) { /* unreachable */ } }
+      return json(req, res, 200, { ha: !!ha, scenes: voiceState.names, count: voiceState.count, last: voiceState.last, error: voiceState.error, google: comps.includes('google_assistant'), alexa: comps.includes('alexa') || comps.includes('alexa.smart_home'), cloud: comps.includes('cloud') });
+    }
+    if (p === '/api/voice/sync' && method === 'POST') {
+      const sess = currentSession(req);
+      if (!sess) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      if (roleOf(sess.user) !== 'admin') return fail(req, res, 403, 'admin_only', 'Only the admin can do that.');
+      try { const r = await syncVoiceScenes(true); return json(req, res, 200, r); } catch (e) { return fail(req, res, 502, 'ha_unreachable', 'Could not reach Home Assistant.'); }
+    }
     if (p === '/api/boot' && method === 'GET') {
       const sess = currentSession(req);
       return json(req, res, 200, {
         server: true,
         version: VERSION,
         latest,
-        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo', automations: !!ha, serverTypes: ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual'] },
+        config: { allowSignup: cfg.allowSignup, firstRun: userCount() === 0, adapter: ha ? 'homeassistant' : 'demo', lan: lanAddrs(), automations: !!ha, serverTypes: ['time', 'sun', 'lefton', 'lightoff', 'sensor', 'lockev', 'temp', 'home', 'away', 'manual'] },
         user: sess ? publicUser(sess.user) : null,
         data: sess ? bootData(sess.user) : null,
         rev: store.db.rev,
@@ -1167,7 +1224,7 @@ function createApp(userConfig = {}) {
   return {
     server, store, cfg, hasAdapter: !!ha, checkUpdate,
     parseAlerts, scanSchool, parseForecast, isLanIp, notifyTick, onLiveEvent, live, recordHistory, historyView, saveHistory, auto,
-    close() { saveHistory(); if (auto) auto.close(); clearInterval(autoFlush); clearInterval(histTimer); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
+    close() { saveHistory(); if (auto) auto.close(); clearInterval(autoFlush); clearInterval(histTimer); if (voiceTimer) clearInterval(voiceTimer); if (voiceFirst) clearTimeout(voiceFirst); clearInterval(sweepT); clearInterval(tidy); if (recTimer) clearInterval(recTimer); live.closed = true; clearTimeout(live.timer); clearTimeout(nudgeT); clearInterval(sseKeep); if (live.probeTimer) clearInterval(live.probeTimer); try { live.ws && live.ws.close(); } catch (e) { /* ignore */ } for (const r of sse) { try { r.end(); } catch (e) { /* ignore */ } } if (notifyTimer) clearInterval(notifyTimer); if (updTimer) clearInterval(updTimer); if (updFirst) clearTimeout(updFirst); store.flush(); return new Promise((r) => server.close(() => r())); },
   };
 }
 

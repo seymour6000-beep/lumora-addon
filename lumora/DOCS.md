@@ -72,3 +72,15 @@ Settings, Light watch controls how Lumora spots a light that has gone offline an
 - **Health report:** per light, how much of the last 7 or 30 days it was online, how many drops, the longest outage and the last drop.
 
 Phone alerts need the Phone alerts settings and keep working with the page closed.
+
+## Pop-out window (4.9)
+
+The pop-out is a small window with your notifications and lights. Open it from the Today panel, the Lights heading, or Ctrl+K. It shows the time and how many lights are on, has an All lights off button, and remembers its size and position. Automations keep running in the main window only, so nothing fires twice. Allow pop-ups for Lumora if your browser blocks it.
+
+## Google Home and Alexa (4.10)
+
+Settings, Google Home and Alexa. Your lights are already Home Assistant entities, so Google Home and Alexa can control them through Home Assistant. Lumora's part is to share your scenes: every few minutes (and whenever you change a scene) it creates a scene in Home Assistant for each Lumora scene, named `scene.lumora_evening`, `scene.lumora_movie`, `scene.lumora_all_off` and so on, including scenes you made yourself. Turn this off with *Share my scenes with Home Assistant*. These scenes are recreated after Home Assistant restarts.
+
+You still do the one-time link between Home Assistant and Google or Amazon. The page lists the steps. The easy route is Home Assistant Cloud (Nabu Casa, paid). A free manual route exists but needs a Google developer project or an Alexa skill. In Home Assistant, Settings, Voice assistants, expose your lights and the Lumora scenes. Lumora does not talk to Google or Amazon itself and cannot check that the link works.
+
+The server address is shown at the bottom of Settings.

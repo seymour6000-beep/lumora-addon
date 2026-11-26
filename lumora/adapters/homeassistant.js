@@ -167,6 +167,11 @@ function create({ url, token, fetchImpl = globalThis.fetch, timeoutMs = 8000, pr
       if (!NOTIFY_ID.test(String(service))) throw Object.assign(new Error('Not a notify service'), { status: 400 });
       try { await req('/api/services/notify/' + service.slice(7), { method: 'POST', body: JSON.stringify({ title: String(title).slice(0, 100), message: String(message).slice(0, 300), ...(target ? { target: [String(target)] } : {}) }) }); } catch (e) { throw Object.assign(new Error('Home Assistant couldn’t send through ' + service + (e.message ? ' (' + e.message.replace(/^Home Assistant /, '') + ')' : '')), { status: 502, cause: e }); }
     },
+    async haComponents() { const c = await req('/api/config'); return Array.isArray(c && c.components) ? c.components : []; },
+    async createScene(sceneId, entities) {
+      if (!/^[a-z0-9_]{1,60}$/.test(String(sceneId))) throw Object.assign(new Error('Bad scene id'), { status: 400 });
+      await req('/api/services/scene/create', { method: 'POST', body: JSON.stringify({ scene_id: sceneId, entities }) });
+    },
     allLights,
     async discover(known = []) {
       const skip = new Set(known);
