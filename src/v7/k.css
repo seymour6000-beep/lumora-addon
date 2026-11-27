@@ -1,5 +1,5 @@
 /* ================= Lumora 8 ================= */
-:root{--fd:'Poppins',Inter,system-ui,sans-serif;--fb:'Poppins',Inter,system-ui,sans-serif;--r:28px;--rs:16px;--rc:18px;--topbar:76px}
+:root{--accent2:var(--accent);--fd:'Poppins',Inter,system-ui,sans-serif;--fb:'Poppins',Inter,system-ui,sans-serif;--r:28px;--rs:16px;--rc:18px;--topbar:76px}
 :root[data-design="nocturne"],:root:not([data-design]){--bg:#080b1c;--surface:#121733;--raise:#1b2146;--ink:#eef0ff;--muted:#8d94c0;--line:#ffffff1a;--accent:#7c8cff;--accent2:#b07cff;--onaccent:#06081a;--off:#262d5a;--knob:#fff;--info:#7cc4ff}
 html{background:var(--bg)}
 body{background:radial-gradient(55% 45% at 0% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),radial-gradient(50% 45% at 100% 100%,color-mix(in srgb,var(--accent2) 18%,transparent),transparent 70%),var(--bg);background-attachment:fixed;font-weight:500}

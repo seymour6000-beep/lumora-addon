@@ -149,3 +149,7 @@ The page no longer scrolls: Lumora fills the screen and the dock sits in its own
 ## Lumora 8.2
 
 Cameras are removed from the app (the Cameras section, tile and camera warnings). The top-bar weather, warning and school chips fit on one line, and a few cut-off texts were fixed (Overview tiles, room cards, dock labels on phones). The Exit full screen button sits under the top-right buttons.
+
+## Lumora 8.2.1
+
+Alignment pass: buttons that went blank in the light looks are fixed, the school-closure icon is the right size, scene buttons wrap instead of being cut off, and the sunrise/sunset, ring and column positions line up.

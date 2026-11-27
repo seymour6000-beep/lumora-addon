@@ -43,3 +43,6 @@ rep("'8.1.0':{t:'Lumora 8.1'","'8.1.1':{t:'Lumora 8.1.1',items:"+_j.dumps(N811)+
 rep("APP_VERSION='8.1.1'","APP_VERSION='8.2.0'")
 N820=["Cameras are removed. The Cameras section, the Cameras tile and camera warnings are gone from Devices, and nothing in Lumora asks for a camera any more.","Top-bar chips (weather, warnings, school status) fit on one tidy line, and the school icon draws properly.","The Exit full screen button sits under the top-right buttons so it never covers the weather.","Fixed a few places where text was cut off: the Overview tiles, room cards and the last dock label on phones."]
 rep("'8.1.0':{t:'Lumora 8.1'","'8.2.0':{t:'Lumora 8.2',items:"+_j.dumps(N820)+"},\n  '8.1.0':{t:'Lumora 8.1'")
+rep("APP_VERSION='8.2.0'","APP_VERSION='8.2.1'")
+N821=["Fixed buttons that went blank in the light looks (Start, Add expense, I'm home and others).","The school-closure chip shows a small icon instead of a big black shape.","The scene buttons wrap instead of being cut off on smaller screens.","The sunrise and sunset times, the lights ring and the Devices columns line up properly."]
+rep("'8.2.0':{t:'Lumora 8.2'","'8.2.1':{t:'Lumora 8.2.1',items:"+_j.dumps(N821)+"},\n  '8.2.0':{t:'Lumora 8.2'")
