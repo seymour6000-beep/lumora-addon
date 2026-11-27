@@ -133,3 +133,7 @@ Open the app and choose *Find my server automatically*, or type your server addr
 ## Lumora 7.0
 
 A full visual rebuild. All styling was deleted and redrawn: a new top bar, six new looks (Nocturne, Daylight, Ember, Lagoon, Porcelain, Mono), new fonts (Familjen Grotesk and Atkinson Hyperlegible, loaded from the internet) and redesigned pages. Your lights, rooms, automations, security, music, sleep and settings are unchanged. The old left side bar and bottom dock are gone. The status lamps are hidden, but the alert beep still works.
+
+## Lumora 8.0
+
+A new midnight look: soft glass cards, a violet glow and the Poppins font. The top tabs are replaced by a floating dock, where glossy icons for each page stand on a glass shelf. The page you are on lifts up, shows its name and has a dot under it. On phones the icons shrink so all nine fit on one row. Your lights, automations, security, music, sleep and settings are unchanged.
