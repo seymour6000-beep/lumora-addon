@@ -141,3 +141,7 @@ A new midnight look: soft glass cards, a violet glow and the Poppins font. The t
 ## Lumora 8.0.1
 
 Automation cards no longer squeeze their text on phones; the switch and buttons wrap onto their own line.
+
+## Lumora 8.1
+
+The page no longer scrolls: Lumora fills the screen and the dock sits in its own band, so it covers nothing. Devices, Automations, Apps, More and Money are laid out in side-by-side panels; a panel scrolls only if it has more than fits. The weather moved next to the logo. The Exit full screen button is styled again.

@@ -34,3 +34,6 @@ rep("'7.0.0':{t:'Lumora 7.0'","'8.0.0':{t:'Lumora 8.0',items:"+_j.dumps(N800)+"}
 rep("APP_VERSION='8.0.0'","APP_VERSION='8.0.1'")
 N801=["Automation cards no longer squeeze their text into a thin column on phones. The switch and buttons now wrap onto their own line."]
 rep("'8.0.0':{t:'Lumora 8.0'","'8.0.1':{t:'Lumora 8.0.1',items:"+_j.dumps(N801)+"},\n  '8.0.0':{t:'Lumora 8.0'")
+rep("APP_VERSION='8.0.1'","APP_VERSION='8.1.0'")
+N810=["The page no longer scrolls. Lumora fills the screen, and the dock sits in its own band at the bottom, so it never covers anything.","Devices, Automations, Apps, More and Money are laid out side by side so they fit on one screen.","If a panel has more in it than fits (a long list of lights, say), only that panel scrolls.","The weather moved up next to the logo.","On phones the page still scrolls inside the frame, but the dock stays clear of it.","The Exit full screen button is styled again (it had lost its look since 7.0)."]
+rep("'8.0.1':{t:'Lumora 8.0.1'","'8.1.0':{t:'Lumora 8.1',items:"+_j.dumps(N810)+"},\n  '8.0.1':{t:'Lumora 8.0.1'")
