@@ -1215,6 +1215,10 @@ html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s eas
 .bcool{margin-top:6px;max-width:520px}.bcool .in{max-width:160px}
 .rtools .rdup{margin-left:0}
 
+/* 6.2.2: the left status bar is gone */
+#sidetab{display:none!important}
+@media (min-width:701px){html:not([data-popout="1"]):not([data-tv="1"]) main{padding-left:44px}}
+
 /* ---- 6.1: bluetooth ---- */
 .btlist{display:grid;gap:8px;margin-top:10px}
 .btrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
@@ -1266,6 +1270,14 @@ section[data-tab="Settings"][data-search="1"] .sgtitle,section[data-tab="Setting
   .setwrap>.sgtitle{display:none}
 }
 .sgtitle{grid-column:1/-1}
+#fsBtn{position:fixed;right:136px;top:calc(14px + env(safe-area-inset-top,0px));z-index:35;width:48px;height:48px;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--surface) 80%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:grid;place-items:center;color:var(--ink);padding:0;box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 12%,transparent)}
+#fsBtn:hover{transform:scale(1.08)}#fsBtn .ico{width:22px;height:22px}
+html[data-tv="1"] #fsBtn{display:none}
+@media (max-width:700px){#fsBtn{right:124px;width:44px;height:44px}}
+#fsExit{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 18px 0 14px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ink) 22%,transparent);background:color-mix(in srgb,var(--surface) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;box-shadow:0 10px 30px -10px rgb(0 0 0/.6);transition:opacity .4s ease}
+#fsExit[hidden]{display:none}
+#fsExit .ico{width:20px;height:20px}
+#fsExit.idle{opacity:.28}#fsExit.idle:hover,#fsExit:focus-visible{opacity:1}
 </style>
 </head>
 <body data-auth="out">
@@ -2106,7 +2118,7 @@ const TRIG={
   lowbat:{l:'A camera battery gets low',f:[]},
   home:{l:'I arrive home',f:[]},
   away:{l:'I leave home',f:[]},
-  manual:{l:'I tap its button (shows in the left bar)',f:[]}
+  manual:{l:'I tap its button (shows on the main page)',f:[]}
 };
 const ACT={
   light:{l:'Turn a light on or off',f:[{n:'id',t:'sel',l:'Light',o:lightOpts,d:'all'},{n:'op',t:'sel',l:'Do',o:[['on','Turn on'],['off','Turn off'],['toggle','Toggle']],d:'on'},{n:'mins',t:'num',l:'Then turn off after (min, 0 = never)',d:0,min:0,max:1440}]},
@@ -2460,7 +2472,7 @@ const TPL=[
   {n:'Gentle wake-up',d:'Brightens the bedroom light slowly over 20 minutes at 7:00 on weekdays.',mk:()=>{ const l=pickLight(['bedroom']); return l&&{t:{type:'time',at:'07:00',days:[1,2,3,4,5]},acts:[{k:'fadeup',id:l.id,mins:20,bri:80}]}; }},
   {n:'Wind down at bedtime',d:'Slowly dims every light and turns it off, starting at 10:00 PM.',mk:()=>state.length&&{t:{type:'time',at:'22:00',days:ALLDAYS},acts:[{k:'fadedown',id:'all',mins:15}]}},
   {n:'Motion lights the porch',d:'When a camera sees motion after dark, the porch light comes on for 5 minutes.',loc:true,mk:()=>{ const l=pickLight(['porch']), c=cams.find(x=>/front/i.test(x.name))||cams[0]; return l&&c&&{t:{type:'motion',cam:c.name},c:[{k:'dark'}],acts:[{k:'light',id:l.id,op:'on',mins:5}]}; }},
-  {n:'Good night button',d:'One tap turns every light off. The button shows in the left bar.',mk:()=>state.length&&{name:'Good night',t:{type:'manual'},acts:[{k:'light',id:'all',op:'off',mins:0},{k:'notify',text:'Good night!'}]}},
+  {n:'Good night button',d:'One tap turns every light off. The button shows on the main page.',mk:()=>state.length&&{name:'Good night',t:{type:'manual'},acts:[{k:'light',id:'all',op:'off',mins:0},{k:'notify',text:'Good night!'}]}},
   {n:'Lights off when I leave',d:'When you switch to “I’m away”, every light goes off.',mk:()=>state.length&&{t:{type:'away'},acts:[{k:'light',id:'all',op:'off',mins:0}]}},
   {n:'Welcome home',d:'When you arrive home after dark, the hallway light comes on at 70% for 10 minutes.',loc:true,mk:()=>{ const l=pickLight(['hall','living']); return l&&{t:{type:'home'},c:[{k:'dark'}],acts:[{k:'bri',id:l.id,bri:70},{k:'light',id:l.id,op:'on',mins:10}]}; }},
   {n:'Turn off lights left on',d:'Any light that has been on for 2 hours is switched off.',mk:()=>state.length&&{t:{type:'lefton',mins:120},acts:[{k:'light',id:'@trigger',op:'off',mins:0}]}},
@@ -2729,6 +2741,8 @@ Object.assign(ICODEF,{
   more:{d:[],s:['M4 9h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z','M8 12h.01M12 12h.01M16 12h.01']},
   bluetooth:{d:[],s:['m7 7.5 10 9-5 4.5v-17l5 4.5-10 9']},
   music:{d:['M9 17.5a2.5 2.5 0 1 1-2.5-2.5A2.5 2.5 0 0 1 9 17.5zM20 15.5a2.5 2.5 0 1 1-2.5-2.5 2.5 2.5 0 0 1 2.5 2.5z'],s:['M9 17.5V6l11-2v11.5','M9 9.5l11-2']},
+  expand:{d:[],s:['M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5']},
+  shrink:{d:[],s:['M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5']},
   moon:{d:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z'],s:['M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2z']},
   play:{d:['M8 5.5v13l11-6.5z'],s:['M8 5.5v13l11-6.5z']},
   pause:{d:[],s:['M8.5 5.5v13M15.5 5.5v13']},
@@ -3521,7 +3535,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='6.2.0';
+const APP_VERSION='6.2.2';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -5276,6 +5290,37 @@ window.__claudeSplash=function(){
   const boot=()=>{ tidy(); const g=grid(); if(g) new MutationObserver(()=>{ if(!busy) setTimeout(tidy,60); }).observe(g,{childList:true,attributes:true,attributeFilter:['hidden'],subtree:false}); setInterval(tidy,3000); };
   if(document.readyState==='loading') addEventListener('DOMContentLoaded',()=>setTimeout(boot,1500)); else setTimeout(boot,1500);
 })();
+/* Lumora 6.2.1: full screen button and an Exit button that is always there while in full screen */
+(function(){
+  if(document.documentElement.dataset.popout==='1') return;
+  const de=document.documentElement, D=window.lumoraDesktop;
+  const canApi=!!(de.requestFullscreen||de.webkitRequestFullscreen);
+  const touch=matchMedia('(pointer:coarse)').matches;
+  const apiFs=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+  const isFs=()=>apiFs()||matchMedia('(display-mode: fullscreen)').matches||(!touch&&screen.height>600&&innerHeight>=screen.height-1&&innerWidth>=screen.width-1);
+  async function enter(){ try{ await (de.requestFullscreen?de.requestFullscreen():de.webkitRequestFullscreen()); }catch(e){ toast('This browser would not go full screen. Try F11.'); } }
+  async function leave(){
+    if(apiFs()){ try{ await (document.exitFullscreen?document.exitFullscreen():document.webkitExitFullscreen()); }catch(e){} return; }
+    if(D&&D.exitFullscreen){ D.exitFullscreen(); return; }
+    toast('Press F11 to leave full screen.');
+  }
+  const mk=(id,label,ic)=>{ const b=document.createElement('button'); b.id=id; b.type='button'; b.setAttribute('aria-label',label); b.title=label; b.innerHTML=ICO(ic); document.body.appendChild(b); return b; };
+  const btn=canApi?mk('fsBtn','Full screen','expand'):null;
+  const ex=document.createElement('button'); ex.id='fsExit'; ex.type='button'; ex.hidden=true; ex.innerHTML=ICO('shrink')+'<span>Exit full screen</span>'; ex.setAttribute('aria-label','Exit full screen'); document.body.appendChild(ex);
+  let idle=null;
+  const wake=()=>{ ex.classList.remove('idle'); clearTimeout(idle); idle=setTimeout(()=>ex.classList.add('idle'),3500); };
+  function sync(){
+    const f=isFs(); const was=!ex.hidden; ex.hidden=!f; de.dataset.fs=f?'1':'';
+    if(btn){ btn.innerHTML=ICO(f?'shrink':'expand'); const l=f?'Exit full screen':'Full screen'; btn.title=l; btn.setAttribute('aria-label',l); }
+    if(f&&!was) wake();
+  }
+  if(btn) btn.onclick=()=>isFs()?leave():enter();
+  ex.onclick=leave;
+  ['mousemove','touchstart','keydown','pointerdown'].forEach(e=>addEventListener(e,()=>{ if(!ex.hidden) wake(); },{passive:true}));
+  document.addEventListener('fullscreenchange',sync); document.addEventListener('webkitfullscreenchange',sync); addEventListener('resize',sync);
+  setInterval(sync,1500); sync();
+  window.__fullscreen={isFs,enter,leave};
+})();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openColor&&!document.querySelector('dialog[open]')){ openColor=null; render(); } });
 document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e.target.closest('.lt'))){ openColor=null; render(); } },true);
 (function(){
@@ -5304,6 +5349,8 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 })();
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
+  '6.2.2':{t:'Lumora 6.2.2',items:["The left side bar is gone, so the pages use the full width. A red problem still beeps for 5 seconds if you left that on in Settings, Alerts and sound."]},
+  '6.2.1':{t:'Lumora 6.2.1',items:["New Full screen button next to Search. While in full screen, an Exit full screen button stays at the top of the screen (it dims when you stop moving the mouse and comes back when you move it). It also works when you pressed F11 or are using the Windows app."]},
   '6.2.0':{t:'Lumora 6.2',items:["Automations can now start every so often (every 15 minutes, every hour\u2026), when the alarm goes off, and when sleep mode starts or finishes.", "New steps: start sleep mode, pause, play or skip the music, and arm the alarm. Automations can arm the alarm but never switch it off.", "New conditions: only on certain days, only if a light is on (or all are off), and only if the alarm is armed or off.", "Wait between runs: set a rest period so a busy trigger, like motion, can\u2019t run an automation again and again.", "A Duplicate button on every automation makes a switched-off copy to tweak, and messages can include {light}, {time} and {rule}.", "Seven new ideas in the Automations page, including Alarm sounds: tell me, Arm the alarm at bedtime and Stretch break."]},
   '6.1.1':{t:'Lumora 6.1.1',items:["Colour changes now stick: Lumora keeps the colour you picked while the bulb catches up, ignores a bulb that briefly reports no colour, and no longer drifts to a slightly rounded colour.", "The main page is now just your lights and cameras. A new More page holds the alarm, music, sleep mode and your other devices (plugs, sensors, locks and thermostats).", "Cleaner layout: switches keep their proper size everywhere, Settings panels no longer overlap or stretch on very wide screens, and the camera, sleep and Spotify cards fit on phones."]},
   '6.1.0':{t:'Lumora 6.1',items:["Sleep mode: a Sleep button on the Bedroom card fades the room to a dim warm glow and then off. Choose the room, the fade time and an optional bedtime in Settings. On the add-on it carries on with the page closed.", "Spotify and music: a Music card with play, skip, volume, shuffle, where to play, and a paste-a-link box. It uses Home Assistant's Spotify integration, and Settings has the steps.", "Bluetooth: a Bluetooth light on the left, and a Settings page to find and connect nearby devices from Chrome, Edge or the Windows app. A browser cannot make Lumora discoverable to other devices.", "The left lights now follow one rule: green is good, yellow is a warning, red is an issue. A red light beeps for 5 seconds, and you can turn that off.", "A new dock with labels, a new look for the left lights, and Settings sorted into eight topics: account, home, lights, devices, alerts, connections, screens and system."]},

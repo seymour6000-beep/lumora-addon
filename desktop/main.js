@@ -147,6 +147,7 @@ function buildMenu() {
 }
 
 /* ---- messages from the connect and offline pages ---- */
+ipcMain.on('win:exitfs', (e) => { try { const w = BrowserWindow.fromWebContents(e.sender); if (w && !w.isDestroyed() && w.isFullScreen()) w.setFullScreen(false); } catch (err) { /* ignore */ } });
 ipcMain.handle('cfg:get', () => ({ ...cfg.all(), version: app.getVersion() }));
 ipcMain.handle('cfg:set', (_e, k, v) => { if (['closeToTray', 'alerts', 'alwaysOnTop', 'openAtLogin'].includes(k)) { cfg.set(k, !!v); if (k === 'openAtLogin') app.setLoginItemSettings({ openAtLogin: !!v }); if (k === 'alwaysOnTop' && win) win.setAlwaysOnTop(!!v); } return true; });
 ipcMain.handle('server:find', async (e) => {

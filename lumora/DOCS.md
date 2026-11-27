@@ -121,3 +121,11 @@ Open the app and choose *Find my server automatically*, or type your server addr
 - **Duplicate**: copies an automation, switched off, so you can change it.
 - **Messages** can include {light} (the light that triggered it), {time} and {rule}.
 - **Ideas**: seven new starting points in the Automations page.
+
+## Lumora 6.2.1
+
+- **Full screen**: a Full screen button sits next to Search (browsers that support it). While in full screen, an **Exit full screen** button stays at the top of the page. It dims after a few seconds and returns when you move the mouse or touch the screen. Esc and F11 still work too. A browser cannot leave an F11 full screen by itself, so there the button reminds you to press F11. The Windows app leaves full screen directly.
+
+## Lumora 6.2.2
+
+- **Left side bar removed**: pages now use the full width. The status lights are no longer shown. A red problem still beeps for 5 seconds if "beep for red" is on in Settings, Alerts and sound. Problems still appear in the notifications list on the main page.

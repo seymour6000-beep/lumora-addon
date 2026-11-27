@@ -19,3 +19,9 @@ rep("'6.1.0':{t:'Lumora 6.1'","'6.1.1':{t:'Lumora 6.1.1',items:"+_j.dumps(N611)+
 rep("APP_VERSION='6.1.0'","APP_VERSION='6.2.0'")
 N62=["Automations can now start every so often (every 15 minutes, every hour…), when the alarm goes off, and when sleep mode starts or finishes.","New steps: start sleep mode, pause, play or skip the music, and arm the alarm. Automations can arm the alarm but never switch it off.","New conditions: only on certain days, only if a light is on (or all are off), and only if the alarm is armed or off.","Wait between runs: set a rest period so a busy trigger, like motion, can’t run an automation again and again.","A Duplicate button on every automation makes a switched-off copy to tweak, and messages can include {light}, {time} and {rule}.","Seven new ideas in the Automations page, including Alarm sounds: tell me, Arm the alarm at bedtime and Stretch break."]
 rep("'6.1.1':{t:'Lumora 6.1.1'","'6.2.0':{t:'Lumora 6.2',items:"+_j.dumps(N62)+"},\n  '6.1.1':{t:'Lumora 6.1.1'")
+rep("APP_VERSION='6.2.0'","APP_VERSION='6.2.1'")
+N621=["New Full screen button next to Search. While in full screen, an Exit full screen button stays at the top of the screen (it dims when you stop moving the mouse and comes back when you move it). It also works when you pressed F11 or are using the Windows app."]
+rep("'6.2.0':{t:'Lumora 6.2'","'6.2.1':{t:'Lumora 6.2.1',items:"+_j.dumps(N621)+"},\n  '6.2.0':{t:'Lumora 6.2'")
+rep("APP_VERSION='6.2.1'","APP_VERSION='6.2.2'")
+N622=["The left side bar is gone, so the pages use the full width. A red problem still beeps for 5 seconds if you left that on in Settings, Alerts and sound."]
+rep("'6.2.1':{t:'Lumora 6.2.1'","'6.2.2':{t:'Lumora 6.2.2',items:"+_j.dumps(N622)+"},\n  '6.2.1':{t:'Lumora 6.2.1'")

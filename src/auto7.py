@@ -16,3 +16,5 @@ rep("  if(ruleBusy.has(r.id)) return;\n  ruleBusy.add(r.id);","  if(!o.force&&+r
 rep("(r.once?'Runs once · ':'')+","(r.once?'Runs once · ':'')+(+r.cool>0?'Waits '+r.cool+' min between runs · ':'')+")
 # icons
 rep("lowbat:'battery',outage:'boltoff',restored:'bolt'","lowbat:'battery',outage:'boltoff',restored:'bolt',interval:'clock',alarm:'shield',sleepstart:'moon',sleepend:'moon'") if False else None
+rep("manual:{l:'I tap its button (shows in the left bar)',f:[]}","manual:{l:'I tap its button (shows on the main page)',f:[]}")
+rep("The button shows in the left bar.","The button shows on the main page.")

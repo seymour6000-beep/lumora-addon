@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('lumoraDesktop', {
   cancelFind: () => ipcRenderer.send('server:cancel'),
   connect: (addr) => ipcRenderer.invoke('server:connect', addr),
   changeServer: () => ipcRenderer.send('server:change'),
+  exitFullscreen: () => ipcRenderer.send('win:exitfs'),
   retry: () => ipcRenderer.send('server:retry'),
   onProgress: (fn) => ipcRenderer.on('server:progress', (_e, done, total) => fn(done, total)),
 });

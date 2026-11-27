@@ -77,3 +77,7 @@ html:not([data-fx="off"]) #sidetab .tl[data-lv="bad"] svg{animation:tlp 1.2s eas
 .sgrid>.panel.wide .pgrid{max-width:100%}
 .bcool{margin-top:6px;max-width:520px}.bcool .in{max-width:160px}
 .rtools .rdup{margin-left:0}
+
+/* 6.2.2: the left status bar is gone */
+#sidetab{display:none!important}
+@media (min-width:701px){html:not([data-popout="1"]):not([data-tv="1"]) main{padding-left:44px}}

@@ -1,6 +1,6 @@
 {
   "name": "lumora-server",
-  "version": "6.2.0",
+  "version": "6.2.2",
   "description": "Self-hosted server for Lumora: accounts, saved settings and real light control through Home Assistant.",
   "main": "server.js",
   "private": true,
