@@ -37,3 +37,9 @@ rep("'8.0.0':{t:'Lumora 8.0'","'8.0.1':{t:'Lumora 8.0.1',items:"+_j.dumps(N801)+
 rep("APP_VERSION='8.0.1'","APP_VERSION='8.1.0'")
 N810=["The page no longer scrolls. Lumora fills the screen, and the dock sits in its own band at the bottom, so it never covers anything.","Devices, Automations, Apps, More and Money are laid out side by side so they fit on one screen.","If a panel has more in it than fits (a long list of lights, say), only that panel scrolls.","The weather moved up next to the logo.","On phones the page still scrolls inside the frame, but the dock stays clear of it.","The Exit full screen button is styled again (it had lost its look since 7.0)."]
 rep("'8.0.1':{t:'Lumora 8.0.1'","'8.1.0':{t:'Lumora 8.1',items:"+_j.dumps(N810)+"},\n  '8.0.1':{t:'Lumora 8.0.1'")
+rep("APP_VERSION='8.1.0'","APP_VERSION='8.1.1'")
+N811=["The weather, warnings and school-status chips in the top bar fit on one tidy line instead of being cut off, and the school icon draws properly.","The Exit full screen button now sits under the top-right buttons so it never covers the weather."]
+rep("'8.1.0':{t:'Lumora 8.1'","'8.1.1':{t:'Lumora 8.1.1',items:"+_j.dumps(N811)+"},\n  '8.1.0':{t:'Lumora 8.1'")
+rep("APP_VERSION='8.1.1'","APP_VERSION='8.2.0'")
+N820=["Cameras are removed. The Cameras section, the Cameras tile and camera warnings are gone from Devices, and nothing in Lumora asks for a camera any more.","Top-bar chips (weather, warnings, school status) fit on one tidy line, and the school icon draws properly.","The Exit full screen button sits under the top-right buttons so it never covers the weather.","Fixed a few places where text was cut off: the Overview tiles, room cards and the last dock label on phones."]
+rep("'8.1.0':{t:'Lumora 8.1'","'8.2.0':{t:'Lumora 8.2',items:"+_j.dumps(N820)+"},\n  '8.1.0':{t:'Lumora 8.1'")

@@ -145,3 +145,7 @@ Automation cards no longer squeeze their text on phones; the switch and buttons 
 ## Lumora 8.1
 
 The page no longer scrolls: Lumora fills the screen and the dock sits in its own band, so it covers nothing. Devices, Automations, Apps, More and Money are laid out in side-by-side panels; a panel scrolls only if it has more than fits. The weather moved next to the logo. The Exit full screen button is styled again.
+
+## Lumora 8.2
+
+Cameras are removed from the app (the Cameras section, tile and camera warnings). The top-bar weather, warning and school chips fit on one line, and a few cut-off texts were fixed (Overview tiles, room cards, dock labels on phones). The Exit full screen button sits under the top-right buttons.

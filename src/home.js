@@ -33,7 +33,7 @@
     const live=state.filter(d=>d.online!==false), on=live.filter(d=>d.on), off=state.length-live.length;
     const W=Math.max(1,Math.min(200,+settings.lightWatts||9)); const watts=on.reduce((a,d)=>a+W*Math.max(.1,(d.bri||100)/100),0);
     const cl=(typeof cams!=='undefined'?cams:[]), camsOn=cl.filter(c=>c.online!==false).length;
-    const tiles=[tile('Lights on',on.length+' of '+state.length,off?off+' offline':'All reachable',off?'warn':'ok'), tile('Using now','≈ '+Math.round(watts)+' W',on.length?'Estimate from brightness':'Nothing is on'), tile('Cameras',camsOn+' of '+cl.length,cl.some(c=>c.battery<20)?'A battery is low':'Online',cl.some(c=>c.battery<20)?'warn':''), tile('Mode',presence==='away'?'Away':'Home',presence==='away'?'Lights left on will be reported':'Welcome back')];
+    const tiles=[tile('Lights on',on.length+' of '+state.length,off?off+' offline':'All reachable',off?'warn':'ok'), tile('Using now','≈ '+Math.round(watts)+' W',on.length?'Estimate from brightness':'Nothing is on'), tile('Mode',presence==='away'?'Away':'Home',presence==='away'?'Lights left on will be reported':'Welcome back')];
     const sig=JSON.stringify(tiles.map(t=>t.textContent)); if(box.dataset.sig===sig) return; box.dataset.sig=sig; box.replaceChildren(...tiles);
   }
   setInterval(()=>{ try{ overview(); }catch(e){} },1500); setTimeout(()=>{ try{ overview(); }catch(e){} },800);
