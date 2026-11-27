@@ -1,0 +1,37 @@
+/* ---------- who may see what ---------- */
+.rolehide,.lvhide{display:none!important}
+body[data-money="0"] #tabs [data-go="Money"],body[data-role="guest"] #tabs [data-go="Money"],body[data-role="guest"] #tabs [data-go="Automations"],body[data-role="guest"] #tabs [data-go="Activity"]{display:none!important}
+body[data-role="guest"] #scan,body[data-role="guest"] #addFound,body[data-role="guest"] #cams,body[data-role="guest"] #ccount,body[data-role="guest"] #ccount ~ *{display:none!important}
+body[data-role="guest"] h2:has(#ccount){display:none}
+html:not([data-remote]) [data-remote-only]{display:none!important}
+body[data-role="guest"] #watchPanel,body[data-role="family"] #watchPanel,body[data-role="guest"] #voicePanel,body[data-role="family"] #voicePanel,body[data-role="guest"] #addrPanel,body[data-role="guest"] #deskPanel{display:none!important}
+body[data-role="guest"] .secmodes,body[data-role="guest"] #secDemo{pointer-events:none;opacity:.5}
+.notem:empty,.nlive:empty,.sfilt,#roomSel,.vsep{display:none!important}
+.vtag:not(.new){display:none!important}
+.hasripple{position:relative;overflow:hidden;isolation:isolate}.ripple{display:none}.pressfx{transform:none}
+
+/* ---------- full-screen layers ---------- */
+#cmdk{position:fixed;inset:0;z-index:400;display:flex;justify-content:center;align-items:flex-start;padding:10vh 16px 16px}
+#cmdk[hidden]{display:none}
+.cmdbox{width:min(620px,100%);max-height:70vh;display:flex;flex-direction:column;overflow:hidden}
+.cmdin{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.cmdin .ico{color:var(--accent)}
+.cmdin input{flex:1;min-width:0;font:inherit;font-size:1.1rem;outline:none}
+#cmdlist{list-style:none;margin:0;padding:8px;overflow:auto;flex:1}
+.cmdg{font:700 .8rem var(--fb);color:var(--muted);padding:10px 12px 4px}
+.cmdi{display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer}
+.cmdi .ico{color:var(--muted)}
+.cmdi em{margin-left:auto;font-style:normal;color:var(--muted);font-size:.85rem}
+.cmdi[aria-selected="true"]{background:var(--ink);color:var(--bg)}.cmdi[aria-selected="true"] .ico,.cmdi[aria-selected="true"] em{color:inherit}
+.cmdempty{padding:22px 14px;color:var(--muted);text-align:center}
+.cmdft{display:none}
+body.cmdopen{overflow:hidden}
+#saver{position:fixed;inset:0;z-index:200;display:none;background:#000;color:#fff;place-items:center;text-align:center}#saver.on{display:grid}
+#rescue{position:fixed;inset:0;z-index:400;display:none;place-items:center;background:var(--bg);padding:20px}#rescue.on{display:grid}
+#rescue .rb{max-width:460px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+#rescue h2{margin:0 0 8px}#rescue .srow{margin-top:12px;flex-wrap:wrap;gap:10px;border:0}
+#csplash{position:fixed;inset:0;z-index:150;display:grid;place-items:center;pointer-events:none;background:#0a1822;color:#e9f2f4;transition:opacity .7s ease,visibility .7s}
+#csplash.out{opacity:0;visibility:hidden}
+#csplash .csin{display:grid;justify-items:center;gap:22px}
+#csplash .csmark{width:104px;height:104px;overflow:visible}
+#csplash .cst{margin:0;font:600 1.4rem var(--fd)}

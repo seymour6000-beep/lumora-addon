@@ -20,3 +20,6 @@ rep("""    if(Object.keys(cmd).length){ const r=await srvApi('POST','/api/device
 rep("const TABS=['Devices','Automations','Activity','Clock','Sky','Money','Apps','Settings'];","const TABS=['Devices','More','Automations','Activity','Clock','Sky','Money','Apps','Settings'];")
 rep("Devices:icoInner('home'),Automations:","Devices:icoInner('home'),More:icoInner('more'),Automations:")
 rep('<section data-tab="Automations" hidden>','<section data-tab="More" hidden>\n<h2>More</h2>\n<div id="moreBox"></div>\n</section>\n<section data-tab="Automations" hidden>')
+
+# Lumora 7: new type
+rep('family=Figtree:wght@400;500;600;700;800&family=Unbounded:wght@400;500;600&display=swap','family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap')

@@ -25,3 +25,6 @@ rep("'6.2.0':{t:'Lumora 6.2'","'6.2.1':{t:'Lumora 6.2.1',items:"+_j.dumps(N621)+
 rep("APP_VERSION='6.2.1'","APP_VERSION='6.2.2'")
 N622=["The left side bar is gone, so the pages use the full width. A red problem still beeps for 5 seconds if you left that on in Settings, Alerts and sound."]
 rep("'6.2.1':{t:'Lumora 6.2.1'","'6.2.2':{t:'Lumora 6.2.2',items:"+_j.dumps(N622)+"},\n  '6.2.1':{t:'Lumora 6.2.1'")
+rep("APP_VERSION='6.2.2'","APP_VERSION='7.0.0'")
+N700=["Lumora 7.0 is a full visual rebuild. Every colour, shape, font and layout was redrawn from scratch, so nothing looks like 6.x.","A new top bar replaces the old tab bar and side bar, with Search, Full screen, Notifications and Today on the right.","Six new looks: Nocturne, Daylight, Ember, Lagoon, Porcelain and Mono. Pick one in Settings.","New fonts: Familjen Grotesk and Atkinson Hyperlegible (they load from the internet; a system font shows if you are offline).","Every page was redrawn: Devices, More, Automations, Activity, Clock, Sky, Money, Apps and Settings.","All your lights, rooms, automations, security, music, sleep and settings carry over unchanged."]
+rep("'6.2.2':{t:'Lumora 6.2.2'","'7.0.0':{t:'Lumora 7.0',items:"+_j.dumps(N700)+"},\n  '6.2.2':{t:'Lumora 6.2.2'")

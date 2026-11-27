@@ -129,3 +129,7 @@ Open the app and choose *Find my server automatically*, or type your server addr
 ## Lumora 6.2.2
 
 - **Left side bar removed**: pages now use the full width. The status lights are no longer shown. A red problem still beeps for 5 seconds if "beep for red" is on in Settings, Alerts and sound. Problems still appear in the notifications list on the main page.
+
+## Lumora 7.0
+
+A full visual rebuild. All styling was deleted and redrawn: a new top bar, six new looks (Nocturne, Daylight, Ember, Lagoon, Porcelain, Mono), new fonts (Familjen Grotesk and Atkinson Hyperlegible, loaded from the internet) and redesigned pages. Your lights, rooms, automations, security, music, sleep and settings are unchanged. The old left side bar and bottom dock are gone. The status lamps are hidden, but the alert beep still works.

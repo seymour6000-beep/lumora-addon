@@ -1,0 +1,17 @@
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes fadeout{from{opacity:1}to{opacity:0}}
+@keyframes toastinUp{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes toastoutUp{to{opacity:0;transform:translateY(-10px)}}
+@keyframes toastin{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes toastout{to{opacity:0}}
+@keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+@keyframes glow{50%{box-shadow:0 0 90px 24px color-mix(in srgb,var(--accent) 55%,transparent)}}
+@keyframes bulbglow{from{box-shadow:0 0 0 0 transparent}}
+@keyframes flip{0%{transform:translateY(-30%);opacity:0}100%{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{opacity:.5}}
+section[data-tab]:not([hidden]){animation:fadein .3s ease both}
+section[data-tab].fadeout{animation:fadeout .15s ease both}
+:root[data-motion="reduced"] *{transition:none!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
