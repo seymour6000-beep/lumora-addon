@@ -68,3 +68,4 @@ html[data-popout="1"] .tabs{display:none!important}
 body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:170px;background:linear-gradient(transparent,var(--bg) 78%);pointer-events:none;z-index:25}
 html[data-popout="1"] body::after{display:none}
 @media (max-width:480px){.tmadd label:nth-child(4){grid-column:1/-1}}
+.rule .txt{flex:1 1 260px}

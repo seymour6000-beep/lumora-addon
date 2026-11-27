@@ -31,3 +31,6 @@ rep("'6.2.2':{t:'Lumora 6.2.2'","'7.0.0':{t:'Lumora 7.0',items:"+_j.dumps(N700)+
 rep("APP_VERSION='7.0.0'","APP_VERSION='8.0.0'")
 N800=["Lumora 8.0: a new midnight look with soft glass cards and a glowing violet accent.","A floating dock replaces the top tabs. Glossy app icons stand on a glass shelf, the page you are on lifts up with a label, and a dot shows where you are.","On phones the dock shrinks to fit all nine pages on one row.","The top bar is now just the logo and your Search, Full screen, Notifications and Today buttons.","New font: Poppins (loads from the internet; a system font shows when you are offline).","The Now area at the top of Devices is a single glowing card. Your lights, automations, security, music and settings are unchanged."]
 rep("'7.0.0':{t:'Lumora 7.0'","'8.0.0':{t:'Lumora 8.0',items:"+_j.dumps(N800)+"},\n  '7.0.0':{t:'Lumora 7.0'")
+rep("APP_VERSION='8.0.0'","APP_VERSION='8.0.1'")
+N801=["Automation cards no longer squeeze their text into a thin column on phones. The switch and buttons now wrap onto their own line."]
+rep("'8.0.0':{t:'Lumora 8.0'","'8.0.1':{t:'Lumora 8.0.1',items:"+_j.dumps(N801)+"},\n  '8.0.0':{t:'Lumora 8.0'")

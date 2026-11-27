@@ -137,3 +137,7 @@ A full visual rebuild. All styling was deleted and redrawn: a new top bar, six n
 ## Lumora 8.0
 
 A new midnight look: soft glass cards, a violet glow and the Poppins font. The top tabs are replaced by a floating dock, where glossy icons for each page stand on a glass shelf. The page you are on lifts up, shows its name and has a dot under it. On phones the icons shrink so all nine fit on one row. Your lights, automations, security, music, sleep and settings are unchanged.
+
+## Lumora 8.0.1
+
+Automation cards no longer squeeze their text on phones; the switch and buttons wrap onto their own line.
