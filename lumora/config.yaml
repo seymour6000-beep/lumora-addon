@@ -1,5 +1,5 @@
-name: Lumora
-version: "8.6.0"
+name: Kindlewick
+version: "9.0.0"
 slug: lumora
 description: Smart-home hub for your lights, with accounts for the whole household
 url: https://github.com/seymour6000-beep/lumora-addon
@@ -11,7 +11,7 @@ homeassistant_api: true
 ports:
   8080/tcp: 8080
 ports_description:
-  8080/tcp: Lumora web page
+  8080/tcp: Kindlewick web page
 options:
   allow_signup: false
   admin_reset: false

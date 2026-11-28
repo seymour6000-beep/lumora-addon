@@ -1,4 +1,4 @@
-# Lumora add-on repository
+# Kindlewick add-on repository (formerly Lumora)
 
 Home Assistant watches this repository. When the `version` in `lumora/config.yaml` goes up, Home Assistant shows an update for Lumora
 and, if Automatic updates is on for the app, installs it by itself and restarts it. Your accounts and settings are kept.

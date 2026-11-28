@@ -230,7 +230,7 @@ rep("st.textContent = d.fav ? '★' : '☆'; ","")
 # today button icon
 s,n=_re.subn(r'(<button id="todayBtn"[^>]*>)<svg.*?</svg>',lambda m:m.group(1)+"<span class=\"icw\" data-ico=\"cal\"></span>",s,count=1,flags=_re.S); assert n==1
 rep("const MARK='<span class=\"mark\">","const MARKSVG_OLD='<span class=\"mark\">")
-rep("document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);","const MARK='<span class=\"mark\">'+LOGO+'</span><span>Lumora</span>';\nlet _bn=0;document.querySelectorAll('[data-brand]').forEach(e=>{ const k='_'+(_bn++); e.innerHTML=MARK.replace(/id=\"(l3\\w)\"/g,'id=\"$1'+k+'\"').replace(/url\\(#(l3\\w)\\)/g,'url(#$1'+k+')'); });")
+rep("document.querySelectorAll('[data-brand]').forEach(e=>e.innerHTML=MARK);","const MARK='<span class=\"mark\">'+LOGO+'</span><span>Lumora</span>';\nlet _bn=0;document.querySelectorAll('[data-brand]').forEach(e=>{ const k='_'+(_bn++); e.innerHTML=MARK.replace(/id=\"(k9\\w)\"/g,'id=\"$1'+k+'\"').replace(/url\\(#(k9\\w)\\)/g,'url(#$1'+k+')'); });")
 
 fav=open('/tmp/v3/fav.txt').read()
 import re as _r2
@@ -242,6 +242,8 @@ rep('''$('wxIc').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="current
 rep("APP_VERSION='4.0.0'","APP_VERSION='4.0.1'")
 rep("'4.0.0':{t:'Lumora 4: new look and icons'","'4.0.1':{t:'More new icons',items:['The weather icons and the status lamps on the left tab now use the new icon set too.']},\n  '4.0.0':{t:'Lumora 4: new look and icons'")
 
+rep("sw.setAttribute('aria-label','Enabled: '+ruleTitle(r)); sw.innerHTML='<i></i>';","sw.setAttribute('aria-label','Enabled: '+ruleTitle(r)); sw.classList.toggle('on',!!r.on); sw.innerHTML='<i></i>';")
 exec(open('/tmp/v3/p41.py').read())
+exec(open('/tmp/v3/rename.py').read())
 open(out,'w').write(s)
 print(len(s))

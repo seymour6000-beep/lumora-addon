@@ -79,3 +79,10 @@ N860=["Every older background has been redrawn. Still ones: richer Soft glow, a 
 "Snow now has depth and wind, Rain has splashes and an occasional flash, Fireflies, Embers, Digital rain, Bubbles and Star warp all glow and look brighter."]
 rep("APP_VERSION='8.5.1'","APP_VERSION='8.6.0'")
 rep("'8.5.1':{t:'Lumora 8.5.1'","'8.6.0':{t:'Lumora 8.6',items:"+_j.dumps(N860)+"},\n  '8.5.1':{t:'Lumora 8.5.1'")
+
+N900=["Lumora is now Kindlewick. The name shows everywhere you see it: the splash, the browser tab, the install name, alerts and help text. Your data, sign-ins and the Home Assistant add-on stay exactly as they were.",
+"There is a new logo: a flame on a small stand, and on the splash and sign-in it lights up and flickers softly. It stays still if you turn motion off.",
+"Fixes: Automation switches now show their on/off state correctly the moment the page opens, and the older backgrounds got a full redraw polish pass.",
+"Your Home Assistant scenes still start with Lumora, because that is how Home Assistant names them. The Google Home and Alexa help text keeps those names so the phrases still work."]
+rep("APP_VERSION='8.6.0'","APP_VERSION='9.0.0'")
+rep("'8.6.0':{t:'Lumora 8.6'","'9.0.0':{t:'Kindlewick 9.0',items:"+_j.dumps(N900)+"},\n  '8.6.0':{t:'Lumora 8.6'")

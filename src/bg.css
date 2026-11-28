@@ -211,3 +211,15 @@ html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
 .bg2-mount{background:linear-gradient(180deg,#05071c,#141a4a 60%,#3a3c8a)}
 .bg2-mount::before{content:"";position:absolute;right:12%;top:9%;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 38% 38%,#fffdf0,#e6e4ff);box-shadow:0 0 50px 16px rgba(190,190,255,.3)}
 @media(max-width:700px){.bg2-mount::before{right:20%;top:6%;width:38px;height:38px}.bg2-synth svg{height:11vh}}
+
+/* ---- 9.0 animated Kindlewick logo ---- */
+.kw-flame,.kw-core,.kw-glow{transform-box:fill-box;transform-origin:50% 100%}
+.kw-flame{animation:kwLight 1s cubic-bezier(.2,.9,.3,1.2) both,kwFlick 3.2s ease-in-out 1s infinite}
+.kw-core{animation:kwCore 2.1s ease-in-out infinite;transform-origin:50% 100%}
+.kw-glow{transform-origin:50% 50%;animation:kwGlow 3.6s ease-in-out infinite}
+@keyframes kwLight{from{transform:scale(.15);opacity:0}to{transform:none;opacity:1}}
+@keyframes kwFlick{0%,100%{transform:scale(1,1) skewX(0)}18%{transform:scale(.97,1.05) skewX(-2.2deg)}37%{transform:scale(1.02,.97) skewX(1.6deg)}58%{transform:scale(.98,1.04) skewX(2.4deg)}80%{transform:scale(1.01,.98) skewX(-1.2deg)}}
+@keyframes kwCore{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.88,1.1);opacity:.88}}
+@keyframes kwGlow{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.kw-flame,.kw-core,.kw-glow{animation:none}}
+html[data-motion="reduced"] .kw-flame,html[data-motion="reduced"] .kw-core,html[data-motion="reduced"] .kw-glow{animation:none}

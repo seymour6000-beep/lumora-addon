@@ -194,3 +194,7 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 ## Lumora 8.6
 
 Every older background was redrawn: Soft glow, Dots, Contours, Triangles, Honeycomb, Circuit board, Blueprint, Film grain, Mountains, Sunset, Stripes, Checkerboard, Glass grid, Mesh, Aurora, Flow, Stars, Lights, Fog, Nebula, Ocean, Synthwave, Bokeh, Lava lamp, Spotlight, Plasma, Prism, Snow, Rain, Fireflies, Embers, Digital rain, Bubbles and Star warp. Patterns follow your accent colour so they also work on light designs.
+
+## Kindlewick 9.0
+
+Lumora is now Kindlewick, with a new animated flame logo. Only the visible name changed: the add-on slug (`lumora`), your saved data, sign-ins and Home Assistant scene names (which start with "Lumora") are untouched, so the update installs over your existing copy. Also fixed: automation switches show their correct state when the page opens.

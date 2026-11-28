@@ -1,6 +1,6 @@
 'use strict';
 /* Talks to Home Assistant's REST API (https://developers.home-assistant.io/docs/api/rest/).
-   Any light Home Assistant can see (Lepro, Hue, LIFX, Govee, ...) shows up in Lumora through this. */
+   Any light Home Assistant can see (Lepro, Hue, LIFX, Govee, ...) shows up in Kindlewick through this. */
 
 const LIGHT_ID = /^light\.[a-z0-9_]{1,100}$/;
 const CAMERA_ID = /^camera\.[a-z0-9_]{1,100}$/;

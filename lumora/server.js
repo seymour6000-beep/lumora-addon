@@ -1,5 +1,5 @@
 'use strict';
-/* Lumora server. No dependencies: needs only Node 18.17 or newer.
+/* Kindlewick server. No dependencies: needs only Node 18.17 or newer.
    - serves the app from ./public
    - accounts with scrypt-hashed passwords and cookie sessions
    - stores the household's settings, rules, scenes and so on on disk
@@ -271,7 +271,7 @@ function createApp(userConfig = {}) {
     if (/^UC[\w-]{22}$/.test(h)) return h;
     const k = h.toLowerCase();
     if (ytIds.has(k)) return ytIds.get(k);
-    const r = await fetch('https://www.youtube.com/@' + encodeURIComponent(h), { signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Lumora/' + VERSION + ')', 'Accept-Language': 'en', Cookie: 'CONSENT=YES+1; SOCS=CAI' } });
+    const r = await fetch('https://www.youtube.com/@' + encodeURIComponent(h), { signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Kindlewick/' + VERSION + ')', 'Accept-Language': 'en', Cookie: 'CONSENT=YES+1; SOCS=CAI' } });
     if (!r.ok) throw new Error('yt channel status ' + r.status);
     const html = (await r.text()).slice(0, 2000000);
     const m = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/) || html.match(/"externalId":"(UC[\w-]{22})"/) || html.match(/"channelId":"(UC[\w-]{22})"/) || html.match(/channel_id=(UC[\w-]{22})/);
@@ -295,7 +295,7 @@ function createApp(userConfig = {}) {
     const c = ytCache.get(id);
     if (c && Date.now() - c.at < 300000) return c.data;
     try {
-      const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + id, { signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Lumora/' + VERSION } });
+      const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + id, { signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Kindlewick/' + VERSION } });
       if (!r.ok) throw new Error('yt feed status ' + r.status);
       const data = { handle: h, id, ...parseYt(await r.text()) };
       ytCache.set(id, { at: Date.now(), data });
@@ -336,7 +336,7 @@ function createApp(userConfig = {}) {
         let loaded = 0, best = null;
         for (const u of cfg.schoolUrls) {
           try {
-            const r = await fetch(u, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'Lumora/' + VERSION } });
+            const r = await fetch(u, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'Kindlewick/' + VERSION } });
             if (!r.ok) continue;
             const html = (await r.text()).slice(0, 1500000);
             loaded++;
@@ -359,7 +359,7 @@ function createApp(userConfig = {}) {
   if (updFirst) updFirst.unref();
 
 
-  /* ---- phone alerts: Lumora asks Home Assistant to send them through its mobile app (or any notify service) ---- */
+  /* ---- phone alerts: Kindlewick asks Home Assistant to send them through its mobile app (or any notify service) ---- */
   const nState = { leftOnSince: 0, leftOnSent: false, offlineSeen: new Map(), offlineSent: new Set(), lastRemind: new Map(), flapSent: new Map(), groupSent: false, busy: false };
   const hhmmFmt = new Intl.DateTimeFormat('en-GB', { timeZone: cfg.timeZone, hour: '2-digit', minute: '2-digit', hour12: false });
   const inQuiet = (w, now) => { const q = w && w.quiet; if (!q || !q.on || !/^\d\d:\d\d$/.test(q.from || '') || !/^\d\d:\d\d$/.test(q.to || '')) return false; const cur = hhmmFmt.format(now); return q.from <= q.to ? (cur >= q.from && cur < q.to) : (cur >= q.from || cur < q.to); };
@@ -484,7 +484,7 @@ function createApp(userConfig = {}) {
     return { days: out, names: hist.names, events: hist.events.filter((e) => e.t >= cutoff).slice(-400), now, tz: cfg.timeZone };
   }
   const lanAddrs = () => { try { const out = []; for (const list of Object.values(require('os').networkInterfaces())) for (const i of list || []) if (i.family === 'IPv4' && !i.internal && !/^(172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(i.address)) out.push(i.address); return [...new Set(out)].slice(0, 4); } catch (e) { return []; } };
-  /* ---- voice assistants: share Lumora's scenes with Home Assistant so Google Home and Alexa can use them ---- */
+  /* ---- voice assistants: share Kindlewick's scenes with Home Assistant so Google Home and Alexa can use them ---- */
   const BUILTIN_SCENES = {
     Evening: { on: true, bri: 45, color: '#ffb35c' }, Movie: { on: true, bri: 12, color: '#8fc1ff' }, Bright: { on: true, bri: 100, color: '#fff1d6' }, 'All off': { on: false },
     Christmas: { on: true, bri: 60, color: '#ff4a3d' }, 'Christmas tree': { on: true, bri: 55, color: '#3ddc84' }, 'Christmas gold': { on: true, bri: 50, color: '#ffc65c' },
@@ -563,7 +563,7 @@ function createApp(userConfig = {}) {
   function secSound(reason) {
     if (sec.alarm.state === 'sounding') return;
     sec.alarm = { state: 'sounding', since: Date.now(), reason }; secSave(); secEvent('alarm', 'ALARM: ' + reason);
-    secPhone('Alarm', reason + '. Open Lumora to see what is happening.'); secFlashOn(); autoEv('alarm', {});
+    secPhone('Alarm', reason + '. Open Kindlewick to see what is happening.'); secFlashOn(); autoEv('alarm', {});
   }
   function secTrigger(reason, entry) {
     if (sec.mode === 'off' || sec.alarm.state !== 'idle') return;
@@ -873,8 +873,8 @@ function createApp(userConfig = {}) {
   }
   if (cfg.adminReset) {
     const admin = Object.values(store.db.users).filter((u) => u.role === 'admin').sort((a, b) => a.created - b.created)[0];
-    if (admin) { const code = randomCode(8); store.db.resets = store.db.resets || {}; store.db.resets[admin.id] = { h: sha(code), exp: Date.now() + 900000, clear2fa: true }; store.flush(); console.log('Lumora: password reset code for ' + admin.email + ' is ' + code.slice(0, 4) + '-' + code.slice(4) + ' (valid 15 minutes). On the sign-in page choose “Forgot password”. Turn the “admin_reset” option off again afterwards.'); }
-    else console.log('Lumora: admin_reset is on, but there is no account yet.');
+    if (admin) { const code = randomCode(8); store.db.resets = store.db.resets || {}; store.db.resets[admin.id] = { h: sha(code), exp: Date.now() + 900000, clear2fa: true }; store.flush(); console.log('Kindlewick: password reset code for ' + admin.email + ' is ' + code.slice(0, 4) + '-' + code.slice(4) + ' (valid 15 minutes). On the sign-in page choose “Forgot password”. Turn the “admin_reset” option off again afterwards.'); }
+    else console.log('Kindlewick: admin_reset is on, but there is no account yet.');
   }
   const tvPending = new Map(); // sha(secret) -> { code, exp, uid, ip }
   const tvSweep = () => { const n = Date.now(); for (const [k, v] of tvPending) if (v.exp < n) tvPending.delete(k); };
@@ -1209,7 +1209,7 @@ function createApp(userConfig = {}) {
       if (!(await checkPassword(String(b.password || ''), me.pw))) return fail(req, res, 403, 'wrong_password', 'Password is incorrect.');
       const secret = b32enc(crypto.randomBytes(20));
       me.totpPending = { secret, exp: Date.now() + 900000 };
-      return json(req, res, 200, { secret: secret.match(/.{1,4}/g).join(' '), uri: 'otpauth://totp/Lumora:' + encodeURIComponent(me.email) + '?secret=' + secret + '&issuer=Lumora&digits=6&period=30' });
+      return json(req, res, 200, { secret: secret.match(/.{1,4}/g).join(' '), uri: 'otpauth://totp/Kindlewick:' + encodeURIComponent(me.email) + '?secret=' + secret + '&issuer=Kindlewick&digits=6&period=30' });
     }
     if (p === '/api/2fa/enable' && method === 'POST') {
       const b = await readJson(req), pend = me.totpPending;
@@ -1357,8 +1357,8 @@ function createApp(userConfig = {}) {
         const b = await readJson(req);
         const phoneOk = ha.isNotifyId(b.smsService) && /^\+[1-9][0-9]{7,14}$/.test(String(b.phone || ''));
         if (!ha.isNotifyId(b.service) && !phoneOk) return fail(req, res, 400, 'bad_service', 'Choose a phone or add a text message number first.');
-        if (ha.isNotifyId(b.service)) await ha.notify(b.service, 'Lumora', 'This is a test. Phone alerts are working.');
-        if (phoneOk) await ha.notify(b.smsService, 'Lumora', 'This is a test. Text alerts are working.', b.phone);
+        if (ha.isNotifyId(b.service)) await ha.notify(b.service, 'Kindlewick', 'This is a test. Phone alerts are working.');
+        if (phoneOk) await ha.notify(b.smsService, 'Kindlewick', 'This is a test. Text alerts are working.', b.phone);
         return json(req, res, 200, { ok: true });
       }
       if (p === '/api/cameras' && method === 'GET') return json(req, res, 200, { cameras: (await ha.cameras()).slice(0, 50) });
@@ -1428,7 +1428,7 @@ function createApp(userConfig = {}) {
       else if (url.pathname === '/desktop.exe') { res.writeHead(302, { Location: cfg.desktopUrl || 'https://github.com/seymour6000-beep/lumora-addon/releases/download/desktop-latest/Lumora-Setup.exe', 'Cache-Control': 'no-store' }); res.end(); }
       else if (url.pathname === '/tv') {
         const host = String(req.headers.host || '').replace(/[^A-Za-z0-9.:\-]/g, '');
-        const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lumora on your TV</title><style>body{margin:0;font:20px/1.5 system-ui,sans-serif;background:#0d0b1f;color:#f3f1ff;display:grid;place-items:center;min-height:100vh}main{max-width:640px;padding:28px}h1{margin:0 0 6px}code{background:#241f4a;padding:2px 10px;border-radius:8px;font-size:1.05em}ol{padding-left:1.2em}li{margin:12px 0}a.b{display:inline-block;margin-top:10px;background:#7a66ff;color:#fff;padding:12px 22px;border-radius:14px;text-decoration:none;font-weight:700}</style></head><body><main><h1>Lumora on your TV</h1><p>Three steps on Google TV or Android TV.</p><ol><li>Install the free <b>Downloader</b> app from the Play Store on the TV and open it.</li><li>In its address box type <code>' + host + '/tv.apk</code> and choose Go. Then choose Install.</li><li>Open <b>Lumora</b>, choose <b>Find my server automatically</b>, then <b>Sign in with a code from my phone</b>. Approve the code on your phone in Lumora, Settings, Approve a TV.</li></ol><a class="b" href="/tv.apk">Download the TV app</a></main></body></html>';
+        const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kindlewick on your TV</title><style>body{margin:0;font:20px/1.5 system-ui,sans-serif;background:#0d0b1f;color:#f3f1ff;display:grid;place-items:center;min-height:100vh}main{max-width:640px;padding:28px}h1{margin:0 0 6px}code{background:#241f4a;padding:2px 10px;border-radius:8px;font-size:1.05em}ol{padding-left:1.2em}li{margin:12px 0}a.b{display:inline-block;margin-top:10px;background:#7a66ff;color:#fff;padding:12px 22px;border-radius:14px;text-decoration:none;font-weight:700}</style></head><body><main><h1>Kindlewick on your TV</h1><p>Three steps on Google TV or Android TV.</p><ol><li>Install the free <b>Downloader</b> app from the Play Store on the TV and open it.</li><li>In its address box type <code>' + host + '/tv.apk</code> and choose Go. Then choose Install.</li><li>Open <b>Kindlewick</b>, choose <b>Find my server automatically</b>, then <b>Sign in with a code from my phone</b>. Approve the code on your phone in Kindlewick, Settings, Approve a TV.</li></ol><a class="b" href="/tv.apk">Download the TV app</a></main></body></html>';
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); res.end(html);
       }
       else serveStatic(req, res, url);
@@ -1455,7 +1455,7 @@ if (require.main === module) {
   const cfg = loadConfig();
   const app = createApp(cfg);
   app.server.listen(cfg.port, cfg.host, () => {
-    console.log('Lumora ' + VERSION + ' is running at http://' + (cfg.host === '0.0.0.0' ? 'localhost' : cfg.host) + ':' + cfg.port);
+    console.log('Kindlewick ' + VERSION + ' is running at http://' + (cfg.host === '0.0.0.0' ? 'localhost' : cfg.host) + ':' + cfg.port);
     console.log('Data folder: ' + cfg.dataDir);
     console.log('Lights: ' + (app.hasAdapter ? 'Home Assistant at ' + cfg.haUrl : 'demo (set HA_URL and HA_TOKEN to control real lights)'));
     if (cfg.cookieSecure === 'auto' && !cfg.trustProxy) console.log('Tip: put this behind HTTPS (see README) before using it away from home.');
