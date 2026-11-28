@@ -46,3 +46,6 @@ rep("'8.1.0':{t:'Lumora 8.1'","'8.2.0':{t:'Lumora 8.2',items:"+_j.dumps(N820)+"}
 rep("APP_VERSION='8.2.0'","APP_VERSION='8.2.1'")
 N821=["Fixed buttons that went blank in the light looks (Start, Add expense, I'm home and others).","The school-closure chip shows a small icon instead of a big black shape.","The scene buttons wrap instead of being cut off on smaller screens.","The sunrise and sunset times, the lights ring and the Devices columns line up properly."]
 rep("'8.2.0':{t:'Lumora 8.2'","'8.2.1':{t:'Lumora 8.2.1',items:"+_j.dumps(N821)+"},\n  '8.2.0':{t:'Lumora 8.2'")
+rep("APP_VERSION='8.2.1'","APP_VERSION='8.2.2'")
+N822=["The scene buttons, All lights off, I'm home / I'm away and Scan for devices are now the same height and sit in line with each other."]
+rep("'8.2.1':{t:'Lumora 8.2.1'","'8.2.2':{t:'Lumora 8.2.2',items:"+_j.dumps(N822)+"},\n  '8.2.1':{t:'Lumora 8.2.1'")

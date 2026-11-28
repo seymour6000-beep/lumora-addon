@@ -153,3 +153,7 @@ Cameras are removed from the app (the Cameras section, tile and camera warnings)
 ## Lumora 8.2.1
 
 Alignment pass: buttons that went blank in the light looks are fixed, the school-closure icon is the right size, scene buttons wrap instead of being cut off, and the sunrise/sunset, ring and column positions line up.
+
+## Lumora 8.2.2
+
+The scene buttons, All lights off, I am home / I am away and Scan for devices are the same height and in line.

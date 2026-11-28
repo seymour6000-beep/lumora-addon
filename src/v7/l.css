@@ -150,3 +150,10 @@ main>*{max-width:1800px;width:100%}
 }
 @media (max-width:820px){#topBar .chip{max-width:100%}}
 @media (min-width:821px){#scenes{flex-wrap:wrap;overflow:visible;gap:8px}}
+/* action row: every control the same height and centred on one line */
+.actbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.actbar #scenes{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0;padding:0}
+.actbar #scenes .btn,.actbar>.alloff,.actbar>#scan,.actbar>#addFound,.actbar .presbox .btn,.actbar .roombtns .btn{height:40px;min-height:40px;padding:0 16px;margin:0;display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:.9rem;box-sizing:border-box}
+.actbar .presbox{display:inline-flex;align-items:center;height:40px;margin:0;padding:0;overflow:hidden}
+.actbar .presbox .btn{border-radius:0;height:100%}
+.actbar>.alloff{margin:0}
