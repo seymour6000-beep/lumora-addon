@@ -69,3 +69,7 @@ rep("'8.3.1':{t:'Lumora 8.3.1'","'8.4.0':{t:'Lumora 8.4',items:"+_j.dumps(N840)+
 N850=["Five new dark backgrounds in Settings, Home and look, Background: Carbon fibre, Black marble, Deep sea rays, Galaxy swirl and Moon ripples.","Fixed: the Background setting had no visible effect since 8.0, because a solid fill covered it. Every background shows again.","Christmas: switches on by itself at midnight on December 1 (and stays on to January 5). If you turn it off, it only stays off for that season and comes back next December 1."]
 rep("APP_VERSION='8.4.0'","APP_VERSION='8.5.0'")
 rep("'8.4.0':{t:'Lumora 8.4'","'8.5.0':{t:'Lumora 8.5',items:"+_j.dumps(N850)+"},\n  '8.4.0':{t:'Lumora 8.4'")
+
+N851=["City at night is redone: a starry sky with a moon, a glowing horizon, three layers of buildings with small warm and cool windows, and blinking red tower lights."]
+rep("APP_VERSION='8.5.0'","APP_VERSION='8.5.1'")
+rep("'8.5.0':{t:'Lumora 8.5'","'8.5.1':{t:'Lumora 8.5.1',items:"+_j.dumps(N851)+"},\n  '8.5.0':{t:'Lumora 8.5'")

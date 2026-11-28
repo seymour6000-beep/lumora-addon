@@ -66,9 +66,6 @@ html[data-bg]:not([data-bg="waves"]) #bgfx{display:block!important}
 .bgx-blue{inset:0;background-color:color-mix(in srgb,#1f5fff 14%,transparent);background-image:linear-gradient(color-mix(in srgb,var(--ink) 12%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 12%,transparent) 1px,transparent 1px),linear-gradient(color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px);background-size:120px 120px,120px 120px,24px 24px,24px 24px}
 .bgx-grain{inset:0;opacity:.5}
 .bgx-grain svg{width:100%;height:100%}
-.bgx-city{inset:0;background:linear-gradient(180deg,transparent 40%,color-mix(in srgb,#ff7a3c 18%,transparent))}
-.bgx-city svg{position:absolute;left:0;bottom:0;width:100%;height:60%}
-.bgx-city .w{animation:bgtw 5s ease-in-out infinite}
 .bgx-mount{inset:0;background:linear-gradient(180deg,color-mix(in srgb,#5a6aff 18%,transparent),transparent 60%)}
 .bgx-mount svg{position:absolute;left:0;bottom:0;width:100%;height:62%}
 .bgx-stripes{inset:0;background:repeating-linear-gradient(115deg,color-mix(in srgb,var(--accent) 16%,transparent) 0 70px,transparent 70px 140px);mask-image:linear-gradient(180deg,#000,transparent 85%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%)}
@@ -105,3 +102,19 @@ html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
 .bgx-ripples i:nth-child(2){animation-delay:3s}.bgx-ripples i:nth-child(3){animation-delay:6s}.bgx-ripples i:nth-child(4){animation-delay:9s}
 @keyframes rip{0%{opacity:0;transform:scale(.05)}14%{opacity:.95}100%{opacity:0;transform:scale(1.4)}}
 @media(prefers-reduced-motion:reduce){.bgx-deepsea i,.bgx-galaxy i,.bgx-ripples i{animation:none}.bgx-ripples i:first-child{opacity:.4;transform:scale(.6)}}
+
+/* 8.5.1 city at night, redone */
+.bgx-city{inset:0;overflow:hidden;background:linear-gradient(180deg,#04061a 0%,#0b1130 34%,#1a1a4a 58%,#4d2f63 78%,#c25a40 100%)}
+.bgx-city::before{content:"";position:absolute;inset:0 0 40% 0;background-image:radial-gradient(1.2px 1.2px at 8% 14%,#fff,transparent),radial-gradient(1px 1px at 17% 32%,#fffc,transparent),radial-gradient(1.3px 1.3px at 26% 9%,#fff,transparent),radial-gradient(1px 1px at 34% 24%,#fffb,transparent),radial-gradient(1.2px 1.2px at 45% 12%,#fff,transparent),radial-gradient(1px 1px at 53% 30%,#fffc,transparent),radial-gradient(1.4px 1.4px at 62% 7%,#fff,transparent),radial-gradient(1px 1px at 71% 22%,#fffb,transparent),radial-gradient(1.2px 1.2px at 80% 35%,#fff,transparent),radial-gradient(1px 1px at 93% 16%,#fffc,transparent),radial-gradient(1px 1px at 5% 40%,#fff9,transparent),radial-gradient(1px 1px at 58% 44%,#fff9,transparent)}
+.bgx-city::after{content:"";position:absolute;right:36%;top:8px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 36% 34%,#fffdf0,#f1ead0 60%,#cfc7aa);box-shadow:0 0 24px 6px #fff6d244,0 0 80px 24px #fff6d218}
+.bgx-city .cl{position:absolute;left:0;bottom:0;width:100%}
+.bgx-city .cl-b{height:62%;fill:#1a1d48}
+.bgx-city .cl-m{height:52%;fill:#10122f}
+.bgx-city .cl-f{height:42%;fill:#070919}
+.bgx-city .cl-b .bd{opacity:.9}
+.bgx-city .w{animation:bgtw 6s ease-in-out infinite}
+.bgx-city .bl{animation:cblink 2s steps(1) infinite}
+.bgx-city .hz{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(0deg,#ff8a5a40,transparent);pointer-events:none}
+@keyframes cblink{0%,55%{opacity:1}56%,100%{opacity:.12}}
+@media(prefers-reduced-motion:reduce){.bgx-city .w,.bgx-city .bl{animation:none}}
+@media(max-width:700px){.bgx-city::after{right:auto;left:40%;top:10px;width:36px;height:36px}}

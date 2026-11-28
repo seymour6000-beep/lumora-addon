@@ -144,9 +144,6 @@ html[data-bg]:not([data-bg="waves"]) #bgfx{display:block!important}
 .bgx-blue{inset:0;background-color:color-mix(in srgb,#1f5fff 14%,transparent);background-image:linear-gradient(color-mix(in srgb,var(--ink) 12%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 12%,transparent) 1px,transparent 1px),linear-gradient(color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--ink) 7%,transparent) 1px,transparent 1px);background-size:120px 120px,120px 120px,24px 24px,24px 24px}
 .bgx-grain{inset:0;opacity:.5}
 .bgx-grain svg{width:100%;height:100%}
-.bgx-city{inset:0;background:linear-gradient(180deg,transparent 40%,color-mix(in srgb,#ff7a3c 18%,transparent))}
-.bgx-city svg{position:absolute;left:0;bottom:0;width:100%;height:60%}
-.bgx-city .w{animation:bgtw 5s ease-in-out infinite}
 .bgx-mount{inset:0;background:linear-gradient(180deg,color-mix(in srgb,#5a6aff 18%,transparent),transparent 60%)}
 .bgx-mount svg{position:absolute;left:0;bottom:0;width:100%;height:62%}
 .bgx-stripes{inset:0;background:repeating-linear-gradient(115deg,color-mix(in srgb,var(--accent) 16%,transparent) 0 70px,transparent 70px 140px);mask-image:linear-gradient(180deg,#000,transparent 85%);-webkit-mask-image:linear-gradient(180deg,#000,transparent 85%)}
@@ -183,6 +180,22 @@ html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
 .bgx-ripples i:nth-child(2){animation-delay:3s}.bgx-ripples i:nth-child(3){animation-delay:6s}.bgx-ripples i:nth-child(4){animation-delay:9s}
 @keyframes rip{0%{opacity:0;transform:scale(.05)}14%{opacity:.95}100%{opacity:0;transform:scale(1.4)}}
 @media(prefers-reduced-motion:reduce){.bgx-deepsea i,.bgx-galaxy i,.bgx-ripples i{animation:none}.bgx-ripples i:first-child{opacity:.4;transform:scale(.6)}}
+
+/* 8.5.1 city at night, redone */
+.bgx-city{inset:0;overflow:hidden;background:linear-gradient(180deg,#04061a 0%,#0b1130 34%,#1a1a4a 58%,#4d2f63 78%,#c25a40 100%)}
+.bgx-city::before{content:"";position:absolute;inset:0 0 40% 0;background-image:radial-gradient(1.2px 1.2px at 8% 14%,#fff,transparent),radial-gradient(1px 1px at 17% 32%,#fffc,transparent),radial-gradient(1.3px 1.3px at 26% 9%,#fff,transparent),radial-gradient(1px 1px at 34% 24%,#fffb,transparent),radial-gradient(1.2px 1.2px at 45% 12%,#fff,transparent),radial-gradient(1px 1px at 53% 30%,#fffc,transparent),radial-gradient(1.4px 1.4px at 62% 7%,#fff,transparent),radial-gradient(1px 1px at 71% 22%,#fffb,transparent),radial-gradient(1.2px 1.2px at 80% 35%,#fff,transparent),radial-gradient(1px 1px at 93% 16%,#fffc,transparent),radial-gradient(1px 1px at 5% 40%,#fff9,transparent),radial-gradient(1px 1px at 58% 44%,#fff9,transparent)}
+.bgx-city::after{content:"";position:absolute;right:36%;top:8px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 36% 34%,#fffdf0,#f1ead0 60%,#cfc7aa);box-shadow:0 0 24px 6px #fff6d244,0 0 80px 24px #fff6d218}
+.bgx-city .cl{position:absolute;left:0;bottom:0;width:100%}
+.bgx-city .cl-b{height:62%;fill:#1a1d48}
+.bgx-city .cl-m{height:52%;fill:#10122f}
+.bgx-city .cl-f{height:42%;fill:#070919}
+.bgx-city .cl-b .bd{opacity:.9}
+.bgx-city .w{animation:bgtw 6s ease-in-out infinite}
+.bgx-city .bl{animation:cblink 2s steps(1) infinite}
+.bgx-city .hz{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(0deg,#ff8a5a40,transparent);pointer-events:none}
+@keyframes cblink{0%,55%{opacity:1}56%,100%{opacity:.12}}
+@media(prefers-reduced-motion:reduce){.bgx-city .w,.bgx-city .bl{animation:none}}
+@media(max-width:700px){.bgx-city::after{right:auto;left:40%;top:10px;width:36px;height:36px}}
 
 /* ---- Lumora 4.5: Christmas season ---- */
 :root[data-season="xmas"],:root[data-season="xmas"][data-design]{color-scheme:dark;--bg:#0b1a14;--surface:#12281e;--raise:#183428;--ink:#fdf3ea;--muted:#a9c4b4;--line:#2a4b3a;--accent:#ff5a4d;--accent2:#ffc65c;--onaccent:#2b0704;--off:#1c3a2c;--knob:#fff;--ok:#7be0a8;--warn:#ffc65c;--bad:#ff8c80;--info:#9cd0ff}
@@ -2440,7 +2453,7 @@ $('updBtn').onclick=async()=>{
     else toast('You’re up to date. Version '+cur+' is the latest.');
   } finally{ b.disabled=false; b.classList.remove('busy'); }
 };
-const APP_VERSION='8.5.0';
+const APP_VERSION='8.5.1';
 const haUpdatesUrl=()=>{
   const o=(settings.haUrl||'').trim().replace(/\/+$/,'');
   if(/^https?:\/\/[^\s]+$/.test(o)) return o+'/config/updates';
@@ -4381,6 +4394,7 @@ document.addEventListener('pointerdown',e=>{ if(openColor&&!(e.target.closest&&e
 /* ---- 2.4: what's new, phone alerts, screensaver ---- */
 const RELEASE_NOTES={
   '8.1.1':{t:'Lumora 8.1.1',items:["The weather, warnings and school-status chips in the top bar fit on one tidy line instead of being cut off, and the school icon draws properly.", "The Exit full screen button now sits under the top-right buttons so it never covers the weather."]},
+  '8.5.1':{t:'Lumora 8.5.1',items:["City at night is redone: a starry sky with a moon, a glowing horizon, three layers of buildings with small warm and cool windows, and blinking red tower lights."]},
   '8.5.0':{t:'Lumora 8.5',items:["Five new dark backgrounds in Settings, Home and look, Background: Carbon fibre, Black marble, Deep sea rays, Galaxy swirl and Moon ripples.", "Fixed: the Background setting had no visible effect since 8.0, because a solid fill covered it. Every background shows again.", "Christmas: switches on by itself at midnight on December 1 (and stays on to January 5). If you turn it off, it only stays off for that season and comes back next December 1."]},
   '8.4.0':{t:'Lumora 8.4',items:["YouTube alerts: when Autoauctionrebuilds or conflictnerd upload a video, a message pops up in the bottom-left corner, beeps twice once, and stays there until you press \u2715.", "Add or remove channels, turn the beep off, send a test message or check now in Settings under Alerts and sound.", "Needs the Lumora server (the Home Assistant add-on) to read YouTube. The preview can only show the test message.", "The update reload countdown is now one ring with the seconds inside the update message, which sits in the bottom-right corner. The duplicate countdown pop-up at the top is gone."]},
   '8.3.1':{t:'Lumora 8.3.1',items:["The Update available message now floats just under the top bar, with its own frosted card, so nothing can cut it off.", "The weather, warning and school chips in the top bar are frosted glass again.", "A faint shadow from the hidden offline bar no longer shows at the top of the screen.", "The Lumora start-up screen has more room around the logo and the loading bar.", "The Made by Claude AI screen now plays every time Lumora opens, not just the first time in a tab, and both start-up screens match the new midnight look."]},
@@ -4928,7 +4942,15 @@ const BGN=(()=>{
     circuit:el=>{ el.className='bgx-circuit'; let p='',n=''; for(let i=0;i<46;i++){ let x=Math.round(rnd(0,1400)/20)*20, y=Math.round(rnd(0,900)/20)*20, d='M'+x+' '+y; for(let k=0;k<4;k++){ const l=Math.round(rnd(2,8))*20, dir=Math.floor(Math.random()*3); if(dir===0){ x+=l; d+=' h'+l; } else if(dir===1){ y+=l; d+=' v'+l; } else { x+=l*.7; y+=l*.7; d+=' l'+(l*.7)+' '+(l*.7); } } p+='<path d="'+d+'"/>'; n+='<circle cx="'+x+'" cy="'+y+'" r="5"/>'; } el.innerHTML='<svg viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'+p+n+'</svg>'; },
     blue:el=>{ el.className='bgx-blue'; },
     grain:el=>{ el.className='bgx-grain'; el.innerHTML='<svg aria-hidden="true"><filter id="grn"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .55 0 0 0 0 .55 0 0 0 0 .55 0 0 0 .55 0"/></filter><rect width="100%" height="100%" filter="url(#grn)"/></svg>'; },
-    city:el=>{ el.className='bgx-city'; let x=0,s='',w=''; while(x<1400){ const bw=rnd(50,120), bh=rnd(140,420); s+='<rect x="'+x.toFixed(0)+'" y="'+(600-bh).toFixed(0)+'" width="'+bw.toFixed(0)+'" height="'+bh.toFixed(0)+'"/>'; for(let wy=600-bh+14;wy<584;wy+=26) for(let wx=x+9;wx<x+bw-14;wx+=20) if(Math.random()<.28) w+='<rect class="w" style="animation-delay:-'+rnd(0,5).toFixed(1)+'s" x="'+wx.toFixed(0)+'" y="'+wy.toFixed(0)+'" width="8" height="12"/>'; x+=bw+rnd(2,12); } el.innerHTML='<svg viewBox="0 0 1400 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><g style="fill:color-mix(in srgb,var(--ink) 16%,var(--bg))">'+s+'</g><g fill="#ffd36a" opacity=".7">'+w+'</g></svg>'; },
+    city:el=>{ el.className='bgx-city';
+      const WC=['#ffd98a','#ffe9b8','#ffc46b','#a9d6ff','#fff3d6'];
+      const layer=(cls,minW,maxW,minH,maxH,dens,tw)=>{ let x=-20,s='',w='',a=''; while(x<1620){ const bw=rnd(minW,maxW), bh=rnd(minH,maxH), y=700-bh;
+          s+=Math.random()<.3?'<path d="M'+x.toFixed(0)+' 700V'+(y+14).toFixed(0)+'H'+(x+bw*.18).toFixed(0)+'V'+y.toFixed(0)+'H'+(x+bw*.82).toFixed(0)+'V'+(y+14).toFixed(0)+'H'+(x+bw).toFixed(0)+'V700Z"/>':'<rect x="'+x.toFixed(0)+'" y="'+y.toFixed(0)+'" width="'+bw.toFixed(0)+'" height="'+bh.toFixed(0)+'"/>';
+          if(dens) for(let wy=y+16;wy<688;wy+=14) for(let wx=x+7;wx<x+bw-9;wx+=11) if(Math.random()<dens) w+='<rect'+(Math.random()<tw?' class="w" style="animation-delay:-'+rnd(0,6).toFixed(1)+'s"':'')+' fill="'+pick(WC)+'" x="'+wx.toFixed(0)+'" y="'+wy.toFixed(0)+'" width="4" height="6"/>';
+          if(cls==='f'&&bh>300&&Math.random()<.45){ const ax=x+bw/2; a+='<rect x="'+(ax-1).toFixed(0)+'" y="'+(y-34).toFixed(0)+'" width="2" height="34"/><circle class="bl" style="animation-delay:-'+rnd(0,2).toFixed(1)+'s" cx="'+ax.toFixed(0)+'" cy="'+(y-36).toFixed(0)+'" r="3" fill="#ff4a4a"/>'; }
+          x+=bw+rnd(0,6); }
+        return '<svg class="cl cl-'+cls+'" viewBox="0 0 1600 700" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><g class="bd">'+s+a+'</g><g>'+w+'</g></svg>'; };
+      el.innerHTML=layer('b',70,150,200,430,0,0)+layer('m',60,120,150,360,.16,.05)+layer('f',55,110,90,300,.24,.08)+'<i class="hz"></i>'; },
     mount:el=>{ el.className='bgx-mount'; const ridge=(base,amp,seed)=>{ let d='M0 600 L0 '+base; for(let x=0;x<=1400;x+=70) d+=' L'+x+' '+(base-Math.abs(Math.sin(x*seed+seed*9))*amp-rnd(0,amp*.25)).toFixed(0); return d+' L1400 600Z'; }; el.innerHTML='<svg viewBox="0 0 1400 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true" style="color:var(--ink)"><path fill="currentColor" opacity=".10" d="'+ridge(300,220,.011)+'"/><path fill="currentColor" opacity=".16" d="'+ridge(380,170,.017)+'"/><path fill="currentColor" opacity=".26" d="'+ridge(460,120,.023)+'"/></svg>'; },
     stripes:el=>{ el.className='bgx-stripes'; },
     spot:el=>{ el.className='bgx-spot'; },

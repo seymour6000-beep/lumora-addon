@@ -187,3 +187,6 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 - Five new dark backgrounds: Carbon fibre, Black marble, Deep sea rays, Galaxy swirl and Moon ripples (Settings, Home and look, Background).
 - Fixed: the Background setting had no visible effect since 8.0 because a solid fill covered it. All backgrounds show again.
 - Christmas season turns on by itself at midnight on December 1 and stays on until January 5. Turning it off only lasts for that season, so it comes back next December 1.
+
+## Lumora 8.5.1
+- City at night background redone: starry sky with a moon, a glowing horizon, three layers of buildings with small warm and cool windows, and blinking red tower lights.
