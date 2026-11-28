@@ -22,7 +22,12 @@ const BGN=(()=>{
     plasma:el=>{ el.className='bgx-plasma'; },
     prism:el=>{ el.className='bgx-prism'; },
     checker:el=>{ el.className='bgx-checker'; },
-    glassgrid:el=>{ el.className='bgx-glassgrid'; }
+    glassgrid:el=>{ el.className='bgx-glassgrid'; },
+    carbon:el=>{ el.className='bgx-carbon'; },
+    deepsea:el=>{ el.className='bgx-deepsea'; el.innerHTML='<i></i><i></i><i></i><i></i>'; },
+    marble:el=>{ el.className='bgx-marble'; el.innerHTML='<svg aria-hidden="true"><defs><filter id="mbl" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".004 .007" numOctaves="5" seed="'+Math.floor(rnd(1,90))+'"/><feColorMatrix values="0 0 0 0 .82  0 0 0 0 .86  0 0 0 0 1  1 0 0 0 0"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 .1 .55 1 .55 .1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/></feComponentTransfer><feGaussianBlur stdDeviation=".7"/></filter></defs><rect width="100%" height="100%" filter="url(#mbl)"/></svg>'; },
+    galaxy:el=>{ el.className='bgx-galaxy'; el.innerHTML='<i></i><i></i>'; },
+    ripples:el=>{ el.className='bgx-ripples'; el.innerHTML='<i></i><i></i><i></i><i></i>'; }
   };
   const canvas=['fireflies','embers','digital','bubbles','warp'];
   const init=(k,W,H)=>{ const n=innerWidth<700?.6:1, a=[]; const N=c=>Math.round(c*n);

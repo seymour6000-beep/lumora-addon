@@ -5,7 +5,9 @@
   const root=document.documentElement;
   const KEY='hub-seasonal';
   const qs=new URLSearchParams(location.search).get('season');
-  const pref=()=>{ try{ return localStorage.getItem(KEY)||'auto'; }catch(e){ return 'auto'; } };
+  /* an "off" you chose in one season only lasts for that season, so Christmas comes back every Dec 1 */
+  const seasonYear=d=>d.getMonth()===0?d.getFullYear()-1:d.getFullYear();
+  const pref=()=>{ try{ const v=localStorage.getItem(KEY)||'auto'; if(v==='off'){ const y=localStorage.getItem(KEY+'-yr'); if(y&&y!==String(seasonYear(new Date()))) return 'auto'; } return v; }catch(e){ return 'auto'; } };
   const inSeason=d=>{ const m=d.getMonth(), day=d.getDate(); return m===11||(m===0&&day<=5); };
   const isOn=()=>qs==='xmas'?true:qs==='off'?false:pref()==='off'?false:inSeason(new Date());
   /* festive scenes: always available, so rules can use them */
@@ -49,7 +51,7 @@
       }
     }catch(e){}
   }
-  window.__xmas={isOn,apply,automations,toggle:()=>{ try{ localStorage.setItem(KEY,isOn()?'off':'on'); }catch(e){} apply(); }};
+  window.__xmas={isOn,apply,automations,toggle:()=>{ try{ const off=isOn(); localStorage.setItem(KEY,off?'off':'on'); localStorage.setItem(KEY+'-yr',String(seasonYear(new Date()))); }catch(e){} apply(); }};
   apply(); setInterval(()=>{ apply(); automations(); },60000);
   new MutationObserver(()=>automations()).observe(document.body,{attributes:true,attributeFilter:['data-auth']});
   setTimeout(automations,1500);

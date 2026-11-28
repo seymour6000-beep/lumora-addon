@@ -41,3 +41,7 @@ s=s.replace(_g,"const go=async()=>{ clearInterval(cd); delete upBox.dataset.n; m
 _st="$('tbStay').onclick=()=>{ clearInterval(cd); msg.textContent="
 assert _st in s
 s=s.replace(_st,"$('tbStay').onclick=()=>{ clearInterval(cd); delete upBox.dataset.n; msg.textContent=",1)
+
+_o="const k=resolve(); root.dataset.bg=mode==='waves'?'waves':'fx';"
+assert _o in s
+s=s.replace(_o,"const k=resolve(); root.dataset.bg=mode==='waves'?'waves':'fx'; root.dataset.bgk=mode==='waves'?'waves':k;",1)

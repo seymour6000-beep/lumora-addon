@@ -260,3 +260,7 @@ body[data-auth="out"] #ytStack,html[data-popout="1"] #ytStack{display:none}
 #tbUp[data-n] #tbNow{grid-column:2;grid-row:2;justify-self:start}
 #tbUp[data-n] #tbStay{grid-column:3;grid-row:2;justify-self:start;white-space:nowrap}
 #tbUp[data-n] .btn{white-space:nowrap}
+
+/* 8.5 backgrounds show again: the 8.0 body fill was hiding them */
+body{background:radial-gradient(55% 45% at 0% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),radial-gradient(50% 45% at 100% 100%,color-mix(in srgb,var(--accent2) 18%,transparent),transparent 70%)!important;background-attachment:fixed}
+html[data-bgk]:not([data-bgk="soft"]):not([data-bgk="plain"]):not([data-bgk="waves"]) body{background:none!important}

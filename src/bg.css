@@ -81,3 +81,27 @@ html[data-bg]:not([data-bg="waves"]) #bgfx{display:block!important}
 html[data-fx="off"] #bgfx *,html[data-fx="off"] #bgfx::before{animation:none!important}
 html[data-fx="subtle"] #bgfx *{animation-duration:90s!important}
 @media (prefers-reduced-motion:reduce){#bgfx *{animation:none!important}}
+
+/* 8.5 five dark backgrounds */
+.bgx-carbon{inset:0;background-color:#101114;background-image:linear-gradient(27deg,#17181c 5px,transparent 5px),linear-gradient(207deg,#17181c 5px,transparent 5px),linear-gradient(27deg,#23252b 5px,transparent 5px),linear-gradient(207deg,#23252b 5px,transparent 5px),linear-gradient(90deg,#1a1b1f 10px,transparent 10px),linear-gradient(#1c1d22 25%,#191a1e 25% 50%,transparent 50% 75%,#25272d 75%);background-size:20px 20px;background-position:0 5px,10px 0,0 10px,10px 5px,0 0,0 0}
+.bgx-carbon::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 20% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),radial-gradient(50% 40% at 90% 100%,color-mix(in srgb,var(--accent2,var(--accent)) 16%,transparent),transparent 70%)}
+.bgx-deepsea{inset:0;background:linear-gradient(180deg,#05243a 0%,#031526 45%,#01070f 100%);overflow:hidden}
+.bgx-deepsea i{position:absolute;top:-20%;width:18vmax;height:140%;background:linear-gradient(180deg,#7fe9ff40,#2f8cff14 55%,transparent);filter:blur(22px);transform-origin:50% 0;animation:dsway 14s ease-in-out infinite alternate}
+.bgx-deepsea i:nth-child(1){left:8%;transform:rotate(14deg)}
+.bgx-deepsea i:nth-child(2){left:34%;width:12vmax;animation-duration:19s;animation-delay:-5s;opacity:.7}
+.bgx-deepsea i:nth-child(3){left:58%;animation-duration:16s;animation-delay:-9s}
+.bgx-deepsea i:nth-child(4){left:82%;width:10vmax;animation-duration:22s;animation-delay:-3s;opacity:.6}
+.bgx-deepsea::after{content:"";position:absolute;left:0;right:0;bottom:0;height:35%;background:linear-gradient(0deg,#000a,transparent)}
+@keyframes dsway{from{transform:rotate(12deg) translateX(-2vmax)}to{transform:rotate(26deg) translateX(3vmax)}}
+.bgx-marble{inset:0;background:radial-gradient(90% 70% at 30% 20%,#1b1e2a,#0a0b11 70%),#0a0b11}
+.bgx-marble svg{position:absolute;inset:0;width:100%;height:100%;opacity:.28}
+.bgx-galaxy{inset:0;background:radial-gradient(70% 60% at 50% 50%,#0f0a24,#05030d 75%);overflow:hidden}
+.bgx-galaxy i{position:absolute;left:50%;top:50%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;border-radius:50%;background:conic-gradient(from 0deg,transparent,#7a3cff66 8%,transparent 22%,#2f8cff55 36%,transparent 50%,#ff3c9a44 64%,transparent 78%,#7a3cff55 92%,transparent);filter:blur(60px);animation:gspin 140s linear infinite;-webkit-mask-image:radial-gradient(closest-side,#000 8%,transparent 70%);mask-image:radial-gradient(closest-side,#000 8%,transparent 70%)}
+.bgx-galaxy i:nth-child(2){width:90vmax;height:90vmax;margin:-45vmax 0 0 -45vmax;animation-duration:90s;animation-direction:reverse;opacity:.7}
+.bgx-galaxy::after{content:"";position:absolute;inset:0;background-image:radial-gradient(1.2px 1.2px at 12% 22%,#fff,transparent),radial-gradient(1px 1px at 28% 68%,#fffc,transparent),radial-gradient(1.4px 1.4px at 47% 14%,#fff,transparent),radial-gradient(1px 1px at 63% 81%,#fffc,transparent),radial-gradient(1.2px 1.2px at 78% 33%,#fff,transparent),radial-gradient(1px 1px at 91% 58%,#fffc,transparent),radial-gradient(1px 1px at 8% 88%,#fff9,transparent),radial-gradient(1.3px 1.3px at 55% 47%,#fff,transparent);opacity:.8}
+@keyframes gspin{to{transform:rotate(360deg)}}
+.bgx-ripples{inset:0;background:radial-gradient(80% 70% at 50% 40%,#0c1c3a,#050912 75%);overflow:hidden}
+.bgx-ripples i{position:absolute;left:50%;top:40%;width:60vmax;height:60vmax;margin:-30vmax 0 0 -30vmax;border-radius:50%;border:2px solid color-mix(in srgb,var(--accent) 60%,#9fd0ff);box-shadow:0 0 50px color-mix(in srgb,var(--accent) 45%,transparent),inset 0 0 40px color-mix(in srgb,var(--accent) 25%,transparent);opacity:0;transform:scale(.05);animation:rip 12s ease-out infinite}
+.bgx-ripples i:nth-child(2){animation-delay:3s}.bgx-ripples i:nth-child(3){animation-delay:6s}.bgx-ripples i:nth-child(4){animation-delay:9s}
+@keyframes rip{0%{opacity:0;transform:scale(.05)}14%{opacity:.95}100%{opacity:0;transform:scale(1.4)}}
+@media(prefers-reduced-motion:reduce){.bgx-deepsea i,.bgx-galaxy i,.bgx-ripples i{animation:none}.bgx-ripples i:first-child{opacity:.4;transform:scale(.6)}}

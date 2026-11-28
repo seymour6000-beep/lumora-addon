@@ -182,3 +182,8 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 ## Lumora 8.4
 - **YouTube alerts.** When Autoauctionrebuilds or conflictnerd upload a video today, a message pops up in the bottom-left corner, beeps twice once, and stays until you press ✕. Add or remove channels, turn the beep off, send a test or check now in Settings > Alerts and sound > YouTube alerts. The Lumora server reads each channel's public upload feed (no key needed) and checks every 10 minutes. It needs internet access from the add-on; thumbnails load from i.ytimg.com.
 - The update reload countdown is one ring with the seconds inside the update message, in the bottom-right corner. The duplicate countdown pop-up at the top is gone.
+
+## Lumora 8.5
+- Five new dark backgrounds: Carbon fibre, Black marble, Deep sea rays, Galaxy swirl and Moon ripples (Settings, Home and look, Background).
+- Fixed: the Background setting had no visible effect since 8.0 because a solid fill covered it. All backgrounds show again.
+- Christmas season turns on by itself at midnight on December 1 and stays on until January 5. Turning it off only lasts for that season, so it comes back next December 1.

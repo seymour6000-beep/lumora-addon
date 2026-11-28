@@ -65,3 +65,7 @@ rep("'8.3.0':{t:'Lumora 8.3'","'8.3.1':{t:'Lumora 8.3.1',items:"+_j.dumps(N831)+
 N840=["YouTube alerts: when Autoauctionrebuilds or conflictnerd upload a video, a message pops up in the bottom-left corner, beeps twice once, and stays there until you press ✕.","Add or remove channels, turn the beep off, send a test message or check now in Settings under Alerts and sound.","Needs the Lumora server (the Home Assistant add-on) to read YouTube. The preview can only show the test message.","The update reload countdown is now one ring with the seconds inside the update message, which sits in the bottom-right corner. The duplicate countdown pop-up at the top is gone."]
 rep("APP_VERSION='8.3.1'","APP_VERSION='8.4.0'")
 rep("'8.3.1':{t:'Lumora 8.3.1'","'8.4.0':{t:'Lumora 8.4',items:"+_j.dumps(N840)+"},\n  '8.3.1':{t:'Lumora 8.3.1'")
+
+N850=["Five new dark backgrounds in Settings, Home and look, Background: Carbon fibre, Black marble, Deep sea rays, Galaxy swirl and Moon ripples.","Fixed: the Background setting had no visible effect since 8.0, because a solid fill covered it. Every background shows again.","Christmas: switches on by itself at midnight on December 1 (and stays on to January 5). If you turn it off, it only stays off for that season and comes back next December 1."]
+rep("APP_VERSION='8.4.0'","APP_VERSION='8.5.0'")
+rep("'8.4.0':{t:'Lumora 8.4'","'8.5.0':{t:'Lumora 8.5',items:"+_j.dumps(N850)+"},\n  '8.4.0':{t:'Lumora 8.4'")
