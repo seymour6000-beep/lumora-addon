@@ -176,3 +176,55 @@ section[data-tab="Devices"]>.hero>.statuscard,.statuscard:has(#ring){display:non
 .auto.add{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:18px!important}
 .auto.add .f{display:flex;flex-direction:column;gap:6px;margin:0;font-weight:600;font-size:.85rem}
 .auto.add .btn{align-self:flex-start}
+/* 8.3.1 frosted top-bar chips + floating update notice */
+#topBar .tbwx,#topBar .tbal .chip,#topBar .tbsc .chip{background:color-mix(in srgb,var(--surface) 62%,transparent)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4)!important;backdrop-filter:blur(16px) saturate(1.4)!important;border:1px solid #ffffff22;box-shadow:inset 0 1px 0 #ffffff1a}
+#topBar .tbup,#tbUp{position:fixed!important;right:16px;left:auto;top:calc(var(--topbar,64px) + 10px);transform:none;z-index:95;width:min(400px,calc(100vw - 32px));max-width:none;flex:none;margin:0!important;display:flex!important;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 16px;border-radius:20px;background:color-mix(in srgb,var(--surface) 78%,transparent)!important;color:var(--ink)!important;border:1px solid color-mix(in srgb,var(--accent) 60%,transparent)!important;-webkit-backdrop-filter:blur(18px) saturate(1.4)!important;backdrop-filter:blur(18px) saturate(1.4)!important;box-shadow:0 24px 50px -16px #000d,inset 0 1px 0 #ffffff1f;overflow:visible;animation:upIn .28s ease-out}
+#tbUp[hidden]{display:none!important}
+#tbUp .tbmsg{flex:1 1 260px;min-width:0;font-weight:600;line-height:1.35;white-space:normal}
+#tbUp .btn{flex:none;min-height:38px;height:38px;padding:0 16px;background:var(--raise);color:var(--ink);border:1px solid var(--line)}
+#tbUp .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--onaccent);border:0}
+@keyframes upIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@media(max-width:1100px){#topBar .tbup,#tbUp{top:auto;right:50%;transform:translateX(50%);bottom:calc(var(--dockh,92px) + 10px);width:min(520px,calc(100vw - 24px));animation:none}}
+@media(prefers-reduced-motion:reduce){#tbUp{animation:none}}
+
+/* 8.3.1 splash screens */
+.splash,.gate{background:radial-gradient(60vmax 50vmax at 18% 12%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 62%),radial-gradient(55vmax 45vmax at 85% 90%,color-mix(in srgb,var(--accent2) 26%,transparent),transparent 60%),var(--bg)!important}
+.splash .brand{font-size:2.8rem;letter-spacing:-.01em}
+.splash .tag{font-size:1rem}
+.splash .sbar{width:180px;height:5px;border-radius:99px;background:color-mix(in srgb,var(--ink) 14%,transparent);overflow:hidden;margin:26px auto 0}
+.splash .sbar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+#csplash{background:radial-gradient(55vmax 45vmax at 80% 15%,color-mix(in srgb,#ff9a6a 22%,transparent),transparent 62%),radial-gradient(55vmax 45vmax at 15% 90%,color-mix(in srgb,var(--accent) 24%,transparent),transparent 60%),var(--bg);color:var(--ink)}
+#csplash .csin{gap:20px}
+#csplash .csmark{width:112px;height:112px;filter:drop-shadow(0 0 26px #ff9a6a88);animation:csPop .9s cubic-bezier(.2,.9,.3,1.2) both,csSpin 14s linear infinite .9s}
+#csplash .cst{font:700 1.6rem var(--fd);letter-spacing:-.01em;animation:csRise .7s .35s ease both}
+#csplash .css2{margin:-8px 0 0;color:var(--muted);font:500 .95rem var(--fb);animation:csRise .7s .55s ease both}
+@keyframes csPop{from{opacity:0;transform:scale(.6) rotate(-40deg)}to{opacity:1;transform:none}}
+@keyframes csSpin{to{transform:rotate(360deg)}}
+@keyframes csRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#csplash .csmark,#csplash .cst,#csplash .css2{animation:none}}
+#netbar:not(.on){box-shadow:none!important;visibility:hidden}
+#netbar.on{visibility:visible}
+.splash .scard{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;width:auto!important;overflow:visible;display:grid;justify-items:center}
+.splash .scard .tag{white-space:nowrap}
+/* 8.3.1 dropdowns */
+#bellMenu{position:fixed;right:clamp(12px,2vw,24px);top:calc(var(--topbar,64px) - 4px);width:min(380px,calc(100vw - 24px));max-height:calc(100vh - var(--topbar,64px) - var(--dockh,100px) - 4px);overflow:auto;z-index:70;padding:14px;border-radius:22px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);-webkit-backdrop-filter:blur(18px) saturate(1.4)!important;backdrop-filter:blur(18px) saturate(1.4)!important;box-shadow:0 28px 60px -20px #000d,inset 0 1px 0 #ffffff1a;animation:ddIn .2s ease-out}
+#bellMenu[hidden]{display:none}
+#bellMenu .bmhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 4px 12px;border-bottom:1px solid var(--line);margin-bottom:10px}
+#bellMenu .bmhead b{font:700 1.05rem var(--fd)}
+#bellMenu .bmsw{display:inline-flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted)}
+#bellMenu .notes{display:block!important;position:static;width:auto;margin:0;padding:0;background:none;border:0;box-shadow:none}
+#bellMenu .notes .nh{display:none}
+#bellMenu #noteList:empty::before{content:"You're all caught up. Nothing needs attention.";display:block;padding:18px 6px;color:var(--muted);text-align:center}
+#bellMenu #noteList .nitem{margin:0 0 8px}
+.bellbtn .pip{position:absolute;right:7px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--bad,#ff5470);border:2px solid var(--surface)}
+.bellbtn .pip[hidden]{display:none}
+#todayPip{display:none!important}
+html:not([data-tv="1"]) aside.today{top:calc(var(--topbar,64px) - 4px);right:clamp(12px,2vw,24px);bottom:auto;left:auto;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - var(--topbar,64px) - var(--dockh,100px) - 4px);padding:18px;gap:14px;border:1px solid var(--line);border-radius:22px;background:color-mix(in srgb,var(--surface) 88%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4)!important;backdrop-filter:blur(18px) saturate(1.4)!important;box-shadow:0 28px 60px -20px #000d,inset 0 1px 0 #ffffff1a;transform:translateY(-8px) scale(.98);transform-origin:top right;opacity:0;visibility:hidden;transition:transform .2s ease,opacity .2s ease,visibility .2s}
+html.today-open:not([data-tv="1"]) aside.today{transform:none;opacity:1;visibility:visible}
+html:not([data-tv="1"]) aside.today :is(.sclock,.sdate,.sunrow){display:none}
+html:not([data-tv="1"]) aside.today #sideTop{gap:0}
+html:not([data-tv="1"]) .scrim{background:transparent!important}
+@keyframes ddIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#bellMenu{animation:none}html:not([data-tv="1"]) aside.today{transition:none}}
+.bellbtn,.bellbtn.hasripple,#cmdBtn.hasripple,#fsBtn.hasripple,#todayBtn.hasripple{position:fixed!important}
+html:not([data-tv="1"]) aside.today #todayClose{display:none}

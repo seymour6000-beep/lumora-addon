@@ -170,3 +170,11 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 - Weather chip has no empty gap when weather is unavailable.
 - The current dock icon glows in its own colour; room, automation and idea cards lift slightly on hover.
 - The Add your own link form in Apps has proper spacing.
+
+## Lumora 8.3.1
+- The bell works: it opens a Notifications dropdown with the current alerts and a switch for pop-up alerts, and shows a dot when something needs attention. (Before, pressing it made the button jump out of place, so the click was lost.)
+- The right-hand panel is a small calendar dropdown under its button; the clock, date, sunrise and notifications it repeated are gone from it.
+- The Update available message floats at the top right (bottom on small screens) so toasts can't cover it.
+- Top-bar weather, warning and school chips are frosted glass again.
+- The Made by Claude AI screen plays every time Lumora opens, and both start-up screens match the midnight look.
+- A shadow from the hidden offline bar no longer shows at the top edge.
