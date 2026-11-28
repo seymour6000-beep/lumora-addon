@@ -163,3 +163,16 @@ section[data-tab="Devices"]>.hero>.statuscard,.statuscard:has(#ring){display:non
 .tab:active{transform:translateY(-6px) scale(1.06)!important;-webkit-box-reflect:none;box-shadow:inset 0 2px 0 #ffffff80,inset 0 -8px 12px #0003,0 10px 14px -8px #0008;background:linear-gradient(160deg,var(--c1),var(--c2));-webkit-tap-highlight-color:transparent}
 .tab{-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .tab>.ripple{display:none!important}
+/* 8.3 polish */
+.f:has(.chips>[aria-label=Monday]){flex:1 1 100%;grid-column:1/-1;width:100%}
+.f:has(.chips>[aria-label=Monday]) .chips{display:flex;flex-wrap:nowrap;gap:6px}
+.f:has(.chips>[aria-label=Monday]) .chip{flex:1 1 0;min-width:34px;max-width:52px;height:38px;padding:0;justify-content:center}
+.wxic:empty{display:none}
+#topBar .tbwx:has(.wxic:empty){padding-left:16px}
+.tab[aria-current=true]{box-shadow:inset 0 2px 0 #ffffff80,inset 0 -8px 12px #0003,0 10px 14px -8px #0008,0 0 0 2px #ffffff55,0 8px 26px -4px var(--c2)}
+.lt,.rcard,.rule,.tpl{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+@media(hover:hover){.rcard:hover,.tpl:hover,.rule:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:inset 0 1px 0 #ffffff14,0 26px 40px -22px #000d}}
+@media(prefers-reduced-motion:reduce){.lt,.rcard,.rule,.tpl{transition:none}.rcard:hover,.tpl:hover,.rule:hover{transform:none}}
+.auto.add{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:18px!important}
+.auto.add .f{display:flex;flex-direction:column;gap:6px;margin:0;font-weight:600;font-size:.85rem}
+.auto.add .btn{align-self:flex-start}

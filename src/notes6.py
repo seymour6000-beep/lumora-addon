@@ -53,3 +53,7 @@ rep("'8.2.1':{t:'Lumora 8.2.1'","'8.2.2':{t:'Lumora 8.2.2',items:"+_j.dumps(N822
 N823=["Removed the round lights-on counter from the top of Devices. The Lights on tile already shows the same number.","The start-up screen no longer mentions cameras.","The dock icon you click no longer grows a dark block underneath it.","Fixed the dark square that flashed over a dock icon while you held the click."]
 rep("APP_VERSION='8.2.2'","APP_VERSION='8.2.3'")
 rep("'8.2.2':{t:'Lumora 8.2.2'","'8.2.3':{t:'Lumora 8.2.3',items:"+_j.dumps(N823)+"},\n  '8.2.2':{t:'Lumora 8.2.2'")
+
+N830=["The Add your own link form in Apps has proper spacing.","Camera leftovers are gone: no camera brands in Apps, no camera-motion triggers or camera ideas in Automations, and old camera-motion automations are cleared.","The Days buttons in the automation builder now sit in one even row.","The weather chip no longer has an empty gap when weather is unavailable.","The current dock icon now glows in its own colour.","Cards for rooms, automations and ideas lift slightly when you point at them."]
+rep("APP_VERSION='8.2.3'","APP_VERSION='8.3.0'")
+rep("'8.2.3':{t:'Lumora 8.2.3'","'8.3.0':{t:'Lumora 8.3',items:"+_j.dumps(N830)+"},\n  '8.2.3':{t:'Lumora 8.2.3'")

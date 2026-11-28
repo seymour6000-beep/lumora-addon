@@ -163,3 +163,10 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 - The dock icon you click no longer grows a dark block underneath it.
 - The start-up screen no longer mentions cameras.
 - Fixed the dark square that flashed over a dock icon while you held the click.
+
+## Lumora 8.3
+- Camera leftovers removed: no camera brands in Apps, no camera-motion triggers or camera ideas in Automations; old camera-motion automations are cleared.
+- Days buttons in the automation builder sit in one even row.
+- Weather chip has no empty gap when weather is unavailable.
+- The current dock icon glows in its own colour; room, automation and idea cards lift slightly on hover.
+- The Add your own link form in Apps has proper spacing.
