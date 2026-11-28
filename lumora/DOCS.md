@@ -162,3 +162,4 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 - Removed the round lights-on counter at the top of Devices (the Lights on tile shows the same number).
 - The dock icon you click no longer grows a dark block underneath it.
 - The start-up screen no longer mentions cameras.
+- Fixed the dark square that flashed over a dock icon while you held the click.
