@@ -262,6 +262,47 @@ function createApp(userConfig = {}) {
     return alBusy;
   }
 
+
+  /* YouTube uploads: each channel's public RSS feed (no key needed). A handle is turned into a channel id once and remembered. */
+  const ytIds = new Map(), ytCache = new Map();
+  const YT_HANDLE = /^@?[A-Za-z0-9._-]{1,60}$/;
+  async function ytResolve(h) {
+    h = String(h).replace(/^@/, '');
+    if (/^UC[\w-]{22}$/.test(h)) return h;
+    const k = h.toLowerCase();
+    if (ytIds.has(k)) return ytIds.get(k);
+    const r = await fetch('https://www.youtube.com/@' + encodeURIComponent(h), { signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Lumora/' + VERSION + ')', 'Accept-Language': 'en', Cookie: 'CONSENT=YES+1; SOCS=CAI' } });
+    if (!r.ok) throw new Error('yt channel status ' + r.status);
+    const html = (await r.text()).slice(0, 2000000);
+    const m = html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/) || html.match(/"externalId":"(UC[\w-]{22})"/) || html.match(/"channelId":"(UC[\w-]{22})"/) || html.match(/channel_id=(UC[\w-]{22})/);
+    if (!m) throw new Error('yt channel not found');
+    ytIds.set(k, m[1]);
+    return m[1];
+  }
+  function parseYt(xml) {
+    const x = String(xml);
+    const name = plain((x.match(/<author>\s*<name>([\s\S]*?)<\/name>/) || [])[1] || '');
+    const videos = [];
+    for (const m of x.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+      const e = m[1], id = (e.match(/<yt:videoId>([\w-]{11})<\/yt:videoId>/) || [])[1];
+      if (!id) continue;
+      videos.push({ id, title: plain((e.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '').slice(0, 160), published: (e.match(/<published>([^<]+)<\/published>/) || [])[1] || '', url: 'https://www.youtube.com/watch?v=' + id });
+    }
+    return { name, videos: videos.slice(0, 6) };
+  }
+  async function ytChannel(h) {
+    const id = await ytResolve(h);
+    const c = ytCache.get(id);
+    if (c && Date.now() - c.at < 300000) return c.data;
+    try {
+      const r = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=' + id, { signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Lumora/' + VERSION } });
+      if (!r.ok) throw new Error('yt feed status ' + r.status);
+      const data = { handle: h, id, ...parseYt(await r.text()) };
+      ytCache.set(id, { at: Date.now(), data });
+      return data;
+    } catch (e) { if (c) return c.data; throw e; }
+  }
+
   /* school notices: the board (CCRCE) publishes closures as plain notices, with no feed, so this only looks for a notice dated today.
      "none" means no notice was found, which is not proof that schools are open. */
   function localParts(d = new Date()) {
@@ -763,7 +804,7 @@ function createApp(userConfig = {}) {
       'Referrer-Policy': 'same-origin',
       'Permissions-Policy': 'geolocation=(self), camera=(), microphone=()',
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://i.ytimg.com; connect-src 'self'; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
       ...h,
     };
     if (isHttps(req)) out['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
@@ -952,6 +993,16 @@ function createApp(userConfig = {}) {
         data: sess ? bootData(sess.user) : null,
         rev: store.db.rev,
       });
+    }
+
+    if (p === '/api/youtube' && method === 'GET') {
+      if (!currentSession(req)) return fail(req, res, 401, 'signed_out', 'Please sign in.');
+      const wait = bump(hits, 'yt|' + ip, 20, 60000);
+      if (wait) return fail(req, res, 429, 'rate_limited', 'Too many requests. Try again in ' + wait + ' seconds.', { retryAfter: wait });
+      const hs = String(url.searchParams.get('h') || '').split(',').map((x) => x.trim()).filter(Boolean).slice(0, 8);
+      if (!hs.length || hs.some((x) => !YT_HANDLE.test(x) && !/^UC[\w-]{22}$/.test(x))) return fail(req, res, 400, 'bad_request', 'Give channel handles such as conflictnerd.');
+      const out = await Promise.allSettled(hs.map((h) => ytChannel(h)));
+      return json(req, res, 200, { channels: out.map((o, i) => o.status === 'fulfilled' ? o.value : { handle: hs[i], error: 'unavailable' }) });
     }
 
     if (p === '/api/weather' && method === 'GET') {

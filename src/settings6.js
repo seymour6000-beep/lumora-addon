@@ -7,7 +7,7 @@
     {id:'home',label:'Home and look',ic:'home',hint:'Name, clock, theme and background',p:['Home','Design','Background']},
     {id:'lights',label:'Lights and rooms',ic:'bulb',hint:'Lights, scenes, sleep mode and light checks',p:['Lights','Your scenes','Sleep mode','Light watch','Offline detection','Automations and location']},
     {id:'devices',label:'Devices and cameras',ic:'sensor',hint:'Sensors, locks, cameras and power cuts',p:['Devices','Cameras','Power outage']},
-    {id:'alerts',label:'Alerts and sound',ic:'bell',hint:'Notifications, phone alerts and the red-light beep',p:['Notifications and sound','Status lights','Phone alerts']},
+    {id:'alerts',label:'Alerts and sound',ic:'bell',hint:'Notifications, YouTube uploads, phone alerts and the red-light beep',p:['Notifications and sound','YouTube alerts','Status lights','Phone alerts']},
     {id:'connections',label:'Connections',ic:'link',hint:'Home Assistant, Spotify, Bluetooth, Google Home and Alexa',p:['Connections','Spotify','Bluetooth','Google Home and Alexa']},
     {id:'screens',label:'Screens and apps',ic:'apps',hint:'TV, remote and the Windows app',p:['Use Lumora on a TV','Approve a TV','TV and remote','Lumora for Windows']},
     {id:'system',label:'System and backup',ic:'gear',hint:'Health, backup, server address and version',p:['Health and backup','This server’s address','Data and about','About Lumora']}

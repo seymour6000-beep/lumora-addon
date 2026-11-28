@@ -178,3 +178,7 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 - Top-bar weather, warning and school chips are frosted glass again.
 - The Made by Claude AI screen plays every time Lumora opens, and both start-up screens match the midnight look.
 - A shadow from the hidden offline bar no longer shows at the top edge.
+
+## Lumora 8.4
+- **YouTube alerts.** When Autoauctionrebuilds or conflictnerd upload a video today, a message pops up in the bottom-left corner, beeps twice once, and stays until you press ✕. Add or remove channels, turn the beep off, send a test or check now in Settings > Alerts and sound > YouTube alerts. The Lumora server reads each channel's public upload feed (no key needed) and checks every 10 minutes. It needs internet access from the add-on; thumbnails load from i.ytimg.com.
+- The update reload countdown is one ring with the seconds inside the update message, in the bottom-right corner. The duplicate countdown pop-up at the top is gone.

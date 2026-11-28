@@ -23,3 +23,21 @@ s=s.replace(",'Cameras'],site",  "],site").replace("cat:['Lights'],site","cat:['
 s=s.replace("['All','Lights','Cameras','Hubs']","['All','Lights','Hubs']").replace('<option>Lights</option><option>Cameras</option><option>Hubs</option>','<option>Lights</option><option>Hubs</option>')
 
 s=s.replace("if(Array.isArray(s)) rules=s.map(migrate).filter(Boolean);","if(Array.isArray(s)) rules=s.map(migrate).filter(r=>r&&r.t&&r.t.type!=='motion'&&r.t.type!=='nomotion');",1)
+
+_PANEL='<div class="panel" id="ytPanel"><h3>YouTube alerts</h3><p class="sub">A message appears in the bottom-left corner when one of these channels uploads a video today. It stays until you press ✕, and it beeps twice once when it arrives.</p><div class="srow"><span>YouTube alerts</span><button class="sw" role="switch" id="ytOn" aria-label="YouTube alerts"><i></i></button></div><div class="srow"><span>Double beep</span><button class="sw" role="switch" id="ytSnd" aria-label="Double beep"><i></i></button></div><div id="ytList"></div><div class="srow"><input class="in" id="ytAdd" placeholder="Channel handle" maxlength="80" aria-label="Channel handle" autocomplete="off"><button class="btn" id="ytAddBtn" type="button">Add channel</button></div><div class="srow"><button class="btn" id="ytTest" type="button">Send a test</button><button class="btn" id="ytCheck" type="button">Check now</button></div><p class="sub" id="ytMsg" role="status"></p></div>\n'
+_a='<div class="panel wide" id="notifyPanel" hidden>'
+assert _a in s
+s=s.replace(_a,_PANEL+_a,1)
+
+_o="const draw=()=>{ msg.textContent='Lumora updated to version '+version+'. Reloading in '+n+'s'; fill.style.width=(n*10)+'%'; };"
+assert _o in s
+s=s.replace(_o,"const draw=()=>{ msg.textContent='Lumora updated to version '+version+'. Reloading in '+n+' seconds.'; fill.style.width=(n*10)+'%'; upBox.dataset.n=n; upBox.style.setProperty('--p',n*10); };",1)
+_t="    try{ toast('Lumora was updated to version '+version+'. Reloading in 10 seconds.'); }catch(e){}\n"
+assert _t in s
+s=s.replace(_t,"",1)
+_g="const go=async()=>{ clearInterval(cd); msg.textContent='Reloading…';"
+assert _g in s
+s=s.replace(_g,"const go=async()=>{ clearInterval(cd); delete upBox.dataset.n; msg.textContent='Reloading…';",1)
+_st="$('tbStay').onclick=()=>{ clearInterval(cd); msg.textContent="
+assert _st in s
+s=s.replace(_st,"$('tbStay').onclick=()=>{ clearInterval(cd); delete upBox.dataset.n; msg.textContent=",1)

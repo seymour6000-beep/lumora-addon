@@ -61,3 +61,7 @@ rep("'8.2.3':{t:'Lumora 8.2.3'","'8.3.0':{t:'Lumora 8.3',items:"+_j.dumps(N830)+
 N831=["The Update available message now floats just under the top bar, with its own frosted card, so nothing can cut it off.","The weather, warning and school chips in the top bar are frosted glass again.","A faint shadow from the hidden offline bar no longer shows at the top of the screen.","The Lumora start-up screen has more room around the logo and the loading bar.","The Made by Claude AI screen now plays every time Lumora opens, not just the first time in a tab, and both start-up screens match the new midnight look."]
 rep("APP_VERSION='8.3.0'","APP_VERSION='8.3.1'")
 rep("'8.3.0':{t:'Lumora 8.3'","'8.3.1':{t:'Lumora 8.3.1',items:"+_j.dumps(N831)+"},\n  '8.3.0':{t:'Lumora 8.3'")
+
+N840=["YouTube alerts: when Autoauctionrebuilds or conflictnerd upload a video, a message pops up in the bottom-left corner, beeps twice once, and stays there until you press ✕.","Add or remove channels, turn the beep off, send a test message or check now in Settings under Alerts and sound.","Needs the Lumora server (the Home Assistant add-on) to read YouTube. The preview can only show the test message.","The update reload countdown is now one ring with the seconds inside the update message, which sits in the bottom-right corner. The duplicate countdown pop-up at the top is gone."]
+rep("APP_VERSION='8.3.1'","APP_VERSION='8.4.0'")
+rep("'8.3.1':{t:'Lumora 8.3.1'","'8.4.0':{t:'Lumora 8.4',items:"+_j.dumps(N840)+"},\n  '8.3.1':{t:'Lumora 8.3.1'")
