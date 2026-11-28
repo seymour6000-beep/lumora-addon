@@ -49,3 +49,7 @@ rep("'8.2.0':{t:'Lumora 8.2'","'8.2.1':{t:'Lumora 8.2.1',items:"+_j.dumps(N821)+
 rep("APP_VERSION='8.2.1'","APP_VERSION='8.2.2'")
 N822=["The scene buttons, All lights off, I'm home / I'm away and Scan for devices are now the same height and sit in line with each other."]
 rep("'8.2.1':{t:'Lumora 8.2.1'","'8.2.2':{t:'Lumora 8.2.2',items:"+_j.dumps(N822)+"},\n  '8.2.1':{t:'Lumora 8.2.1'")
+
+N823=["Removed the round lights-on counter from the top of Devices. The Lights on tile already shows the same number.","The start-up screen no longer mentions cameras.","The dock icon you click no longer grows a dark block underneath it."]
+rep("APP_VERSION='8.2.2'","APP_VERSION='8.2.3'")
+rep("'8.2.2':{t:'Lumora 8.2.2'","'8.2.3':{t:'Lumora 8.2.3',items:"+_j.dumps(N823)+"},\n  '8.2.2':{t:'Lumora 8.2.2'")

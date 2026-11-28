@@ -8,3 +8,4 @@ s=s.replace("const MAX_LIGHTS=30, MAX_CAMS=30;","const MAX_LIGHTS=30, MAX_CAMS=0
 s=s.replace("if(Array.isArray(sc)) cams=sc.filter(c=>c&&c.id&&c.name); else if(REMOTE) cams=[];","cams=[];",1)
 s=s.replace('placeholder="Search lights and cameras"','placeholder="Search lights"').replace("Search lights and cameras","Search lights")
 s=s.replace("Devices and cameras","Devices and sensors").replace("Sensors, locks, cameras and power cuts","Sensors, locks and power cuts")
+s=s.replace("Your lights and cameras, in one place.","Your lights, in one place.")

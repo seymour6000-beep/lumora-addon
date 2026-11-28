@@ -157,3 +157,8 @@ Alignment pass: buttons that went blank in the light looks are fixed, the school
 ## Lumora 8.2.2
 
 The scene buttons, All lights off, I am home / I am away and Scan for devices are the same height and in line.
+
+## Lumora 8.2.3
+- Removed the round lights-on counter at the top of Devices (the Lights on tile shows the same number).
+- The dock icon you click no longer grows a dark block underneath it.
+- The start-up screen no longer mentions cameras.
