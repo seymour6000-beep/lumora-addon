@@ -190,3 +190,7 @@ The scene buttons, All lights off, I am home / I am away and Scan for devices ar
 
 ## Lumora 8.5.1
 - City at night background redone: starry sky with a moon, a glowing horizon, three layers of buildings with small warm and cool windows, and blinking red tower lights.
+
+## Lumora 8.6
+
+Every older background was redrawn: Soft glow, Dots, Contours, Triangles, Honeycomb, Circuit board, Blueprint, Film grain, Mountains, Sunset, Stripes, Checkerboard, Glass grid, Mesh, Aurora, Flow, Stars, Lights, Fog, Nebula, Ocean, Synthwave, Bokeh, Lava lamp, Spotlight, Plasma, Prism, Snow, Rain, Fireflies, Embers, Digital rain, Bubbles and Star warp. Patterns follow your accent colour so they also work on light designs.

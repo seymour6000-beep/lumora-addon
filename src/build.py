@@ -156,6 +156,8 @@ rep("    else if(k==='snow'||k==='rain'){","""    else if(BGN.css[k]){ BGN.css[k
     }
     else if(k==='snow'||k==='rain'){""")
 rep("    } else {\n      ctx.globalAlpha=.35; ctx.lineWidth=1.2;","    } else if(BGN.draw[kind]){\n      BGN.draw[kind](ctx,parts,t,dt,W,H,inkColor());\n    } else {\n      ctx.globalAlpha=.35; ctx.lineWidth=1.2;")
+rep("    if(k==='plain'){ el.className='bgx-plain'; }","    if(BGN.v2&&BGN.v2.has(k)){ el.className=''; BGN.css[k](el); }\n    else if(k==='plain'){ el.className='bgx-plain'; }")
+rep("    if(kind==='snow'){\n      ctx.globalAlpha=.7;","    if(BGN.draw[kind]){ BGN.draw[kind](ctx,parts,t,dt,W,H,inkColor()); }\n    else if(kind==='snow'){\n      ctx.globalAlpha=.7;")
 rep("const g=type==='auto'?'Automatic':type==='static'?'Still':'Moving'; ","const g=type==='default'?'Default':type==='auto'?'Automatic':type==='static'?'Still':'Moving'; ")
 
 # ---- 3.2.0 patches ----

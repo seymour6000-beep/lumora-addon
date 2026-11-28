@@ -73,3 +73,9 @@ rep("'8.4.0':{t:'Lumora 8.4'","'8.5.0':{t:'Lumora 8.5',items:"+_j.dumps(N850)+"}
 N851=["City at night is redone: a starry sky with a moon, a glowing horizon, three layers of buildings with small warm and cool windows, and blinking red tower lights."]
 rep("APP_VERSION='8.5.0'","APP_VERSION='8.5.1'")
 rep("'8.5.0':{t:'Lumora 8.5'","'8.5.1':{t:'Lumora 8.5.1',items:"+_j.dumps(N851)+"},\n  '8.5.0':{t:'Lumora 8.5'")
+
+N860=["Every older background has been redrawn. Still ones: richer Soft glow, a faded Dots grid, flowing Contours, a low-poly Triangles that follows your accent colour, a lit Honeycomb, a glowing Circuit board with moving pulses, a finer Blueprint, real Film grain, layered night Mountains with a moon, a sunset with a sun and hills, softer Stripes and Checkerboard.",
+"Moving ones: Aurora now has stars and soft curtains, Stars twinkle and shoot, Ocean is a moonlit sea, Synthwave has a striped sun and a glowing grid, Spotlight has real beams, Prism turns slowly, Lava lamp and Plasma are fuller, Bokeh is rim-lit, Fog drifts in layers, Nebula has stars.",
+"Snow now has depth and wind, Rain has splashes and an occasional flash, Fireflies, Embers, Digital rain, Bubbles and Star warp all glow and look brighter."]
+rep("APP_VERSION='8.5.1'","APP_VERSION='8.6.0'")
+rep("'8.5.1':{t:'Lumora 8.5.1'","'8.6.0':{t:'Lumora 8.6',items:"+_j.dumps(N860)+"},\n  '8.5.1':{t:'Lumora 8.5.1'")
